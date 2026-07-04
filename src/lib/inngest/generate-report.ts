@@ -59,7 +59,14 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): 
   throw lastErr
 }
 
-const WEB_SEARCH_TOOL = [{ type: 'web_search_20250305' as const, name: 'web_search' as const }]
+// max_uses caps searches per call — search fees + result input tokens are the
+// dominant report cost, so an uncapped call can multiply the price of a run.
+const webSearchTool = (maxUses: number) =>
+  [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: maxUses }]
+
+// Step results carry their AI cost so per-report cost tracking survives
+// Inngest step memoization/replays.
+interface StepResult<T> { value: T; costUsd: number }
 
 export const generateReport = inngest.createFunction(
   {
@@ -102,12 +109,13 @@ export const generateReport = inngest.createFunction(
       .eq('id', reportId)
 
     const sections: Record<string, unknown> = {}
+    let totalCostUsd = 0
 
     // ── Step 1: Competitor research ───────────────────────────
     let competitors: unknown
     try {
-      competitors = await step.run('research-competitors', () => withRetry('research-competitors', async () => {
-        const { text } = await callAI({
+      const res = await step.run('research-competitors', (): Promise<StepResult<unknown[]>> => withRetry('research-competitors', async () => {
+        const { text, costUsd } = await callAI({
           messages: [{ role: 'user', content: buildCompetitorResearchMessage({
             idea_raw_text: idea.raw_text,
             archetype: idea.archetype,
@@ -121,12 +129,14 @@ export const generateReport = inngest.createFunction(
           system: COMPETITOR_RESEARCH_SYSTEM_PROMPT,
           maxTokens: 4096,
           tag: 'report:competitors',
-          tools: WEB_SEARCH_TOOL,
+          tools: webSearchTool(5),
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Competitor response not an array')
-        return parsed
+        return { value: parsed, costUsd }
       }))
+      competitors = res.value
+      totalCostUsd += res.costUsd
     } catch (err) {
       console.error('research-competitors failed:', err)
       competitors = UNAVAILABLE('Competitor research could not be completed.')
@@ -138,10 +148,10 @@ export const generateReport = inngest.createFunction(
     // ── Step 2: Cost estimation ───────────────────────────────
     let costBreakdown: unknown
     try {
-      costBreakdown = await step.run('estimate-costs', () => withRetry('estimate-costs', async () => {
+      const res = await step.run('estimate-costs', (): Promise<StepResult<unknown>> => withRetry('estimate-costs', async () => {
         const productArchetypes = ['physical_product', 'ecommerce_brand']
         if (productArchetypes.includes(idea.archetype)) {
-          return calculateCosts({
+          return { value: calculateCosts({
             location_country: idea.location_country,
             materials_batch_cost: parseNumber(mapsTo['cost.materials']),
             packaging_per_unit: parseNumber(mapsTo['cost.packaging_per_unit']),
@@ -151,10 +161,10 @@ export const generateReport = inngest.createFunction(
             batch_yield: parseNumber(mapsTo['cost.batch_yield']),
             hourly_rate: parseNumber(mapsTo['cost.hourly_rate']),
             unit_cost_estimate: parseNumber(mapsTo['cost.unit_cost_estimate']),
-          })
+          }), costUsd: 0 }
         }
         // Non-product archetypes: get a real LLM cost estimate instead of a stub
-        const { text } = await callAI({
+        const { text, costUsd } = await callAI({
           messages: [{ role: 'user', content: buildCostEstimationMessage({
             idea_raw_text: idea.raw_text,
             archetype: idea.archetype,
@@ -172,8 +182,10 @@ export const generateReport = inngest.createFunction(
         if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
           throw new Error('Cost estimation response not an object')
         }
-        return parsed
+        return { value: parsed, costUsd }
       }))
+      costBreakdown = res.value
+      totalCostUsd += res.costUsd
     } catch (err) {
       console.error('estimate-costs failed:', err)
       costBreakdown = UNAVAILABLE('Cost estimation could not be completed.')
@@ -185,8 +197,8 @@ export const generateReport = inngest.createFunction(
     // ── Step 3: Compliance check ──────────────────────────────
     let legalCompliance: unknown
     try {
-      legalCompliance = await step.run('compliance-check', () => withRetry('compliance-check', async () => {
-        const { text } = await callAI({
+      const res = await step.run('compliance-check', (): Promise<StepResult<unknown[]>> => withRetry('compliance-check', async () => {
+        const { text, costUsd } = await callAI({
           messages: [{ role: 'user', content: buildComplianceMessage({
             archetype: idea.archetype,
             location_country: idea.location_country,
@@ -198,12 +210,14 @@ export const generateReport = inngest.createFunction(
           system: COMPLIANCE_SYSTEM_PROMPT,
           maxTokens: 3072,
           tag: 'report:compliance',
-          tools: WEB_SEARCH_TOOL,
+          tools: webSearchTool(3),
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Compliance response not an array')
-        return parsed
+        return { value: parsed, costUsd }
       }))
+      legalCompliance = res.value
+      totalCostUsd += res.costUsd
     } catch (err) {
       console.error('compliance-check failed:', err)
       legalCompliance = UNAVAILABLE('Compliance check could not be completed.')
@@ -215,8 +229,8 @@ export const generateReport = inngest.createFunction(
     // ── Step 4: Synthesis ─────────────────────────────────────
     let synthesis: Partial<SynthesisOutput>
     try {
-      synthesis = await step.run('synthesise', () => withRetry('synthesise', async () => {
-        const { text } = await callAI({
+      const res = await step.run('synthesise', (): Promise<StepResult<SynthesisOutput>> => withRetry('synthesise', async () => {
+        const { text, costUsd } = await callAI({
           messages: [{ role: 'user', content: buildSynthesisMessage({
             idea_raw_text: idea.raw_text,
             archetype: idea.archetype,
@@ -234,8 +248,10 @@ export const generateReport = inngest.createFunction(
           maxTokens: 4096,
           tag: 'report:synthesis',
         })
-        return extractJson(text) as SynthesisOutput
+        return { value: extractJson(text) as SynthesisOutput, costUsd }
       }))
+      synthesis = res.value
+      totalCostUsd += res.costUsd
     } catch (err) {
       console.error('synthesise failed:', err)
       synthesis = {
@@ -252,6 +268,9 @@ export const generateReport = inngest.createFunction(
 
     // ── Step 5: Assemble preview sections + complete ──────────
     await step.run('assemble', async () => {
+      // Admin-visible generation cost (USD, incl. web-search fees; excludes
+      // failed retry attempts). Underscore-prefixed so viewers skip it.
+      sections._meta = { cost_usd: Math.round(totalCostUsd * 10000) / 10000 }
       const competitorList = Array.isArray(competitors) ? competitors as Array<Record<string, unknown>> : []
       const allNextSteps = Array.isArray(synthesis.next_steps) ? synthesis.next_steps as Array<Record<string, unknown>> : []
 

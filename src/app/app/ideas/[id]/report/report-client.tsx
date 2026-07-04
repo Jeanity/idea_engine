@@ -724,11 +724,11 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
   async function handleClick() {
     const ok = window.confirm(
       'Run the full AI research pipeline?\n\n' +
-      '• Competitor research (web search)\n' +
+      '• Competitor research (web search, max 5 searches)\n' +
       '• Cost estimation\n' +
-      '• Compliance check (web search)\n' +
+      '• Compliance check (web search, max 3 searches)\n' +
       '• Synthesis\n\n' +
-      'Estimated cost: ~A$0.10–0.15\n\nContinue?'
+      'Estimated cost: ~US$0.30–0.60\n\nContinue?'
     )
     if (!ok) return
     setLoading(true)
@@ -753,7 +753,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
     <div className="rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-5 py-4 text-center">
       <p className="text-xs font-semibold text-amber-700 mb-1">Admin — Test mode</p>
       <p className="text-xs text-amber-600 mb-3">
-        Runs the full research pipeline. ~A$0.10–0.15 per run.
+        Runs the full research pipeline. ~US$0.30–0.60 per run.
       </p>
       <button
         onClick={handleClick}
@@ -773,12 +773,16 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
   const [regenerating, setRegenerating] = useState(false)
 
   const hasFullSections = report?.status === 'complete' && Object.keys(report.sections).length > 0
+  const generationCost = (report?.sections?._meta as { cost_usd?: number } | undefined)?.cost_usd
 
   if (hasFullSections && !regenerating) {
     return (
       <div>
         <FullReportViewer report={report!} />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
+          {isAdmin && generationCost !== undefined && (
+            <p className="text-xs text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
+          )}
           <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
         </div>
       </div>
