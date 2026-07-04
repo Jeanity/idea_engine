@@ -229,7 +229,7 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
     scores: Record<string, { score: number; rationale: string }>
     overall_verdict: string
   } | undefined
-  const nextStepsPreview = (p.next_steps_preview ?? []) as Array<{ action: string; timeframe: string }>
+  const nextStepsPreview = (p.next_steps ?? []) as Array<{ action: string; timeframe: string }>
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
@@ -362,12 +362,12 @@ function FullReportViewer({ report }: { report: ReportData }) {
                 {(competitors as Array<Record<string, string>>).map((c, i) => (
                   <div key={i} className="px-5 py-4">
                     <div className="flex items-start justify-between gap-4 mb-2">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <a href={c.url} target="_blank" rel="noopener noreferrer"
-                          className="font-medium text-indigo-600 hover:underline text-sm">{c.name}</a>
+                          className="font-medium text-indigo-600 hover:underline text-sm break-words">{c.name}</a>
                         <span className="text-xs text-gray-400 ml-2">{c.location}</span>
                       </div>
-                      <span className="text-xs font-medium text-gray-700 whitespace-nowrap shrink-0">{c.pricing_summary}</span>
+                      <span className="text-xs font-medium text-gray-700 text-right max-w-[45%] break-words">{c.pricing_summary}</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
                       <span className="font-medium text-gray-700">Positioning: </span>{c.positioning_angle}

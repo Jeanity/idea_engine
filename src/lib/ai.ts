@@ -59,6 +59,12 @@ export async function callAI({ messages, system, maxTokens = MAX_TOKENS, tag = '
     })
   )
 
+  // A max_tokens stop means the output was cut off mid-answer — for JSON
+  // responses that guarantees a parse failure downstream, so fail loudly here.
+  if (response.stop_reason === 'max_tokens') {
+    throw new Error(`Response truncated at ${maxTokens} output tokens (tag=${tag}) — raise maxTokens for this call`)
+  }
+
   // Extract text blocks — web search responses have tool_use + tool_result blocks mixed in
   const textBlocks = response.content.filter((b): b is Anthropic.Messages.TextBlock => b.type === 'text')
   if (textBlocks.length === 0) {

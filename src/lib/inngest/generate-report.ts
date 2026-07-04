@@ -40,6 +40,21 @@ function loadBank(archetype: string): Question[] {
 
 const UNAVAILABLE = (reason: string) => ({ status: 'unavailable', reason })
 
+// One retry protects against transient failures (truncation, malformed JSON,
+// API hiccups) without duplicating whole-step retries in Inngest.
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): Promise<T> {
+  let lastErr: unknown
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      console.warn(`${label}: attempt ${i}/${attempts} failed:`, err instanceof Error ? err.message : err)
+    }
+  }
+  throw lastErr
+}
+
 const WEB_SEARCH_TOOL = [{ type: 'web_search_20250305' as const, name: 'web_search' as const }]
 
 export const generateReport = inngest.createFunction(
@@ -87,7 +102,7 @@ export const generateReport = inngest.createFunction(
     // ── Step 1: Competitor research ───────────────────────────
     let competitors: unknown
     try {
-      competitors = await step.run('research-competitors', async () => {
+      competitors = await step.run('research-competitors', () => withRetry('research-competitors', async () => {
         const { text } = await callAI({
           messages: [{ role: 'user', content: buildCompetitorResearchMessage({
             idea_raw_text: idea.raw_text,
@@ -100,14 +115,14 @@ export const generateReport = inngest.createFunction(
             geographic_scope: mapsTo['market.geographic_scope'] ?? null,
           }) }],
           system: COMPETITOR_RESEARCH_SYSTEM_PROMPT,
-          maxTokens: 2048,
+          maxTokens: 4096,
           tag: 'report:competitors',
           tools: WEB_SEARCH_TOOL,
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Competitor response not an array')
         return parsed
-      })
+      }))
     } catch (err) {
       console.error('research-competitors failed:', err)
       competitors = UNAVAILABLE('Competitor research could not be completed.')
@@ -153,7 +168,7 @@ export const generateReport = inngest.createFunction(
     // ── Step 3: Compliance check ──────────────────────────────
     let legalCompliance: unknown
     try {
-      legalCompliance = await step.run('compliance-check', async () => {
+      legalCompliance = await step.run('compliance-check', () => withRetry('compliance-check', async () => {
         const { text } = await callAI({
           messages: [{ role: 'user', content: buildComplianceMessage({
             archetype: idea.archetype,
@@ -164,14 +179,14 @@ export const generateReport = inngest.createFunction(
             production_location: mapsTo['cost.production_location'] ?? null,
           }) }],
           system: COMPLIANCE_SYSTEM_PROMPT,
-          maxTokens: 1024,
+          maxTokens: 3072,
           tag: 'report:compliance',
           tools: WEB_SEARCH_TOOL,
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Compliance response not an array')
         return parsed
-      })
+      }))
     } catch (err) {
       console.error('compliance-check failed:', err)
       legalCompliance = UNAVAILABLE('Compliance check could not be completed.')
@@ -183,7 +198,7 @@ export const generateReport = inngest.createFunction(
     // ── Step 4: Synthesis ─────────────────────────────────────
     let synthesis: Partial<SynthesisOutput>
     try {
-      synthesis = await step.run('synthesise', async () => {
+      synthesis = await step.run('synthesise', () => withRetry('synthesise', async () => {
         const { text } = await callAI({
           messages: [{ role: 'user', content: buildSynthesisMessage({
             idea_raw_text: idea.raw_text,
@@ -196,11 +211,14 @@ export const generateReport = inngest.createFunction(
             cost_breakdown: costBreakdown,
           }) }],
           system: SYNTHESIS_SYSTEM_PROMPT,
-          maxTokens: 2048,
+          // The synthesis JSON (summary + 4 scored dimensions + pricing +
+          // 3-5 risks + 3-5 next steps) regularly exceeds 2048 tokens —
+          // that cap truncated the JSON and killed all five sections at once.
+          maxTokens: 4096,
           tag: 'report:synthesis',
         })
         return extractJson(text) as SynthesisOutput
-      })
+      }))
     } catch (err) {
       console.error('synthesise failed:', err)
       synthesis = {
