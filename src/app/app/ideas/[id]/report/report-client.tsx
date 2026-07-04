@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 
 interface ReportData {
   id: string
@@ -16,6 +15,7 @@ interface Props {
   restatement: string | null
   archetype: string
   initialReport: ReportData | null
+  isAdmin: boolean
 }
 
 // ── Progress screen ───────────────────────────────────────────
@@ -54,12 +54,10 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
     }
   }, [ideaId])
 
-  // Start generation on mount if no report
   useEffect(() => {
     triggerGeneration()
   }, [triggerGeneration])
 
-  // Poll for updates
   useEffect(() => {
     if (!report || report.status === 'complete' || report.status === 'failed') return
     const interval = setInterval(async () => {
@@ -80,8 +78,7 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
     return () => clearInterval(interval)
   }, [report, ideaId, onComplete])
 
-  const sections = report?.sections ?? {}
-  const completedKeys = Object.keys(sections)
+  const completedKeys = Object.keys(report?.sections ?? {})
 
   if (error) {
     return (
@@ -136,7 +133,7 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
   )
 }
 
-// ── Report viewer ─────────────────────────────────────────────
+// ── Shared helpers ────────────────────────────────────────────
 
 function ScoreBar({ score }: { score: number }) {
   return (
@@ -147,6 +144,53 @@ function ScoreBar({ score }: { score: number }) {
     </div>
   )
 }
+
+function isUnavailable(v: unknown): v is { status: 'unavailable'; reason: string } {
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).status === 'unavailable'
+}
+
+function UnavailableSection({ title, reason }: { title: string; reason?: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+      <h2 className="font-semibold text-gray-900 mb-1">{title}</h2>
+      <p className="text-sm text-gray-400">{reason ?? 'This section was unavailable.'}</p>
+    </div>
+  )
+}
+
+const SCORE_LABELS: Record<string, string> = {
+  market_opportunity: 'Market opportunity',
+  execution_difficulty: 'Execution difficulty',
+  capital_required: 'Capital required',
+  time_to_revenue: 'Time to revenue',
+}
+
+function ViabilitySnapshot({ vs }: {
+  vs: { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string }
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+      <h2 className="font-semibold text-gray-900 mb-4">Viability Snapshot</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {Object.entries(vs.scores).map(([key, val]) => (
+          <div key={key}>
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{SCORE_LABELS[key] ?? key}</span>
+              <span className="font-medium text-gray-700">{val.score}/5</span>
+            </div>
+            <ScoreBar score={val.score} />
+            <p className="text-xs text-gray-500 mt-1">{val.rationale}</p>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3">
+        <p className="text-sm text-indigo-900">{vs.overall_verdict}</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Teaser viewer ─────────────────────────────────────────────
 
 function LockedSection({ title }: { title: string }) {
   return (
@@ -173,21 +217,12 @@ function LockedSection({ title }: { title: string }) {
   )
 }
 
-function UnavailableSection({ title, reason }: { title: string; reason?: string }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-      <h2 className="font-semibold text-gray-900 mb-1">{title}</h2>
-      <p className="text-sm text-gray-400">{reason ?? 'This section was unavailable.'}</p>
-    </div>
-  )
-}
-
-function isUnavailable(v: unknown): v is { status: 'unavailable'; reason: string } {
-  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).status === 'unavailable'
-}
-
-function ReportViewer({ report }: { report: ReportData }) {
-  // Teaser lives in preview_sections; full report (post-payment) will be in sections
+function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
+  report: ReportData
+  ideaId: string
+  isAdmin: boolean
+  onGenerateFull: () => void
+}) {
   const p = report.preview_sections
   const summary = p.summary as { text: string } | undefined
   const vs = p.viability_snapshot as {
@@ -196,17 +231,9 @@ function ReportViewer({ report }: { report: ReportData }) {
   } | undefined
   const nextStepsPreview = (p.next_steps_preview ?? []) as Array<{ action: string; timeframe: string }>
 
-  const labels: Record<string, string> = {
-    market_opportunity: 'Market opportunity',
-    execution_difficulty: 'Execution difficulty',
-    capital_required: 'Capital required',
-    time_to_revenue: 'Time to revenue',
-  }
-
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
 
-      {/* Summary */}
       {summary?.text ? (
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
           <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
@@ -214,29 +241,8 @@ function ReportViewer({ report }: { report: ReportData }) {
         </div>
       ) : <UnavailableSection title="Summary" />}
 
-      {/* Viability snapshot */}
-      {vs?.scores ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Viability Snapshot</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            {Object.entries(vs.scores).map(([key, val]) => (
-              <div key={key}>
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>{labels[key] ?? key}</span>
-                  <span className="font-medium text-gray-700">{val.score}/5</span>
-                </div>
-                <ScoreBar score={val.score} />
-                <p className="text-xs text-gray-500 mt-1">{val.rationale}</p>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3">
-            <p className="text-sm text-indigo-900">{vs.overall_verdict}</p>
-          </div>
-        </div>
-      ) : <UnavailableSection title="Viability Snapshot" />}
+      {vs?.scores ? <ViabilitySnapshot vs={vs} /> : <UnavailableSection title="Viability Snapshot" />}
 
-      {/* Next steps teaser */}
       {nextStepsPreview.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
@@ -254,7 +260,6 @@ function ReportViewer({ report }: { report: ReportData }) {
         </div>
       )}
 
-      {/* Locked sections */}
       <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-5 py-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Included in full report</p>
         <ul className="space-y-2 text-sm text-gray-500">
@@ -279,16 +284,301 @@ function ReportViewer({ report }: { report: ReportData }) {
         </button>
       </div>
 
+      {isAdmin && (
+        <GenerateFullReportButton ideaId={ideaId} onStart={onGenerateFull} />
+      )}
     </div>
   )
 }
 
-// ── Main client component ─────────────────────────────────────
+// ── Full report section components ───────────────────────────
 
-function RegenerateButton({ ideaId, onStart }: { ideaId: string; onStart: () => void }) {
+function SeverityBadge({ severity }: { severity: string }) {
+  const styles: Record<string, string> = {
+    required: 'bg-red-100 text-red-700',
+    recommended: 'bg-yellow-100 text-yellow-700',
+    fyi: 'bg-blue-100 text-blue-700',
+  }
+  return (
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles[severity] ?? 'bg-gray-100 text-gray-600'}`}>
+      {severity}
+    </span>
+  )
+}
+
+function currencySymbol(currency: string) {
+  return currency === 'AUD' ? 'A$' : currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$'
+}
+
+function fmt(sym: string, n: number) {
+  return `${sym}${n.toFixed(2)}`
+}
+
+function FullReportViewer({ report }: { report: ReportData }) {
+  const s = report.sections
+
+  const summary = s.summary
+  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
+  const competitors = s.competitors
+  const costBreakdown = s.cost_breakdown
+  const pricing = s.pricing_recommendation
+  const compliance = s.legal_compliance
+  const risks = s.risks
+  const nextSteps = s.next_steps
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+
+      {/* Summary */}
+      {isUnavailable(summary)
+        ? <UnavailableSection title="Summary" reason={summary.reason} />
+        : summary && (summary as { text: string }).text
+          ? (
+            <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+              <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
+              <p className="text-sm text-gray-700 leading-relaxed">{(summary as { text: string }).text}</p>
+            </div>
+          )
+          : <UnavailableSection title="Summary" />}
+
+      {/* Viability snapshot */}
+      {isUnavailable(vs)
+        ? <UnavailableSection title="Viability Snapshot" reason={vs.reason} />
+        : vs?.scores
+          ? <ViabilitySnapshot vs={vs} />
+          : <UnavailableSection title="Viability Snapshot" />}
+
+      {/* Competitors */}
+      {isUnavailable(competitors)
+        ? <UnavailableSection title="Competitors" reason={competitors.reason} />
+        : Array.isArray(competitors) && competitors.length > 0
+          ? (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Competitors</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{competitors.length} found</p>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {(competitors as Array<Record<string, string>>).map((c, i) => (
+                  <div key={i} className="px-5 py-4">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div>
+                        <a href={c.url} target="_blank" rel="noopener noreferrer"
+                          className="font-medium text-indigo-600 hover:underline text-sm">{c.name}</a>
+                        <span className="text-xs text-gray-400 ml-2">{c.location}</span>
+                      </div>
+                      <span className="text-xs font-medium text-gray-700 whitespace-nowrap shrink-0">{c.pricing_summary}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium text-gray-700">Positioning: </span>{c.positioning_angle}
+                    </p>
+                    <p className="text-xs text-emerald-700 bg-emerald-50 rounded px-2 py-1.5">
+                      <span className="font-medium">Gap: </span>{c.gap_notes}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+          : <UnavailableSection title="Competitors" />}
+
+      {/* Cost breakdown */}
+      {isUnavailable(costBreakdown)
+        ? <UnavailableSection title="Cost Breakdown" reason={costBreakdown.reason} />
+        : costBreakdown
+          ? (() => {
+            const cb = costBreakdown as {
+              per_unit: Record<string, number | null> | null
+              suggested_price: number | null
+              gross_margin_pct: number | null
+              currency: string
+              notes: string
+              estimation_flags: Record<string, string>
+            }
+            const sym = currencySymbol(cb.currency ?? 'USD')
+            const lineItems = [
+              { key: 'materials', label: 'Materials' },
+              { key: 'packaging', label: 'Packaging' },
+              { key: 'power', label: 'Power' },
+              { key: 'active_labour', label: 'Active labour' },
+              { key: 'passive_labour', label: 'Passive labour' },
+            ]
+            return (
+              <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+                <h2 className="font-semibold text-gray-900 mb-4">
+                  Cost Breakdown <span className="text-xs font-normal text-gray-400">{cb.currency}</span>
+                </h2>
+                {cb.per_unit ? (
+                  <>
+                    <div className="space-y-2 mb-4">
+                      {lineItems.map(({ key, label }) => {
+                        const val = cb.per_unit![key]
+                        const flag = cb.estimation_flags?.[key]
+                        if (flag === 'not_applicable') return null
+                        return (
+                          <div key={key} className="flex justify-between items-center text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">{label}</span>
+                              {flag === 'estimated' && (
+                                <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded">est.</span>
+                              )}
+                            </div>
+                            <span className="font-medium text-gray-800">
+                              {val !== null && val !== undefined ? fmt(sym, val) : '—'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                      {cb.per_unit.total_cogs !== null && cb.per_unit.total_cogs !== undefined && (
+                        <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
+                          <span className="font-semibold text-gray-700">Total COGS</span>
+                          <span className="font-bold text-gray-900">{fmt(sym, cb.per_unit.total_cogs as number)}</span>
+                        </div>
+                      )}
+                    </div>
+                    {(cb.suggested_price !== null || cb.gross_margin_pct !== null) && (
+                      <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 flex justify-between items-center mb-3">
+                        {cb.suggested_price !== null && (
+                          <div>
+                            <p className="text-xs text-emerald-600 mb-0.5">Suggested price</p>
+                            <p className="text-xl font-bold text-emerald-900">{fmt(sym, cb.suggested_price)}</p>
+                          </div>
+                        )}
+                        {cb.gross_margin_pct !== null && (
+                          <div className="text-right">
+                            <p className="text-xs text-emerald-600 mb-0.5">Gross margin</p>
+                            <p className="text-xl font-bold text-emerald-900">{cb.gross_margin_pct}%</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : null}
+                {cb.notes && <p className="text-xs text-gray-500 leading-relaxed">{cb.notes}</p>}
+              </div>
+            )
+          })()
+          : <UnavailableSection title="Cost Breakdown" />}
+
+      {/* Pricing recommendation */}
+      {isUnavailable(pricing)
+        ? <UnavailableSection title="Pricing Recommendation" reason={pricing.reason} />
+        : pricing
+          ? (() => {
+            const p = pricing as { model: string; suggested_price_or_range: string; rationale: string; comparable_market_rates: string }
+            return (
+              <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+                <h2 className="font-semibold text-gray-900 mb-1">Pricing Recommendation</h2>
+                <p className="text-xs text-gray-400 mb-4">{p.model}</p>
+                <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 mb-3">
+                  <p className="text-xs text-indigo-500 mb-0.5">Suggested price</p>
+                  <p className="text-lg font-semibold text-indigo-900">{p.suggested_price_or_range}</p>
+                </div>
+                <p className="text-sm text-gray-700 mb-2">{p.rationale}</p>
+                <p className="text-xs text-gray-500">{p.comparable_market_rates}</p>
+              </div>
+            )
+          })()
+          : <UnavailableSection title="Pricing Recommendation" />}
+
+      {/* Legal compliance */}
+      {isUnavailable(compliance)
+        ? <UnavailableSection title="Legal & Compliance" reason={compliance.reason} />
+        : Array.isArray(compliance) && compliance.length > 0
+          ? (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Legal & Compliance</h2>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {(compliance as Array<Record<string, string>>).map((item, i) => (
+                  <div key={i} className="px-5 py-4">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="text-sm font-medium text-gray-800">{item.item}</p>
+                      <SeverityBadge severity={item.severity} />
+                    </div>
+                    <p className="text-xs text-gray-400 mb-2">{item.jurisdiction}</p>
+                    <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                    {item.official_source_url && (
+                      <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-indigo-600 hover:underline break-all">
+                        {item.official_source_url}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="px-5 py-4 bg-amber-50 border-t border-amber-100">
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  <span className="font-semibold">Not legal advice.</span> The compliance items above are for informational purposes only. Requirements vary by location, business structure, and circumstances. Consult a qualified lawyer, accountant, or relevant government body before acting on any item listed here.
+                </p>
+              </div>
+            </div>
+          )
+          : <UnavailableSection title="Legal & Compliance" />}
+
+      {/* Risks */}
+      {isUnavailable(risks)
+        ? <UnavailableSection title="Key Risks" reason={risks.reason} />
+        : Array.isArray(risks) && risks.length > 0
+          ? (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Key Risks</h2>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {(risks as Array<Record<string, string>>).map((risk, i) => (
+                  <div key={i} className="px-5 py-4">
+                    <p className="text-sm font-medium text-gray-800 mb-1">{risk.title}</p>
+                    <p className="text-sm text-gray-600 mb-2">{risk.description}</p>
+                    <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
+                      <span className="font-medium">Mitigation: </span>{risk.mitigation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+          : <UnavailableSection title="Key Risks" />}
+
+      {/* Next steps */}
+      {isUnavailable(nextSteps)
+        ? <UnavailableSection title="Next Steps" reason={nextSteps.reason} />
+        : Array.isArray(nextSteps) && nextSteps.length > 0
+          ? (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Next Steps</h2>
+                <p className="text-xs text-gray-400 mt-0.5">In order of priority</p>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {(nextSteps as Array<Record<string, string>>).map((step, i) => (
+                  <div key={i} className="px-5 py-4 flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mt-0.5">
+                      <span className="text-xs font-semibold text-indigo-700">{i + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-indigo-600">{step.timeframe}</span>
+                      <p className="text-sm text-gray-800 mt-0.5">{step.action}</p>
+                      {step.rationale && <p className="text-xs text-gray-500 mt-1">{step.rationale}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+          : <UnavailableSection title="Next Steps" />}
+
+    </div>
+  )
+}
+
+// ── Action buttons ────────────────────────────────────────────
+
+function RegenerateButton({ ideaId, label, onStart }: { ideaId: string; label: string; onStart: () => void }) {
   const [loading, setLoading] = useState(false)
 
-  async function handleRegenerate() {
+  async function handleClick() {
     setLoading(true)
     try {
       await fetch('/api/reports', {
@@ -304,25 +594,93 @@ function RegenerateButton({ ideaId, onStart }: { ideaId: string; onStart: () => 
 
   return (
     <button
-      onClick={handleRegenerate}
+      onClick={handleClick}
       disabled={loading}
       className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-40 underline underline-offset-2"
     >
-      {loading ? 'Starting…' : 'Regenerate report'}
+      {loading ? 'Starting…' : label}
     </button>
   )
 }
 
-export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport }: Props) {
+function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart: () => void }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    const ok = window.confirm(
+      'Run the full AI research pipeline?\n\n' +
+      '• Competitor research (web search)\n' +
+      '• Cost estimation\n' +
+      '• Compliance check (web search)\n' +
+      '• Synthesis\n\n' +
+      'Estimated cost: ~A$0.10–0.15\n\nContinue?'
+    )
+    if (!ok) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/reports/full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea_id: ideaId }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        alert(d.error ?? 'Failed to start full report')
+        return
+      }
+      onStart()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-5 py-4 text-center">
+      <p className="text-xs font-semibold text-amber-700 mb-1">Admin — Test mode</p>
+      <p className="text-xs text-amber-600 mb-3">
+        Runs the full research pipeline. ~A$0.10–0.15 per run.
+      </p>
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+      >
+        {loading ? 'Starting…' : 'Generate full report'}
+      </button>
+    </div>
+  )
+}
+
+// ── Main client component ─────────────────────────────────────
+
+export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport, isAdmin }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
+
+  const hasFullSections = report?.status === 'complete' && Object.keys(report.sections).length > 0
+
+  if (hasFullSections && !regenerating) {
+    return (
+      <div>
+        <FullReportViewer report={report!} />
+        <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
+          <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
+        </div>
+      </div>
+    )
+  }
 
   if (report?.status === 'complete' && !regenerating) {
     return (
       <div>
-        <ReportViewer report={report} />
-        <div className="max-w-3xl mx-auto px-6 pb-6 text-center print:hidden">
-          <RegenerateButton ideaId={ideaId} onStart={() => { setRegenerating(true); setReport(null) }} />
+        <TeaserViewer
+          report={report}
+          ideaId={ideaId}
+          isAdmin={isAdmin}
+          onGenerateFull={() => { setRegenerating(true); setReport(null) }}
+        />
+        <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
+          <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
         </div>
       </div>
     )

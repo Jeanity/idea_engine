@@ -28,6 +28,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     .eq('idea_id', id)
     .single()
 
+  const isAdmin = user.email === process.env.ADMIN_EMAIL
+
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -39,6 +41,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         archetype={idea.archetype}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         initialReport={report ? (report as any) : null}
+        isAdmin={isAdmin}
       />
     </main>
   )

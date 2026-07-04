@@ -46,7 +46,7 @@ export const generateReport = inngest.createFunction(
   {
     id: 'generate-report',
     retries: 0,
-    triggers: [{ event: 'idea-engine/report.requested' }],
+    triggers: [{ event: 'idea-engine/full-report.requested' }],
   },
   async ({ event, step }: { event: { data: { reportId: string; ideaId: string; userId: string } }; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> } }) => {
     const { reportId, ideaId } = event.data
