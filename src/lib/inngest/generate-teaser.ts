@@ -58,6 +58,7 @@ export const generateTeaser = inngest.createFunction(
       .eq('id', reportId)
 
     const { text } = await callAI({
+      model: 'claude-haiku-4-5-20251001',
       messages: [{ role: 'user', content: buildTeaserMessage({
         idea_raw_text: idea.raw_text,
         archetype: idea.archetype,
