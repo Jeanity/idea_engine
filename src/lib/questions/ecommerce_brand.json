@@ -1,0 +1,89 @@
+[
+  {
+    "key": "ecom_target_customer",
+    "text": "Who is your ideal customer?",
+    "subtext": "e.g., 'People buying gifts for iPhone-owning teens, in the US and UK.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.target_customer"
+  },
+  {
+    "key": "ecom_differentiator",
+    "text": "What makes your product different from what's already for sale online?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.differentiator"
+  },
+  {
+    "key": "ecom_fulfilment_model",
+    "text": "How do orders get made and shipped?",
+    "input_type": "select",
+    "options": [
+      "Print-on-demand",
+      "Dropship from supplier",
+      "Own inventory, ship from home",
+      "3PL warehouse",
+      "White-label supplier + own storage"
+    ],
+    "required": true,
+    "maps_to": "cost.fulfilment_model"
+  },
+  {
+    "key": "ecom_sales_channel",
+    "text": "Where will you sell?",
+    "input_type": "select",
+    "options": [
+      "Own Shopify store",
+      "Etsy / marketplace only",
+      "Amazon FBA",
+      "Multiple channels (own site + marketplace)"
+    ],
+    "required": true,
+    "maps_to": "idea.sales_channel"
+  },
+  {
+    "key": "ecom_unit_cost_estimate",
+    "text": "What's your landed cost per unit from the supplier?",
+    "subtext": "Include product + supplier shipping to you. Local currency. If you don't know yet, leave blank.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "cost.unit_cost_estimate"
+  },
+  {
+    "key": "ecom_packaging_per_unit",
+    "text": "How much does packaging cost per unit shipped?",
+    "subtext": "Box or mailer + inserts + tape. Rough is fine. Leave blank for print-on-demand.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "cost.packaging_per_unit"
+  },
+  {
+    "key": "ecom_target_price",
+    "text": "What retail price do you have in mind (per unit, local currency)?",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "price.target_price"
+  },
+  {
+    "key": "ecom_geographic_scope",
+    "text": "Where will you ship?",
+    "input_type": "select",
+    "options": [
+      "My country only",
+      "My country + neighbouring countries",
+      "English-speaking countries",
+      "Global (wherever the fulfilment supports)"
+    ],
+    "required": true,
+    "maps_to": "market.geographic_scope"
+  },
+  {
+    "key": "ecom_startup_capital",
+    "text": "Roughly how much money do you have to start?",
+    "subtext": "For initial inventory, store setup, first ads.",
+    "input_type": "select",
+    "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
+    "required": true,
+    "maps_to": "cost.startup_capital"
+  }
+]

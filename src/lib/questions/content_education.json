@@ -1,0 +1,89 @@
+[
+  {
+    "key": "content_specific_topic",
+    "text": "In one sentence, what's your content about and who is it for?",
+    "subtext": "e.g., '15-minute weeknight dinners for parents of picky eaters.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.target_customer"
+  },
+  {
+    "key": "content_primary_channel",
+    "text": "Which channel is primary?",
+    "input_type": "select",
+    "options": [
+      "YouTube",
+      "TikTok / short-form video",
+      "Podcast",
+      "Newsletter / blog",
+      "Online course platform",
+      "Paid community",
+      "Coaching / consulting"
+    ],
+    "required": true,
+    "maps_to": "idea.sales_channel"
+  },
+  {
+    "key": "content_primary_monetisation",
+    "text": "What's your primary way of making money from it?",
+    "input_type": "select",
+    "options": [
+      "Ads",
+      "Sponsorships",
+      "Paid subscription",
+      "Course sales",
+      "Coaching / consulting",
+      "Affiliate",
+      "Merch"
+    ],
+    "required": true,
+    "maps_to": "monetisation.primary_channel"
+  },
+  {
+    "key": "content_secondary_monetisation",
+    "text": "Any secondary revenue you're planning?",
+    "input_type": "select",
+    "options": [
+      "None",
+      "Ads",
+      "Sponsorships",
+      "Paid subscription",
+      "Course sales",
+      "Coaching / consulting",
+      "Affiliate",
+      "Merch"
+    ],
+    "required": false,
+    "maps_to": "monetisation.secondary_channel"
+  },
+  {
+    "key": "content_existing_content",
+    "text": "How much have you published already?",
+    "input_type": "select",
+    "options": [
+      "Nothing published",
+      "A few pieces",
+      "Regular cadence, small audience",
+      "Regular cadence, growing"
+    ],
+    "required": true,
+    "maps_to": "resource.existing_content"
+  },
+  {
+    "key": "content_audience_size",
+    "text": "How big is your current audience?",
+    "subtext": "Total across your primary channel.",
+    "input_type": "select",
+    "options": ["None yet", "Under 1k", "1k–10k", "10k–100k", "100k+"],
+    "required": true,
+    "maps_to": "resource.audience_size"
+  },
+  {
+    "key": "content_time_commitment",
+    "text": "How much time will you put into this each week?",
+    "input_type": "select",
+    "options": ["Evenings/weekends only", "Part-time (~20 hrs)", "Full-time"],
+    "required": true,
+    "maps_to": "idea.time_commitment"
+  }
+]

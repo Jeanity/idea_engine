@@ -1,0 +1,74 @@
+[
+  {
+    "key": "market_side_a",
+    "text": "Who's on the supply side of your marketplace?",
+    "subtext": "e.g., 'Independent dog walkers who want extra weekend income.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.target_customer"
+  },
+  {
+    "key": "market_side_b",
+    "text": "Who's on the demand side?",
+    "subtext": "e.g., 'Dog owners in Chicago who work long hours and need a mid-day walk.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.differentiator"
+  },
+  {
+    "key": "market_monetisation_model",
+    "text": "How do you make money on each transaction?",
+    "input_type": "select",
+    "options": [
+      "Take rate (commission on each transaction)",
+      "Subscription (from one or both sides)",
+      "Listing fee",
+      "Featured / promoted listings",
+      "Payment processing fee"
+    ],
+    "required": true,
+    "maps_to": "price.model"
+  },
+  {
+    "key": "market_take_rate",
+    "text": "If commission-based, what percentage per transaction?",
+    "subtext": "Number between 0 and 100. Skip if you're not using commissions.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "price.take_rate_pct"
+  },
+  {
+    "key": "market_free_tier_shape",
+    "text": "Is there a free side or free tier? What's included?",
+    "subtext": "Marketplaces often make one side free to solve the chicken-and-egg problem.",
+    "input_type": "text",
+    "required": false,
+    "maps_to": "monetisation.free_tier_shape"
+  },
+  {
+    "key": "market_geographic_scope",
+    "text": "Where does the marketplace operate?",
+    "input_type": "select",
+    "options": [
+      "One city",
+      "One country",
+      "English-speaking countries",
+      "Global"
+    ],
+    "required": true,
+    "maps_to": "market.geographic_scope"
+  },
+  {
+    "key": "market_tech_capability",
+    "text": "Who's building the platform?",
+    "input_type": "select",
+    "options": [
+      "I code it myself",
+      "I have a technical co-founder",
+      "No-code tools",
+      "I'll hire / outsource development"
+    ],
+    "required": true,
+    "maps_to": "resource.tech_capability"
+  }
+]

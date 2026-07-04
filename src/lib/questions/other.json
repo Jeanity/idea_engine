@@ -1,0 +1,23 @@
+[
+  {
+    "key": "other_problem",
+    "text": "What problem does this solve?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "fallback.problem"
+  },
+  {
+    "key": "other_customer",
+    "text": "Who is the customer?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "fallback.customer"
+  },
+  {
+    "key": "other_money_model",
+    "text": "How would you make money from it?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "fallback.money_model"
+  }
+]

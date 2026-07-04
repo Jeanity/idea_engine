@@ -1,0 +1,74 @@
+[
+  {
+    "key": "app_specific_user",
+    "text": "Who is the specific user this app is for?",
+    "subtext": "e.g., 'Freelance designers who juggle 3–10 clients at once.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.target_customer"
+  },
+  {
+    "key": "app_differentiator",
+    "text": "What does your app do that existing tools don't?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.differentiator"
+  },
+  {
+    "key": "app_monetisation_model",
+    "text": "How will users pay?",
+    "input_type": "select",
+    "options": [
+      "Monthly subscription",
+      "Annual subscription",
+      "One-time license",
+      "Freemium + paid tier",
+      "Free with ads",
+      "Per-seat (team plans)",
+      "Usage-based / metered"
+    ],
+    "required": true,
+    "maps_to": "price.model"
+  },
+  {
+    "key": "app_free_tier_shape",
+    "text": "If you have a free tier, what's included vs paid?",
+    "subtext": "Skip if you're not doing free.",
+    "input_type": "text",
+    "required": false,
+    "maps_to": "monetisation.free_tier_shape"
+  },
+  {
+    "key": "app_target_price",
+    "text": "Roughly what price do you have in mind (per user, per month, in your local currency)?",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "price.target_price"
+  },
+  {
+    "key": "app_tech_capability",
+    "text": "Who's building it?",
+    "input_type": "select",
+    "options": [
+      "I code it myself",
+      "I have a technical co-founder",
+      "No-code tools",
+      "I'll hire / outsource development"
+    ],
+    "required": true,
+    "maps_to": "resource.tech_capability"
+  },
+  {
+    "key": "app_geographic_scope",
+    "text": "Where are your users?",
+    "input_type": "select",
+    "options": [
+      "My local city",
+      "My country",
+      "English-speaking countries",
+      "Global"
+    ],
+    "required": true,
+    "maps_to": "market.geographic_scope"
+  }
+]

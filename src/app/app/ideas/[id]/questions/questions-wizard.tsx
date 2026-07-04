@@ -1,0 +1,379 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Question {
+  key: string
+  text: string
+  subtext?: string | null
+  input_type: 'text' | 'select' | 'number' | 'multiselect'
+  options?: string[]
+  required: boolean
+}
+
+interface ExistingAnswer {
+  question_key: string
+  answer_text: string
+  position: number
+}
+
+interface ApiResponse {
+  questions: Question[]
+  existing_answers: ExistingAnswer[]
+}
+
+function parseValue(q: Question, saved: string): string | string[] {
+  if (q.input_type === 'multiselect') {
+    try { return JSON.parse(saved) as string[] } catch { return [] }
+  }
+  return saved
+}
+
+function encodeValue(value: string | string[]): string {
+  if (Array.isArray(value)) return value.length > 0 ? JSON.stringify(value) : ''
+  return value.trim()
+}
+
+// ── Input components ──────────────────────────────────────────
+
+function TextInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <textarea
+      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+      rows={4}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder="Type your answer…"
+    />
+  )
+}
+
+function NumberInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="number"
+      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder="Enter a number…"
+    />
+  )
+}
+
+function SelectInput({ value, options, onChange }: { value: string; options: string[]; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-2">
+      {options.map(opt => (
+        <label key={opt} className="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="radio"
+            name="select-option"
+            value={opt}
+            checked={value === opt}
+            onChange={() => onChange(opt)}
+            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className={`text-sm ${value === opt ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-gray-900'}`}>
+            {opt}
+          </span>
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function MultiSelectInput({ value, options, onChange }: { value: string[]; options: string[]; onChange: (v: string[]) => void }) {
+  function toggle(opt: string) {
+    onChange(value.includes(opt) ? value.filter(v => v !== opt) : [...value, opt])
+  }
+  return (
+    <div className="space-y-2">
+      {options.map(opt => (
+        <label key={opt} className="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            value={opt}
+            checked={value.includes(opt)}
+            onChange={() => toggle(opt)}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className={`text-sm ${value.includes(opt) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-gray-900'}`}>
+            {opt}
+          </span>
+        </label>
+      ))}
+      {value.length > 0 && (
+        <p className="text-xs text-indigo-600 mt-1">{value.length} selected</p>
+      )}
+    </div>
+  )
+}
+
+// ── Wizard ─────────────────────────────────────────────────────
+
+export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
+  const router = useRouter()
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [answers, setAnswers] = useState<Map<string, string>>(new Map())
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [hasFetchedDynamic, setHasFetchedDynamic] = useState(false)
+  const [currentValue, setCurrentValue] = useState<string | string[]>('')
+  const [validationError, setValidationError] = useState<string | null>(null)
+
+  const fetchQuestions = useCallback(async (): Promise<ApiResponse> => {
+    const res = await fetch(`/api/ideas/${ideaId}/questions`)
+    if (!res.ok) throw new Error('Failed to fetch questions')
+    return res.json()
+  }, [ideaId])
+
+  // Initial load
+  useEffect(() => {
+    fetchQuestions()
+      .then(data => {
+        const qs = data.questions ?? []
+        const answerMap = new Map<string, string>()
+        ;(data.existing_answers ?? []).forEach(a => answerMap.set(a.question_key, a.answer_text))
+
+        setQuestions(qs)
+        setAnswers(answerMap)
+
+        // Resume from first unanswered question
+        const firstUnanswered = qs.findIndex(q => !answerMap.has(q.key))
+        const resumeIdx = firstUnanswered === -1 ? Math.max(0, qs.length - 1) : firstUnanswered
+        setCurrentIndex(resumeIdx)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [fetchQuestions])
+
+  // Sync input value when navigating to a different question
+  useEffect(() => {
+    const q = questions[currentIndex]
+    if (!q) return
+    setCurrentValue(parseValue(q, answers.get(q.key) ?? ''))
+    setValidationError(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, questions])
+
+  async function saveAnswer(q: Question, answerText: string) {
+    await fetch(`/api/ideas/${ideaId}/answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question_key: q.key,
+        question_text: q.text,
+        answer_text: answerText,
+        position: currentIndex,
+      }),
+    })
+  }
+
+  async function completeWizard() {
+    const res = await fetch(`/api/ideas/${ideaId}/complete`, { method: 'POST' })
+    if (res.ok) {
+      router.push(`/app/ideas/${ideaId}/summary`)
+    } else {
+      const data = await res.json()
+      setValidationError(data.error ?? 'Could not complete. Please check all required questions are answered.')
+    }
+  }
+
+  async function handleNext() {
+    const q = questions[currentIndex]
+    if (!q) return
+
+    const answerText = encodeValue(currentValue)
+
+    if (q.required && !answerText) {
+      setValidationError('Please answer this question before continuing.')
+      return
+    }
+
+    setSaving(true)
+    setValidationError(null)
+
+    try {
+      let updatedQuestions = questions
+      const newAnswers = new Map(answers)
+
+      if (answerText) {
+        await saveAnswer(q, answerText)
+        newAnswers.set(q.key, answerText)
+        setAnswers(newAnswers)
+      }
+
+      // After answering last required static question, fetch to pick up dynamic questions
+      if (!hasFetchedDynamic) {
+        const allRequiredAnswered = questions
+          .filter(qq => qq.required)
+          .every(qq => newAnswers.has(qq.key))
+
+        if (allRequiredAnswered) {
+          const data = await fetchQuestions()
+          updatedQuestions = data.questions ?? questions
+          setQuestions(updatedQuestions)
+          setHasFetchedDynamic(true)
+        }
+      }
+
+      if (currentIndex < updatedQuestions.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+      } else {
+        await completeWizard()
+      }
+    } catch (err) {
+      console.error(err)
+      setValidationError('Something went wrong saving your answer. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleSkip() {
+    setValidationError(null)
+    setSaving(true)
+    try {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+      } else {
+        await completeWizard()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleBack() {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+      setValidationError(null)
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500 text-sm">
+        No questions available for this idea type.
+      </div>
+    )
+  }
+
+  const q = questions[currentIndex]
+  const isLast = currentIndex === questions.length - 1
+  const answeredCount = questions.filter(qq => answers.has(qq.key)).length
+  const progressPct = Math.round((answeredCount / questions.length) * 100)
+
+  return (
+    <div className="space-y-8">
+      {/* Progress */}
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-gray-400 font-medium">
+            Question {currentIndex + 1} of {questions.length}
+          </span>
+          <span className="text-xs text-gray-400">{progressPct}%</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-gray-200">
+          <div
+            className="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Question card */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-900">{q.text}</span>
+          {!q.required && (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">Optional</span>
+          )}
+        </div>
+        {q.subtext && (
+          <p className="mb-5 text-xs text-gray-500">{q.subtext}</p>
+        )}
+        {!q.subtext && <div className="mb-5" />}
+
+        {q.input_type === 'text' && (
+          <TextInput
+            value={currentValue as string}
+            onChange={v => setCurrentValue(v)}
+          />
+        )}
+        {q.input_type === 'number' && (
+          <NumberInput
+            value={currentValue as string}
+            onChange={v => setCurrentValue(v)}
+          />
+        )}
+        {q.input_type === 'select' && q.options && (
+          <SelectInput
+            value={currentValue as string}
+            options={q.options}
+            onChange={v => setCurrentValue(v)}
+          />
+        )}
+        {q.input_type === 'multiselect' && q.options && (
+          <MultiSelectInput
+            value={currentValue as string[]}
+            options={q.options}
+            onChange={v => setCurrentValue(v)}
+          />
+        )}
+
+        {validationError && (
+          <p className="mt-3 text-xs text-red-600">{validationError}</p>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={handleBack}
+          disabled={currentIndex === 0 || saving}
+          className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          ← Back
+        </button>
+
+        <div className="flex items-center gap-3">
+          {!q.required && (
+            <button
+              onClick={handleSkip}
+              disabled={saving}
+              className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-30"
+            >
+              Skip
+            </button>
+          )}
+          <button
+            onClick={handleNext}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving && (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            )}
+            {isLast ? 'Generate Report →' : 'Continue →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

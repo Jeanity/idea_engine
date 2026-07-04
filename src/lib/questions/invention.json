@@ -1,0 +1,67 @@
+[
+  {
+    "key": "invention_category",
+    "text": "What kind of invention is it?",
+    "input_type": "select",
+    "options": [
+      "Device / hardware",
+      "Process / method",
+      "Composition / material",
+      "Software algorithm",
+      "Design"
+    ],
+    "required": true,
+    "maps_to": "ip.category"
+  },
+  {
+    "key": "invention_ip_status",
+    "text": "What's the current IP status?",
+    "input_type": "select",
+    "options": [
+      "No filing yet",
+      "Provisional patent filed",
+      "Non-provisional / PCT filed",
+      "Granted patent",
+      "Trade secret only (no filing intended)"
+    ],
+    "required": true,
+    "maps_to": "ip.status"
+  },
+  {
+    "key": "invention_target_market",
+    "text": "Who ultimately uses or buys this? Any industries you're targeting?",
+    "subtext": "e.g., 'Residential electricians retrofitting older homes.' or 'Consumer pet owners.'",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "ip.target_market"
+  },
+  {
+    "key": "invention_differentiator",
+    "text": "What's the novel claim — what does yours do that existing solutions can't?",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.differentiator"
+  },
+  {
+    "key": "invention_stage",
+    "text": "How far along is it?",
+    "input_type": "select",
+    "options": [
+      "Just an idea",
+      "Working prototype",
+      "Small production run tested",
+      "Ready for scale / licensing"
+    ],
+    "required": true,
+    "maps_to": "idea.stage"
+  },
+  {
+    "key": "invention_startup_capital",
+    "text": "Roughly how much money do you have available for this?",
+    "subtext": "For prototyping, filings, initial manufacturing.",
+    "input_type": "select",
+    "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
+    "required": true,
+    "maps_to": "cost.startup_capital"
+  }
+]

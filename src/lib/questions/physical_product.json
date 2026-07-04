@@ -1,0 +1,96 @@
+[
+  {
+    "key": "product_home_based",
+    "text": "Where will you make and sell from?",
+    "subtext": "Changes what permits you'll need and how your cost picture looks.",
+    "input_type": "select",
+    "options": [
+      "Home kitchen / workshop only",
+      "Home workshop plus market stall / pop-up",
+      "Rented commercial space",
+      "Online only (fulfilled from home)"
+    ],
+    "required": true,
+    "maps_to": "cost.production_location"
+  },
+  {
+    "key": "product_specific_focus",
+    "text": "Who or what is this product specifically for?",
+    "subtext": "e.g., 'dogs with anxiety', 'coffee drinkers who like fruity notes', 'cyclists commuting in the rain'.",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "market.target_customer"
+  },
+  {
+    "key": "product_materials",
+    "text": "List your main ingredients or materials with rough quantities per batch.",
+    "subtext": "Free text is fine — e.g., '500g oat flour, 2 eggs, 400g pumpkin, 200g peanut butter'.",
+    "input_type": "text",
+    "required": true,
+    "maps_to": "cost.materials"
+  },
+  {
+    "key": "product_equipment_owned",
+    "text": "Which equipment do you already own?",
+    "subtext": "Tick everything you have. Anything not ticked, we'll assume you need to buy.",
+    "input_type": "multiselect",
+    "options": [
+      "Domestic oven",
+      "Commercial oven",
+      "Dehydrator",
+      "Stand mixer",
+      "Food processor",
+      "Vacuum sealer / packaging machine",
+      "Label printer",
+      "Refrigeration / cold storage"
+    ],
+    "required": true,
+    "maps_to": "cost.equipment_owned"
+  },
+  {
+    "key": "product_equipment_wattage",
+    "text": "Total wattage of the main heat/power equipment you'll run per batch?",
+    "subtext": "Check the label on your oven or dehydrator. If unsure, a domestic oven is ~1800–2400W.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.equipment_wattage"
+  },
+  {
+    "key": "product_active_minutes",
+    "text": "How many minutes of hands-on work per batch?",
+    "subtext": "Only the time you're actually mixing, shaping, packaging — not oven time.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.active_minutes_per_batch"
+  },
+  {
+    "key": "product_batch_yield",
+    "text": "How many finished units come out of one batch?",
+    "subtext": "e.g., '40 packs of treats', '24 bottles of sauce'.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.batch_yield"
+  },
+  {
+    "key": "product_hourly_rate",
+    "text": "What's the hourly rate you want to pay yourself for hands-on work?",
+    "subtext": "In your local currency. If you're not sure, pick a number you'd accept for a casual job locally.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.hourly_rate"
+  },
+  {
+    "key": "product_sales_channel",
+    "text": "How will you sell it?",
+    "input_type": "select",
+    "options": [
+      "Weekend markets / pop-ups",
+      "Wholesale to local shops",
+      "Own online store",
+      "Marketplace (Etsy / eBay)",
+      "Mix of local + online"
+    ],
+    "required": true,
+    "maps_to": "idea.sales_channel"
+  }
+]
