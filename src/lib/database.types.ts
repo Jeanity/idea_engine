@@ -1,5 +1,5 @@
-// Auto-generate this file with: npx supabase gen types typescript --project-id mgwjbrywhebptkmbufvp
-// Hand-authored for now; regenerate after running the migration.
+// Regenerate with: npx supabase gen types typescript --project-id mgwjbrywhebptkmbufvp > src/lib/database.types.ts
+// (requires: npx supabase login)
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -17,7 +17,7 @@ export type IdeaStatus = 'draft' | 'questioning' | 'researching' | 'ready'
 export type ReportStatus = 'queued' | 'running' | 'complete' | 'failed'
 export type PurchaseStatus = 'pending' | 'complete' | 'refunded' | 'failed'
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -46,6 +46,7 @@ export interface Database {
           marketing_opt_in?: boolean
           updated_at?: string
         }
+        Relationships: []
       }
       ideas: {
         Row: {
@@ -86,6 +87,15 @@ export interface Database {
           status?: IdeaStatus
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'ideas_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
       }
       answers: {
         Row: {
@@ -114,6 +124,15 @@ export interface Database {
           position?: number
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'answers_idea_id_fkey'
+            columns: ['idea_id']
+            isOneToOne: false
+            referencedRelation: 'ideas'
+            referencedColumns: ['id']
+          }
+        ]
       }
       reports: {
         Row: {
@@ -154,6 +173,22 @@ export interface Database {
           model_version?: string | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'reports_idea_id_fkey'
+            columns: ['idea_id']
+            isOneToOne: true
+            referencedRelation: 'ideas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
       }
       purchases: {
         Row: {
@@ -191,7 +226,27 @@ export interface Database {
           refunded_at?: string | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'purchases_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'purchases_report_id_fkey'
+            columns: ['report_id']
+            isOneToOne: false
+            referencedRelation: 'reports'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
