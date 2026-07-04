@@ -1,7 +1,7 @@
 import { createDbClient } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import SignOutButton from './sign-out-button'
+import { AppHeader } from '@/components/app-header'
 
 export const metadata = { title: 'Dashboard — Idea Engine' }
 
@@ -48,13 +48,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <span className="font-semibold text-gray-900">Idea Engine</span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{user.email}</span>
-          <SignOutButton />
-        </div>
-      </header>
+      <AppHeader email={user.email!} />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-8">

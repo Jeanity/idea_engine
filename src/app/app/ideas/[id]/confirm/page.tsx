@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { AppHeader } from '@/components/app-header'
 import ConfirmForm from './confirm-form'
 
 export const metadata = { title: 'Confirm your idea — Idea Engine' }
@@ -32,9 +33,7 @@ export default async function ConfirmPage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <span className="font-semibold text-gray-900">Idea Engine</span>
-      </header>
+      <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">Does this sound right?</h1>
         <p className="text-gray-500 text-sm mb-8">

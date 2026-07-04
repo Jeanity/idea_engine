@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { AppHeader } from '@/components/app-header'
 import NewIdeaForm from './new-idea-form'
 
 export const metadata = { title: 'New idea — Idea Engine' }
@@ -11,9 +12,7 @@ export default async function NewIdeaPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <span className="font-semibold text-gray-900">Idea Engine</span>
-      </header>
+      <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">Describe your idea</h1>
         <p className="text-gray-500 text-sm mb-8">

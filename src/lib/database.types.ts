@@ -23,6 +23,7 @@ export type Database = {
       profiles: {
         Row: {
           id: string
+          username: string | null
           display_name: string | null
           default_country: string | null
           default_region: string | null
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           id: string
+          username?: string | null
           display_name?: string | null
           default_country?: string | null
           default_region?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          username?: string | null
           display_name?: string | null
           default_country?: string | null
           default_region?: string | null

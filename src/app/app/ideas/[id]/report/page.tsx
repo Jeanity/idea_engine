@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { AppHeader } from '@/components/app-header'
 import ReportClient from './report-client'
 
 export const metadata = { title: 'Report — Idea Engine' }
@@ -32,9 +33,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <span className="font-semibold text-gray-900">Idea Engine</span>
-      </header>
+      <AppHeader email={user.email!} />
       <ReportClient
         ideaId={id}
         restatement={idea.restatement}

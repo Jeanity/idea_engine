@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { AppHeader } from '@/components/app-header'
 import QuestionsWizard from './questions-wizard'
 
 export const metadata = { title: 'Questions — Idea Engine' }
@@ -25,9 +26,7 @@ export default async function QuestionsPage({ params }: { params: Promise<{ id: 
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <span className="font-semibold text-gray-900">Idea Engine</span>
-      </header>
+      <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-10">
         <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 mb-2">
           Step 2 of 3 — Tell us more
