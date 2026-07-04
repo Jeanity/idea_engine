@@ -1,7 +1,7 @@
-# Handoff — 2026-07-05 (usage save point)
+# Handoff — updated 2026-07-05 (financing step now live-tested)
 
 ## State at save
-All work is committed and pushed to `main` (deploys via Vercel automatically). Everything below **builds cleanly** (`npx tsc --noEmit` + `npx next build` pass, verified by the wiring subagent) but the financing step has **NOT been tested live** — that was the next action when we stopped.
+All work is committed and pushed to `main` (deploys via Vercel automatically). Financing prompt **live-tested and passing**: 6 real QLD/AU programs (R&D Tax Incentive, Ignite Ideas, CSIRO Kick-Start…), correct JSON keys, US$0.16/run with 3 searches. Test found and fixed two issues: (1) 2048-token cap truncated search-enabled output → financing step now 4096; (2) model constructs stale deep-links from memory (CSIRO URL 404'd) → financing + compliance prompts now require URLs copied exactly from search results. `scripts/dump-quality-log.ts` added for the 4B.3 matrix.
 
 ## What landed this session (Phase 4B work)
 1. **Expert-partner persona** — `src/lib/prompts/persona.ts` (`EXPERT_PARTNER_PREAMBLE`), prepended to all report prompts: competitor-research, compliance, cost-estimation, synthesis, financing. Partner-not-judge voice + "know what you don't know" specialist rule.
@@ -16,13 +16,11 @@ All work is committed and pushed to `main` (deploys via Vercel automatically). E
 - Premium-tier candidate steps listed in PHASE_04B (financing deep-dive, 10-search competitors, supplier sourcing, scenario modeling, citations)
 
 ## Next actions (in order)
-1. **Live-test the financing prompt** (~US$0.10): script ready at
-   `C:\Users\w3bt3\AppData\Local\Temp\claude\E--sig\cef12796-a6cd-4254-bd68-39cf7a562410\scratchpad\test-financing.cjs`
-   (scratchpad is session-scoped — if gone, it rebuilt the financing system prompt from the two prompt files and called Sonnet with web_search max_uses 3 using the invention scenario: capital $2k–10k vs AUD 13k–60k startup. Recreate in ~20 lines.)
-   Check: stop_reason end_turn, valid JSON array, real .gov.au URLs, sensible items.
-2. **Regenerate the charger report** in prod (admin button, ~US$0.30–0.60) — verify: financing card appears in Costs & Pricing, synthesis next steps name actual programs, risks have mitigations, cost shown under report (`sections._meta.cost_usd`).
-3. **Task 4B.3**: run the 14-report cost/quality matrix (2 ideas × 7 archetypes), log in docs/QUALITY_LOG.md (Haiku script to dump id/archetype/cost/failures from Supabase reports table).
+1. ~~Live-test the financing prompt~~ ✅ DONE 2026-07-05 — passed (see State above).
+2. **Regenerate the charger report** in prod (Danny: admin button, ~US$0.30–0.75) — verify: Funding Options card appears in Costs & Pricing, synthesis next steps name actual programs, risks have mitigations + partner voice, generation cost shown under report (`sections._meta.cost_usd`).
+3. **Task 4B.3**: run the 14-report cost/quality matrix (2 ideas × 7 archetypes — Danny enters them through the wizard). Then `npx tsx scripts/dump-quality-log.ts` prints the markdown table for docs/QUALITY_LOG.md; Danny fills the Grade column.
 4. **Task 4B.4**: tier-boundary decision from that data → then Phase 5 payments can start (Stripe account setup should begin now-ish regardless — activation takes days).
+5. Consider later (4B backlog): server-side URL liveness check (drop 404/410s, keep 403s — bot-blockers) for financing/compliance/competitor links.
 
 ## Gotchas for the next session
 - Prompt JSON schemas must pin exact key names (unpinned risks schema → empty cards; fixed by "EXACT JSON SHAPES" block in synthesis).

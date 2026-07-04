@@ -223,7 +223,9 @@ export const generateReport = inngest.createFunction(
               currency: cb?.currency ?? null,
             }) }],
             system: FINANCING_SYSTEM_PROMPT,
-            maxTokens: 2048,
+            // Search-enabled calls also spend output tokens on interim text
+            // between searches — 2048 truncated in live testing.
+            maxTokens: 4096,
             tag: 'report:financing',
             tools: webSearchTool(3),
           })

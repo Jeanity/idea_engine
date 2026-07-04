@@ -9,6 +9,7 @@ CRITICAL OUTPUT RULE: Your entire response must be a single JSON array starting 
 IMPORTANT RULES:
 - Only include items where you can find a real, official government or regulatory body URL (.gov, .gov.au, .gov.uk, official industry regulator, etc.).
 - If you cannot find an official source URL for an item, do not include it — never fabricate URLs.
+- URLs must be copied exactly from your web search results for this conversation — never construct or recall a URL path from memory (remembered deep links are frequently dead).
 - Be specific to the archetype AND the jurisdiction. Generic "consult a lawyer" items are not allowed.
 - Severity: "required" = legally mandatory, "recommended" = strongly advised / industry standard, "fyi" = worth knowing but not action-critical.
 - Return 2–6 items. Quality over quantity.
