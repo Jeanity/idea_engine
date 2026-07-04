@@ -1,7 +1,7 @@
 import { inngest } from '@/lib/inngest'
 import { createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
-import { calculateCosts, parseNumber, currencyFor } from '@/lib/cost-calculator'
+import { calculateCosts, parseNumber } from '@/lib/cost-calculator'
 import {
   COMPETITOR_RESEARCH_SYSTEM_PROMPT,
   buildCompetitorResearchMessage,
@@ -12,6 +12,10 @@ import {
   buildSynthesisMessage,
   type SynthesisOutput,
 } from '@/lib/prompts/synthesis'
+import {
+  COST_ESTIMATION_SYSTEM_PROMPT,
+  buildCostEstimationMessage,
+} from '@/lib/prompts/cost-estimation'
 
 interface Question {
   key: string
@@ -134,7 +138,7 @@ export const generateReport = inngest.createFunction(
     // ── Step 2: Cost estimation ───────────────────────────────
     let costBreakdown: unknown
     try {
-      costBreakdown = await step.run('estimate-costs', async () => {
+      costBreakdown = await step.run('estimate-costs', () => withRetry('estimate-costs', async () => {
         const productArchetypes = ['physical_product', 'ecommerce_brand']
         if (productArchetypes.includes(idea.archetype)) {
           return calculateCosts({
@@ -149,14 +153,27 @@ export const generateReport = inngest.createFunction(
             unit_cost_estimate: parseNumber(mapsTo['cost.unit_cost_estimate']),
           })
         }
-        // Non-product archetypes: return a simplified cost object
-        return {
-          per_unit: null,
-          currency: currencyFor(idea.location_country),
-          notes: `Cost structure for ${idea.archetype} depends on specific business model. Key inputs: startup capital = ${mapsTo['cost.startup_capital'] ?? 'not provided'}.`,
-          estimation_flags: {},
+        // Non-product archetypes: get a real LLM cost estimate instead of a stub
+        const { text } = await callAI({
+          messages: [{ role: 'user', content: buildCostEstimationMessage({
+            idea_raw_text: idea.raw_text,
+            archetype: idea.archetype,
+            location_country: idea.location_country,
+            location_region: idea.location_region,
+            restatement: idea.restatement,
+            answers,
+            competitors: Array.isArray(competitors) ? competitors : [],
+          }) }],
+          system: COST_ESTIMATION_SYSTEM_PROMPT,
+          maxTokens: 2048,
+          tag: 'report:costs',
+        })
+        const parsed = extractJson(text)
+        if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
+          throw new Error('Cost estimation response not an object')
         }
-      })
+        return parsed
+      }))
     } catch (err) {
       console.error('estimate-costs failed:', err)
       costBreakdown = UNAVAILABLE('Cost estimation could not be completed.')

@@ -314,6 +314,10 @@ function fmt(sym: string, n: number) {
   return `${sym}${n.toFixed(2)}`
 }
 
+function fmt0(sym: string, n: number) {
+  return `${sym}${Math.round(n).toLocaleString()}`
+}
+
 const REPORT_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'competitors', label: 'Competitors' },
@@ -448,6 +452,8 @@ function FullReportViewer({ report }: { report: ReportData }) {
                 currency: string
                 notes: string
                 estimation_flags: Record<string, string>
+                startup_costs?: Array<{ item: string; estimate_low: number; estimate_high: number; note: string }>
+                ongoing_costs?: Array<{ item: string; estimate_monthly: number; note: string }>
               }
               const sym = currencySymbol(cb.currency ?? 'USD')
               const lineItems = [
@@ -508,6 +514,58 @@ function FullReportViewer({ report }: { report: ReportData }) {
                       )}
                     </>
                   ) : null}
+
+                  {cb.startup_costs && cb.startup_costs.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-sm font-semibold text-gray-700">Estimated startup costs</h3>
+                        <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-100 rounded px-1.5 py-0.5">
+                          AI estimates — validate with real quotes
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {cb.startup_costs.map((item, i) => (
+                          <div key={i} className="flex justify-between items-start text-sm gap-4">
+                            <div className="min-w-0">
+                              <p className="text-gray-700">{item.item}</p>
+                              {item.note && <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>}
+                            </div>
+                            <span className="font-medium text-gray-800 whitespace-nowrap">
+                              {fmt0(sym, item.estimate_low)}–{fmt0(sym, item.estimate_high)}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
+                          <span className="font-semibold text-gray-600">Total (range)</span>
+                          <span className="font-semibold text-gray-700">
+                            {fmt0(sym, cb.startup_costs.reduce((sum, item) => sum + item.estimate_low, 0))}
+                            –
+                            {fmt0(sym, cb.startup_costs.reduce((sum, item) => sum + item.estimate_high, 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {cb.ongoing_costs && cb.ongoing_costs.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Estimated ongoing costs</h3>
+                      <div className="space-y-2">
+                        {cb.ongoing_costs.map((item, i) => (
+                          <div key={i} className="flex justify-between items-start text-sm gap-4">
+                            <div className="min-w-0">
+                              <p className="text-gray-700">{item.item}</p>
+                              {item.note && <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>}
+                            </div>
+                            <span className="font-medium text-gray-800 whitespace-nowrap">
+                              {fmt0(sym, item.estimate_monthly)}/mo
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {cb.notes && <p className="text-xs text-gray-500 leading-relaxed">{cb.notes}</p>}
                 </div>
               )
