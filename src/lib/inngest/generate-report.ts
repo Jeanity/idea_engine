@@ -168,7 +168,7 @@ export const generateReport = inngest.createFunction(
           tag: 'report:compliance',
           tools: WEB_SEARCH_TOOL,
         })
-        const parsed = JSON.parse(text)
+        const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Compliance response not an array')
         return parsed
       })

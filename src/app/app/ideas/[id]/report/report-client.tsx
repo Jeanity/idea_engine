@@ -187,128 +187,98 @@ function isUnavailable(v: unknown): v is { status: 'unavailable'; reason: string
 }
 
 function ReportViewer({ report }: { report: ReportData }) {
-  const s = report.sections
+  // Teaser lives in preview_sections; full report (post-payment) will be in sections
   const p = report.preview_sections
+  const summary = p.summary as { text: string } | undefined
+  const vs = p.viability_snapshot as {
+    scores: Record<string, { score: number; rationale: string }>
+    overall_verdict: string
+  } | undefined
+  const nextStepsPreview = (p.next_steps_preview ?? []) as Array<{ action: string; timeframe: string }>
 
-  // Use preview for free tier; full sections locked (visual only in Phase 4)
-  const competitors = (p.competitors ?? []) as Array<Record<string, unknown>>
-  const allCompetitors = Array.isArray(s.competitors) ? s.competitors as Array<Record<string, unknown>> : []
-  const hasMoreCompetitors = allCompetitors.length > 2
+  const labels: Record<string, string> = {
+    market_opportunity: 'Market opportunity',
+    execution_difficulty: 'Execution difficulty',
+    capital_required: 'Capital required',
+    time_to_revenue: 'Time to revenue',
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
+
       {/* Summary */}
-      {isUnavailable(s.summary)
-        ? <UnavailableSection title="Summary" reason={(s.summary as {reason: string}).reason} />
-        : (
-          <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-            <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">{(s.summary as {text: string})?.text}</p>
-          </div>
-        )}
+      {summary?.text ? (
+        <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+          <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">{summary.text}</p>
+        </div>
+      ) : <UnavailableSection title="Summary" />}
 
       {/* Viability snapshot */}
-      {isUnavailable(s.viability_snapshot)
-        ? <UnavailableSection title="Viability Snapshot" />
-        : (() => {
-            const vs = s.viability_snapshot as {
-              scores: Record<string, { score: number; rationale: string }>
-              overall_verdict: string
-            }
-            const labels: Record<string, string> = {
-              market_opportunity: 'Market opportunity',
-              execution_difficulty: 'Execution difficulty',
-              capital_required: 'Capital required',
-              time_to_revenue: 'Time to revenue',
-            }
-            return (
-              <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-                <h2 className="font-semibold text-gray-900 mb-4">Viability Snapshot</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {Object.entries(vs.scores ?? {}).map(([key, val]) => (
-                    <div key={key}>
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>{labels[key] ?? key}</span>
-                        <span className="font-medium text-gray-700">{val.score}/5</span>
-                      </div>
-                      <ScoreBar score={val.score} />
-                      <p className="text-xs text-gray-500 mt-1">{val.rationale}</p>
-                    </div>
-                  ))}
+      {vs?.scores ? (
+        <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+          <h2 className="font-semibold text-gray-900 mb-4">Viability Snapshot</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {Object.entries(vs.scores).map(([key, val]) => (
+              <div key={key}>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>{labels[key] ?? key}</span>
+                  <span className="font-medium text-gray-700">{val.score}/5</span>
                 </div>
-                <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3">
-                  <p className="text-sm text-indigo-900">{vs.overall_verdict}</p>
-                </div>
-              </div>
-            )
-          })()}
-
-      {/* Competitors — preview shows 2, rest locked */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Competitors</h2>
-        </div>
-        {isUnavailable(s.competitors) ? (
-          <div className="px-5 py-4">
-            <p className="text-sm text-gray-400">{(s.competitors as {reason: string}).reason}</p>
-          </div>
-        ) : (
-          <>
-            <div className="divide-y divide-gray-100">
-              {competitors.map((c, i) => (
-                <div key={i} className="px-5 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <a href={c.url as string} target="_blank" rel="noopener noreferrer"
-                        className="text-sm font-medium text-indigo-600 hover:underline">
-                        {c.name as string}
-                      </a>
-                      <p className="text-xs text-gray-500 mt-0.5">{c.location as string} · {c.pricing_summary as string}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {hasMoreCompetitors && <LockedSection title={`+${allCompetitors.length - 2} more competitors with gap analysis`} />}
-          </>
-        )}
-      </div>
-
-      {/* Locked sections */}
-      <LockedSection title="Cost Breakdown" />
-      <LockedSection title="Pricing Recommendation" />
-      <LockedSection title="Legal & Compliance" />
-      <LockedSection title="Risks" />
-
-      {/* Next steps — preview shows 2 */}
-      {Array.isArray(p.next_steps) && p.next_steps.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Next Steps (preview)</h2>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {(p.next_steps as Array<Record<string, unknown>>).map((step, i) => (
-              <div key={i} className="px-5 py-4">
-                <div className="flex gap-3">
-                  <span className="flex-shrink-0 text-xs font-bold text-indigo-600 mt-0.5">{step.timeframe as string}</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{step.action as string}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{step.rationale as string}</p>
-                  </div>
-                </div>
+                <ScoreBar score={val.score} />
+                <p className="text-xs text-gray-500 mt-1">{val.rationale}</p>
               </div>
             ))}
           </div>
-          <LockedSection title="Full next steps + full report" />
+          <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3">
+            <p className="text-sm text-indigo-900">{vs.overall_verdict}</p>
+          </div>
+        </div>
+      ) : <UnavailableSection title="Viability Snapshot" />}
+
+      {/* Next steps teaser */}
+      {nextStepsPreview.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Where to start</h2>
+            <p className="text-xs text-gray-400 mt-0.5">2 of your personalised next steps</p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {nextStepsPreview.map((step, i) => (
+              <div key={i} className="px-5 py-3 flex gap-3 items-baseline">
+                <span className="flex-shrink-0 text-xs font-semibold text-indigo-600">{step.timeframe}</span>
+                <p className="text-sm text-gray-800">{step.action}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="pt-4 pb-8 text-center print:hidden">
-        <p className="text-sm text-gray-500 mb-3">Unlock the full report to see all competitor gap analysis, cost breakdown, pricing strategy, compliance checklist, and complete next steps.</p>
-        <button className="inline-flex items-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
-          Unlock full report — coming in Phase 5
+      {/* Locked sections */}
+      <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-5 py-6">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Included in full report</p>
+        <ul className="space-y-2 text-sm text-gray-500">
+          {[
+            '5–8 real competitors with pricing and gap analysis',
+            'Cost breakdown — materials, labour, power, margin',
+            'Pricing strategy with comparable market rates',
+            'Legal & compliance checklist with official source links',
+            'Risk register with mitigations',
+            'Complete prioritised next steps',
+          ].map(item => (
+            <li key={item} className="flex gap-2 items-start">
+              <svg className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              {item}
+            </li>
+          ))}
+        </ul>
+        <button className="mt-5 w-full rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+          Unlock full report — coming soon
         </button>
       </div>
+
     </div>
   )
 }

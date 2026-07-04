@@ -1,0 +1,89 @@
+import { inngest } from '@/lib/inngest'
+import { createServiceClient } from '@/lib/db'
+import { callAI } from '@/lib/ai'
+import { TEASER_SYSTEM_PROMPT, buildTeaserMessage } from '@/lib/prompts/teaser'
+
+interface Question {
+  key: string
+  maps_to: string
+}
+
+function loadBank(archetype: string): Question[] {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require(`@/lib/questions/${archetype}.json`) as Question[]
+  } catch {
+    return []
+  }
+}
+
+function extractJson(text: string): unknown {
+  const objectMatch = text.match(/\{[\s\S]*\}/)
+  if (!objectMatch) throw new Error(`No JSON object in teaser response: ${text.slice(0, 120)}`)
+  return JSON.parse(objectMatch[0])
+}
+
+export const generateTeaser = inngest.createFunction(
+  {
+    id: 'generate-teaser',
+    retries: 2,
+    triggers: [{ event: 'idea-engine/report.requested' }],
+  },
+  async ({ event }: { event: { data: { reportId: string; ideaId: string } } }) => {
+    const { reportId, ideaId } = event.data
+    const supabase = createServiceClient()
+
+    const { data: idea } = await supabase
+      .from('ideas')
+      .select('id, raw_text, archetype, location_country, location_region, restatement')
+      .eq('id', ideaId)
+      .single()
+
+    if (!idea) throw new Error(`Idea ${ideaId} not found`)
+
+    const { data: answersRows } = await supabase
+      .from('answers')
+      .select('question_key, answer_text')
+      .eq('idea_id', ideaId)
+
+    const bank = loadBank(idea.archetype)
+    const answers = (answersRows ?? []).flatMap(row => {
+      const bankQ = bank.find(q => q.key === row.question_key)
+      return bankQ ? [{ maps_to: bankQ.maps_to, answer: row.answer_text }] : []
+    })
+
+    await supabase
+      .from('reports')
+      .update({ status: 'running', generation_started_at: new Date().toISOString() })
+      .eq('id', reportId)
+
+    const { text } = await callAI({
+      messages: [{ role: 'user', content: buildTeaserMessage({
+        idea_raw_text: idea.raw_text,
+        archetype: idea.archetype,
+        location_country: idea.location_country,
+        location_region: idea.location_region,
+        restatement: idea.restatement,
+        answers,
+      }) }],
+      system: TEASER_SYSTEM_PROMPT,
+      maxTokens: 1024,
+      tag: 'report:teaser',
+    })
+
+    const teaser = extractJson(text) as {
+      summary: unknown
+      viability_snapshot: unknown
+      next_steps_preview: unknown
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase.from('reports').update({
+      preview_sections: teaser as any,
+      sections: {},
+      status: 'complete',
+      generation_completed_at: new Date().toISOString(),
+      model_version: 'claude-sonnet-4-6',
+    }).eq('id', reportId)
+  }
+)
