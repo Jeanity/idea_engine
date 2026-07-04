@@ -314,8 +314,19 @@ function fmt(sym: string, n: number) {
   return `${sym}${n.toFixed(2)}`
 }
 
+const REPORT_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'competitors', label: 'Competitors' },
+  { key: 'costs', label: 'Costs & Pricing' },
+  { key: 'legal', label: 'Legal & Compliance' },
+  { key: 'risks', label: 'Risks & Next Steps' },
+] as const
+
+type ReportTabKey = typeof REPORT_TABS[number]['key']
+
 function FullReportViewer({ report }: { report: ReportData }) {
   const s = report.sections
+  const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
 
   const summary = s.summary
   const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
@@ -326,248 +337,294 @@ function FullReportViewer({ report }: { report: ReportData }) {
   const risks = s.risks
   const nextSteps = s.next_steps
 
+  const competitorsCount = Array.isArray(competitors) ? competitors.length : null
+
+  function handleTabChange(key: ReportTabKey) {
+    setActiveTab(key)
+    window.scrollTo({ top: 0 })
+  }
+
+  function panelClass(key: ReportTabKey) {
+    return activeTab === key ? 'block' : 'hidden print:block'
+  }
+
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+    <div className="max-w-3xl mx-auto px-6 py-10 print:py-4">
 
-      {/* Summary */}
-      {isUnavailable(summary)
-        ? <UnavailableSection title="Summary" reason={summary.reason} />
-        : summary && (summary as { text: string }).text
-          ? (
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-              <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">{(summary as { text: string }).text}</p>
-            </div>
-          )
-          : <UnavailableSection title="Summary" />}
-
-      {/* Viability snapshot */}
-      {isUnavailable(vs)
-        ? <UnavailableSection title="Viability Snapshot" reason={vs.reason} />
-        : vs?.scores
-          ? <ViabilitySnapshot vs={vs} />
-          : <UnavailableSection title="Viability Snapshot" />}
-
-      {/* Competitors */}
-      {isUnavailable(competitors)
-        ? <UnavailableSection title="Competitors" reason={competitors.reason} />
-        : Array.isArray(competitors) && competitors.length > 0
-          ? (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Competitors</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{competitors.length} found</p>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {(competitors as Array<Record<string, string>>).map((c, i) => (
-                  <div key={i} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="min-w-0 flex-1">
-                        <a href={c.url} target="_blank" rel="noopener noreferrer"
-                          className="font-medium text-indigo-600 hover:underline text-sm break-words">{c.name}</a>
-                        <span className="text-xs text-gray-400 ml-2">{c.location}</span>
-                      </div>
-                      <span className="text-xs font-medium text-gray-700 text-right max-w-[45%] break-words">{c.pricing_summary}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      <span className="font-medium text-gray-700">Positioning: </span>{c.positioning_angle}
-                    </p>
-                    <p className="text-xs text-emerald-700 bg-emerald-50 rounded px-2 py-1.5">
-                      <span className="font-medium">Gap: </span>{c.gap_notes}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-          : <UnavailableSection title="Competitors" />}
-
-      {/* Cost breakdown */}
-      {isUnavailable(costBreakdown)
-        ? <UnavailableSection title="Cost Breakdown" reason={costBreakdown.reason} />
-        : costBreakdown
-          ? (() => {
-            const cb = costBreakdown as {
-              per_unit: Record<string, number | null> | null
-              suggested_price: number | null
-              gross_margin_pct: number | null
-              currency: string
-              notes: string
-              estimation_flags: Record<string, string>
-            }
-            const sym = currencySymbol(cb.currency ?? 'USD')
-            const lineItems = [
-              { key: 'materials', label: 'Materials' },
-              { key: 'packaging', label: 'Packaging' },
-              { key: 'power', label: 'Power' },
-              { key: 'active_labour', label: 'Active labour' },
-              { key: 'passive_labour', label: 'Passive labour' },
-            ]
+      {/* Tab bar */}
+      <div className="sticky top-0 z-10 bg-gray-50 -mx-6 px-6 mb-6 border-b border-gray-200 overflow-x-auto print:hidden">
+        <div className="flex gap-1 whitespace-nowrap">
+          {REPORT_TABS.map(tab => {
+            const isActive = activeTab === tab.key
             return (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                  ${isActive
+                    ? 'border-indigo-600 text-indigo-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                {tab.label}
+                {tab.key === 'competitors' && competitorsCount !== null && (
+                  <span className={`ml-1.5 ${isActive ? 'text-indigo-500' : 'text-gray-400'}`}>
+                    · {competitorsCount}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Panel 1: Overview */}
+      <div className={`${panelClass('overview')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(summary)
+          ? <UnavailableSection title="Summary" reason={summary.reason} />
+          : summary && (summary as { text: string }).text
+            ? (
               <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-                <h2 className="font-semibold text-gray-900 mb-4">
-                  Cost Breakdown <span className="text-xs font-normal text-gray-400">{cb.currency}</span>
-                </h2>
-                {cb.per_unit ? (
-                  <>
-                    <div className="space-y-2 mb-4">
-                      {lineItems.map(({ key, label }) => {
-                        const val = cb.per_unit![key]
-                        const flag = cb.estimation_flags?.[key]
-                        if (flag === 'not_applicable') return null
-                        return (
-                          <div key={key} className="flex justify-between items-center text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600">{label}</span>
-                              {flag === 'estimated' && (
-                                <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded">est.</span>
-                              )}
+                <h2 className="font-semibold text-gray-900 mb-3">Summary</h2>
+                <p className="text-sm text-gray-700 leading-relaxed">{(summary as { text: string }).text}</p>
+              </div>
+            )
+            : <UnavailableSection title="Summary" />}
+
+        {isUnavailable(vs)
+          ? <UnavailableSection title="Viability Snapshot" reason={vs.reason} />
+          : vs?.scores
+            ? <ViabilitySnapshot vs={vs} />
+            : <UnavailableSection title="Viability Snapshot" />}
+      </div>
+
+      {/* Panel 2: Competitors */}
+      <div className={`${panelClass('competitors')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(competitors)
+          ? <UnavailableSection title="Competitors" reason={competitors.reason} />
+          : Array.isArray(competitors) && competitors.length > 0
+            ? (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">Competitors</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">{competitors.length} found</p>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(competitors as Array<Record<string, string>>).map((c, i) => (
+                    <div key={i} className="px-5 py-4">
+                      <div className="mb-2">
+                        <div className="min-w-0">
+                          <a href={c.url} target="_blank" rel="noopener noreferrer"
+                            className="font-medium text-indigo-600 hover:underline text-sm break-words">{c.name}</a>
+                          <span className="text-xs text-gray-400 ml-2">{c.location}</span>
+                        </div>
+                        {c.pricing_summary && (
+                          <p className="text-xs font-medium text-gray-700 mt-0.5 break-words">{c.pricing_summary}</p>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        <span className="font-medium text-gray-700">Positioning: </span>{c.positioning_angle}
+                      </p>
+                      <p className="text-xs text-emerald-700 bg-emerald-50 rounded px-2 py-1.5">
+                        <span className="font-medium">Gap: </span>{c.gap_notes}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+            : <UnavailableSection title="Competitors" />}
+      </div>
+
+      {/* Panel 3: Costs & Pricing */}
+      <div className={`${panelClass('costs')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(costBreakdown)
+          ? <UnavailableSection title="Cost Breakdown" reason={costBreakdown.reason} />
+          : costBreakdown
+            ? (() => {
+              const cb = costBreakdown as {
+                per_unit: Record<string, number | null> | null
+                suggested_price: number | null
+                gross_margin_pct: number | null
+                currency: string
+                notes: string
+                estimation_flags: Record<string, string>
+              }
+              const sym = currencySymbol(cb.currency ?? 'USD')
+              const lineItems = [
+                { key: 'materials', label: 'Materials' },
+                { key: 'packaging', label: 'Packaging' },
+                { key: 'power', label: 'Power' },
+                { key: 'active_labour', label: 'Active labour' },
+                { key: 'passive_labour', label: 'Passive labour' },
+              ]
+              return (
+                <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+                  <h2 className="font-semibold text-gray-900 mb-4">
+                    Cost Breakdown <span className="text-xs font-normal text-gray-400">{cb.currency}</span>
+                  </h2>
+                  {cb.per_unit ? (
+                    <>
+                      <div className="space-y-2 mb-4">
+                        {lineItems.map(({ key, label }) => {
+                          const val = cb.per_unit![key]
+                          const flag = cb.estimation_flags?.[key]
+                          if (flag === 'not_applicable') return null
+                          return (
+                            <div key={key} className="flex justify-between items-center text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-600">{label}</span>
+                                {flag === 'estimated' && (
+                                  <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded">est.</span>
+                                )}
+                              </div>
+                              <span className="font-medium text-gray-800">
+                                {val !== null && val !== undefined ? fmt(sym, val) : '—'}
+                              </span>
                             </div>
-                            <span className="font-medium text-gray-800">
-                              {val !== null && val !== undefined ? fmt(sym, val) : '—'}
-                            </span>
+                          )
+                        })}
+                        {cb.per_unit.total_cogs !== null && cb.per_unit.total_cogs !== undefined && (
+                          <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
+                            <span className="font-semibold text-gray-700">Total COGS</span>
+                            <span className="font-bold text-gray-900">{fmt(sym, cb.per_unit.total_cogs as number)}</span>
                           </div>
-                        )
-                      })}
-                      {cb.per_unit.total_cogs !== null && cb.per_unit.total_cogs !== undefined && (
-                        <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-2">
-                          <span className="font-semibold text-gray-700">Total COGS</span>
-                          <span className="font-bold text-gray-900">{fmt(sym, cb.per_unit.total_cogs as number)}</span>
+                        )}
+                      </div>
+                      {(cb.suggested_price !== null || cb.gross_margin_pct !== null) && (
+                        <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 flex justify-between items-center mb-3">
+                          {cb.suggested_price !== null && (
+                            <div>
+                              <p className="text-xs text-emerald-600 mb-0.5">Suggested price</p>
+                              <p className="text-xl font-bold text-emerald-900">{fmt(sym, cb.suggested_price)}</p>
+                            </div>
+                          )}
+                          {cb.gross_margin_pct !== null && (
+                            <div className="text-right">
+                              <p className="text-xs text-emerald-600 mb-0.5">Gross margin</p>
+                              <p className="text-xl font-bold text-emerald-900">{cb.gross_margin_pct}%</p>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-                    {(cb.suggested_price !== null || cb.gross_margin_pct !== null) && (
-                      <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 flex justify-between items-center mb-3">
-                        {cb.suggested_price !== null && (
-                          <div>
-                            <p className="text-xs text-emerald-600 mb-0.5">Suggested price</p>
-                            <p className="text-xl font-bold text-emerald-900">{fmt(sym, cb.suggested_price)}</p>
-                          </div>
-                        )}
-                        {cb.gross_margin_pct !== null && (
-                          <div className="text-right">
-                            <p className="text-xs text-emerald-600 mb-0.5">Gross margin</p>
-                            <p className="text-xl font-bold text-emerald-900">{cb.gross_margin_pct}%</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : null}
-                {cb.notes && <p className="text-xs text-gray-500 leading-relaxed">{cb.notes}</p>}
-              </div>
-            )
-          })()
-          : <UnavailableSection title="Cost Breakdown" />}
-
-      {/* Pricing recommendation */}
-      {isUnavailable(pricing)
-        ? <UnavailableSection title="Pricing Recommendation" reason={pricing.reason} />
-        : pricing
-          ? (() => {
-            const p = pricing as { model: string; suggested_price_or_range: string; rationale: string; comparable_market_rates: string }
-            return (
-              <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
-                <h2 className="font-semibold text-gray-900 mb-1">Pricing Recommendation</h2>
-                <p className="text-xs text-gray-400 mb-4">{p.model}</p>
-                <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 mb-3">
-                  <p className="text-xs text-indigo-500 mb-0.5">Suggested price</p>
-                  <p className="text-lg font-semibold text-indigo-900">{p.suggested_price_or_range}</p>
+                    </>
+                  ) : null}
+                  {cb.notes && <p className="text-xs text-gray-500 leading-relaxed">{cb.notes}</p>}
                 </div>
-                <p className="text-sm text-gray-700 mb-2">{p.rationale}</p>
-                <p className="text-xs text-gray-500">{p.comparable_market_rates}</p>
+              )
+            })()
+            : <UnavailableSection title="Cost Breakdown" />}
+
+        {isUnavailable(pricing)
+          ? <UnavailableSection title="Pricing Recommendation" reason={pricing.reason} />
+          : pricing
+            ? (() => {
+              const p = pricing as { model: string; suggested_price_or_range: string; rationale: string; comparable_market_rates: string }
+              return (
+                <div className="rounded-xl border border-gray-200 bg-white px-5 py-5">
+                  <h2 className="font-semibold text-gray-900 mb-1">Pricing Recommendation</h2>
+                  <p className="text-xs text-gray-400 mb-4">{p.model}</p>
+                  <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 mb-3">
+                    <p className="text-xs text-indigo-500 mb-0.5">Suggested price</p>
+                    <p className="text-lg font-semibold text-indigo-900">{p.suggested_price_or_range}</p>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2">{p.rationale}</p>
+                  <p className="text-xs text-gray-500">{p.comparable_market_rates}</p>
+                </div>
+              )
+            })()
+            : <UnavailableSection title="Pricing Recommendation" />}
+      </div>
+
+      {/* Panel 4: Legal & Compliance */}
+      <div className={`${panelClass('legal')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(compliance)
+          ? <UnavailableSection title="Legal & Compliance" reason={compliance.reason} />
+          : Array.isArray(compliance) && compliance.length > 0
+            ? (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">Legal & Compliance</h2>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(compliance as Array<Record<string, string>>).map((item, i) => (
+                    <div key={i} className="px-5 py-4">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="text-sm font-medium text-gray-800">{item.item}</p>
+                        <SeverityBadge severity={item.severity} />
+                      </div>
+                      <p className="text-xs text-gray-400 mb-2">{item.jurisdiction}</p>
+                      <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                      {item.official_source_url && (
+                        <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-indigo-600 hover:underline break-all">
+                          {item.official_source_url}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="px-5 py-4 bg-amber-50 border-t border-amber-100">
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    <span className="font-semibold">Not legal advice.</span> The compliance items above are for informational purposes only. Requirements vary by location, business structure, and circumstances. Consult a qualified lawyer, accountant, or relevant government body before acting on any item listed here.
+                  </p>
+                </div>
               </div>
             )
-          })()
-          : <UnavailableSection title="Pricing Recommendation" />}
+            : <UnavailableSection title="Legal & Compliance" />}
+      </div>
 
-      {/* Legal compliance */}
-      {isUnavailable(compliance)
-        ? <UnavailableSection title="Legal & Compliance" reason={compliance.reason} />
-        : Array.isArray(compliance) && compliance.length > 0
-          ? (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Legal & Compliance</h2>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {(compliance as Array<Record<string, string>>).map((item, i) => (
-                  <div key={i} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3 mb-1">
-                      <p className="text-sm font-medium text-gray-800">{item.item}</p>
-                      <SeverityBadge severity={item.severity} />
+      {/* Panel 5: Risks & Next Steps */}
+      <div className={`${panelClass('risks')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(risks)
+          ? <UnavailableSection title="Key Risks" reason={risks.reason} />
+          : Array.isArray(risks) && risks.length > 0
+            ? (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">Key Risks</h2>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(risks as Array<Record<string, string>>).map((risk, i) => (
+                    <div key={i} className="px-5 py-4">
+                      <p className="text-sm font-medium text-gray-800 mb-1">{risk.title}</p>
+                      <p className="text-sm text-gray-600 mb-2">{risk.description}</p>
+                      <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
+                        <span className="font-medium">Mitigation: </span>{risk.mitigation}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-400 mb-2">{item.jurisdiction}</p>
-                    <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
-                    {item.official_source_url && (
-                      <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-indigo-600 hover:underline break-all">
-                        {item.official_source_url}
-                      </a>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-              <div className="px-5 py-4 bg-amber-50 border-t border-amber-100">
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  <span className="font-semibold">Not legal advice.</span> The compliance items above are for informational purposes only. Requirements vary by location, business structure, and circumstances. Consult a qualified lawyer, accountant, or relevant government body before acting on any item listed here.
-                </p>
-              </div>
-            </div>
-          )
-          : <UnavailableSection title="Legal & Compliance" />}
+            )
+            : <UnavailableSection title="Key Risks" />}
 
-      {/* Risks */}
-      {isUnavailable(risks)
-        ? <UnavailableSection title="Key Risks" reason={risks.reason} />
-        : Array.isArray(risks) && risks.length > 0
-          ? (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Key Risks</h2>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {(risks as Array<Record<string, string>>).map((risk, i) => (
-                  <div key={i} className="px-5 py-4">
-                    <p className="text-sm font-medium text-gray-800 mb-1">{risk.title}</p>
-                    <p className="text-sm text-gray-600 mb-2">{risk.description}</p>
-                    <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
-                      <span className="font-medium">Mitigation: </span>{risk.mitigation}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-          : <UnavailableSection title="Key Risks" />}
-
-      {/* Next steps */}
-      {isUnavailable(nextSteps)
-        ? <UnavailableSection title="Next Steps" reason={nextSteps.reason} />
-        : Array.isArray(nextSteps) && nextSteps.length > 0
-          ? (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Next Steps</h2>
-                <p className="text-xs text-gray-400 mt-0.5">In order of priority</p>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {(nextSteps as Array<Record<string, string>>).map((step, i) => (
-                  <div key={i} className="px-5 py-4 flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mt-0.5">
-                      <span className="text-xs font-semibold text-indigo-700">{i + 1}</span>
+        {isUnavailable(nextSteps)
+          ? <UnavailableSection title="Next Steps" reason={nextSteps.reason} />
+          : Array.isArray(nextSteps) && nextSteps.length > 0
+            ? (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">Next Steps</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">In order of priority</p>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(nextSteps as Array<Record<string, string>>).map((step, i) => (
+                    <div key={i} className="px-5 py-4 flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mt-0.5">
+                        <span className="text-xs font-semibold text-indigo-700">{i + 1}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-indigo-600">{step.timeframe}</span>
+                        <p className="text-sm text-gray-800 mt-0.5">{step.action}</p>
+                        {step.rationale && <p className="text-xs text-gray-500 mt-1">{step.rationale}</p>}
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-xs font-semibold text-indigo-600">{step.timeframe}</span>
-                      <p className="text-sm text-gray-800 mt-0.5">{step.action}</p>
-                      {step.rationale && <p className="text-xs text-gray-500 mt-1">{step.rationale}</p>}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-          : <UnavailableSection title="Next Steps" />}
+            )
+            : <UnavailableSection title="Next Steps" />}
+      </div>
 
     </div>
   )
