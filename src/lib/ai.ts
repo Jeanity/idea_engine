@@ -56,6 +56,8 @@ export async function callAI({ messages, system, maxTokens = MAX_TOKENS, tag = '
     throw new Error(`No text block in Claude response. stop_reason=${response.stop_reason}`)
   }
 
-  const text = textBlocks.map(b => b.text).join('\n').trim()
+  // Use the last text block — with web search, Claude writes a preamble before
+  // searching and puts the final JSON answer in the last text block.
+  const text = textBlocks[textBlocks.length - 1].text.trim()
   return { text, inputTokens, outputTokens }
 }

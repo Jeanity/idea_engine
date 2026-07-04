@@ -18,6 +18,17 @@ interface Question {
   maps_to: string
 }
 
+// Extracts the first JSON array or object from a string, tolerating prose preamble.
+function extractJson(text: string): unknown {
+  const arrayMatch = text.match(/\[[\s\S]*\]/)
+  const objectMatch = text.match(/\{[\s\S]*\}/)
+  const match = arrayMatch && objectMatch
+    ? (text.indexOf('[') < text.indexOf('{') ? arrayMatch : objectMatch)
+    : arrayMatch ?? objectMatch
+  if (!match) throw new Error(`No JSON found in response: ${text.slice(0, 120)}`)
+  return JSON.parse(match[0])
+}
+
 function loadBank(archetype: string): Question[] {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -93,7 +104,7 @@ export const generateReport = inngest.createFunction(
           tag: 'report:competitors',
           tools: WEB_SEARCH_TOOL,
         })
-        const parsed = JSON.parse(text)
+        const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Competitor response not an array')
         return parsed
       })
@@ -188,7 +199,7 @@ export const generateReport = inngest.createFunction(
           maxTokens: 2048,
           tag: 'report:synthesis',
         })
-        return JSON.parse(text) as SynthesisOutput
+        return extractJson(text) as SynthesisOutput
       })
     } catch (err) {
       console.error('synthesise failed:', err)
