@@ -27,13 +27,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Check for an existing non-failed report
+  const force = body.force === true
+
   const { data: existing } = await supabase
     .from('reports')
     .select('id, status')
     .eq('idea_id', idea_id)
     .single()
 
-  if (existing && existing.status !== 'failed') {
+  if (existing && existing.status !== 'failed' && !force) {
     return NextResponse.json({ reportId: existing.id, status: existing.status })
   }
 

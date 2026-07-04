@@ -315,18 +315,54 @@ function ReportViewer({ report }: { report: ReportData }) {
 
 // ── Main client component ─────────────────────────────────────
 
+function RegenerateButton({ ideaId, onStart }: { ideaId: string; onStart: () => void }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleRegenerate() {
+    setLoading(true)
+    try {
+      await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea_id: ideaId, force: true }),
+      })
+      onStart()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleRegenerate}
+      disabled={loading}
+      className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-40 underline underline-offset-2"
+    >
+      {loading ? 'Starting…' : 'Regenerate report'}
+    </button>
+  )
+}
+
 export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
+  const [regenerating, setRegenerating] = useState(false)
 
-  if (report?.status === 'complete') {
-    return <ReportViewer report={report} />
+  if (report?.status === 'complete' && !regenerating) {
+    return (
+      <div>
+        <ReportViewer report={report} />
+        <div className="max-w-3xl mx-auto px-6 pb-6 text-center print:hidden">
+          <RegenerateButton ideaId={ideaId} onStart={() => { setRegenerating(true); setReport(null) }} />
+        </div>
+      </div>
+    )
   }
 
   return (
     <ProgressScreen
       ideaId={ideaId}
       restatement={restatement}
-      onComplete={setReport}
+      onComplete={(r) => { setReport(r); setRegenerating(false) }}
     />
   )
 }
