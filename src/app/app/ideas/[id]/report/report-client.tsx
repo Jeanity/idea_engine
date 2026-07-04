@@ -642,15 +642,23 @@ function FullReportViewer({ report }: { report: ReportData }) {
                   <h2 className="font-semibold text-gray-900">Key Risks</h2>
                 </div>
                 <div className="divide-y divide-gray-100">
-                  {(risks as Array<Record<string, string>>).map((risk, i) => (
-                    <div key={i} className="px-5 py-4">
-                      <p className="text-sm font-medium text-gray-800 mb-1">{risk.title}</p>
-                      <p className="text-sm text-gray-600 mb-2">{risk.description}</p>
-                      <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
-                        <span className="font-medium">Mitigation: </span>{risk.mitigation}
-                      </p>
-                    </div>
-                  ))}
+                  {(risks as Array<Record<string, string>>).map((risk, i) => {
+                    // Tolerate alternate key names from older reports whose
+                    // prompt didn't pin the schema (risk/detail vs title/description).
+                    const title = risk.title ?? risk.risk
+                    const description = risk.description ?? risk.detail
+                    return (
+                      <div key={i} className="px-5 py-4">
+                        {title && <p className="text-sm font-medium text-gray-800 mb-1">{title}</p>}
+                        {description && <p className="text-sm text-gray-600 mb-2">{description}</p>}
+                        {risk.mitigation && (
+                          <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
+                            <span className="font-medium">Mitigation: </span>{risk.mitigation}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -674,7 +682,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
                       <div>
                         <span className="text-xs font-semibold text-indigo-600">{step.timeframe}</span>
                         <p className="text-sm text-gray-800 mt-0.5">{step.action}</p>
-                        {step.rationale && <p className="text-xs text-gray-500 mt-1">{step.rationale}</p>}
+                        {(step.rationale ?? step.detail) && <p className="text-xs text-gray-500 mt-1">{step.rationale ?? step.detail}</p>}
                       </div>
                     </div>
                   ))}

@@ -13,7 +13,14 @@ RULES:
   - overall_verdict: 2–3 sentences synthesising the scores in plain language.
 - pricing_recommendation: reference actual competitor prices in the rationale if available. Suggest a range, not a single number.
 - risks: 3–5 items, ordered most-severe first. Specific to this idea — not generic startup advice.
-- next_steps: 3–5 items, ordered do-first first. Timeframes are honest (week 1 must be achievable in week 1).`
+- next_steps: 3–5 items, ordered do-first first. Timeframes are honest (week 1 must be achievable in week 1).
+
+EXACT JSON SHAPES (use these key names and no others):
+- summary: { "text": string }
+- viability_snapshot: { "scores": { "market_opportunity": { "score": number, "rationale": string }, "execution_difficulty": { "score": number, "rationale": string }, "capital_required": { "score": number, "rationale": string }, "time_to_revenue": { "score": number, "rationale": string } }, "overall_verdict": string }
+- pricing_recommendation: { "model": string, "suggested_price_or_range": string, "rationale": string, "comparable_market_rates": string }
+- risks: [ { "title": string, "description": string, "mitigation": string } ] — every risk MUST include a concrete mitigation
+- next_steps: [ { "action": string, "timeframe": string, "rationale": string } ]`
 
 export interface SynthesisInput {
   idea_raw_text: string
