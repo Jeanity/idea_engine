@@ -4,7 +4,9 @@
 
 **Stack (committed):** Next.js 15 (App Router, TypeScript) on Vercel · Supabase (Postgres + magic-link auth) · Claude API (Sonnet for generation, with built-in web search tool for research) · Inngest (async report jobs) · Stripe Checkout (payments) · Resend (email) · Tailwind CSS.
 
-**Explicitly OUT of MVP (see PHASE_07):** pitch generator, pitch rooms, supporter/investor marketplace, equity/success-fee features, idea vault comparisons, multi-tier reports, validation experiments.
+**Explicitly OUT of MVP (see PHASE_07):** pitch generator, pitch rooms, supporter/investor marketplace, equity/success-fee features, idea vault comparisons, validation experiments.
+
+**Pricing (revised 2026-07-05, supersedes the single-tier note above):** two tiers — US$19.95 full report (current pipeline, cost target ≤US$0.60/report) and US$49.95 premium report (deeper research pass, cost target ≤US$2.00/report). Boundary locked by measurement in Phase 4B before Stripe work begins.
 
 ## Phases in build order
 
@@ -14,7 +16,8 @@
 | 2 | [PHASE_02_idea_intake.md](PHASE_02_idea_intake.md) | Idea entry form + AI classification into idea archetypes, persisted per user | Phase 1 |
 | 3 | [PHASE_03_guided_questions.md](PHASE_03_guided_questions.md) | Archetype-specific follow-up question wizard with save/resume | Phase 2 |
 | 4 | [PHASE_04_report_pipeline.md](PHASE_04_report_pipeline.md) | Async research + cost estimation + report generation, viewable with preview/locked sections | Phase 3 |
-| 5 | [PHASE_05_payments.md](PHASE_05_payments.md) | Stripe Checkout single tier, full-report unlock, email delivery, "my reports" page | Phase 4 |
+| 4B | [PHASE_04B_report_quality_tiers.md](PHASE_04B_report_quality_tiers.md) | Expert-partner persona, financing-bridge step, cost/quality test matrix, $19.95/$49.95 tier boundary decision | Phase 4 |
+| 5 | [PHASE_05_payments.md](PHASE_05_payments.md) | Stripe Checkout (two tiers), full-report unlock, email delivery, "my reports" page | Phase 4B (task 4B.4) |
 | 6 | [PHASE_06_launch.md](PHASE_06_launch.md) | Landing page, legal pages/disclaimers, analytics, abuse/cost controls, QA, launch | Phase 5 |
 | 7 | [PHASE_07_post_mvp_quarantine.md](PHASE_07_post_mvp_quarantine.md) | **NOT BUILT NOW.** Pitch generator, pitch rooms, marketplace, equity — legal-risk quarantine notes | Post-launch |
 

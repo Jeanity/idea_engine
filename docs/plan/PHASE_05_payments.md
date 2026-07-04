@@ -1,16 +1,18 @@
 # Phase 05 — Payments & Unlock
 
+> **Revised 2026-07-05:** two tiers replace the original single-tier plan — **US$19.95** full report (current pipeline) and **US$49.95** premium report (deeper pass; step list in PHASE_04B). The exact section split comes from Phase 4B's measured decision (task 4B.4) — do not start 5.1 before that is logged.
+
 ## Goal ("done" looks like)
-One paid tier. A user with a generated report hits "Unlock full report", pays via Stripe Checkout, and the locked sections open immediately; they also get the report link by email. You can take real money.
+Two paid tiers. A user with a generated report picks a tier, pays via Stripe Checkout, and the corresponding sections open immediately; they also get the report link by email. You can take real money.
 
 ## Dependencies
-Phase 4 complete (reports with preview/locked sections). Requires a Stripe account (business details, bank account) — **start the Stripe account setup at the beginning of this phase; activation review can take days.**
+Phase 4 complete; **Phase 4B task 4B.4 (tier boundary decision) logged**. Requires a Stripe account (business details, bank account) — **start the Stripe account setup at the beginning of this phase; activation review can take days.**
 
 ## Tasks (in order)
 
-### 5.1 Pricing decision + Stripe setup
-**Model: Sonnet** — operational config with a recommendation, not architecture.
-Single tier at **A$19** per full report (between the pitch's $9.95 and $49.95 tiers; one price = one decision for the buyer and one code path for you — add tiers post-launch only if data demands it). Create the Stripe product/price in test mode. Document in `docs/PRICING.md` including the per-report LLM cost from Phase 4.9 to confirm margin.
+### 5.1 Pricing setup (two tiers)
+**Model: Sonnet** — operational config; the pricing decision itself comes from Phase 4B.
+Two Stripe products in test mode: **US$19.95 full report** and **US$49.95 premium report**. Add `report_tier` ('full' | 'premium') to the `purchases` table; premium purchases trigger the premium pipeline steps (PHASE_04B list) for that report. Document in `docs/PRICING.md` with the measured per-report costs from 4B.3 (targets: ≤$0.60 tier 1, ≤$2.00 tier 2).
 
 ### 5.2 Checkout integration
 **Model: Sonnet** — well-documented integration, needs correctness care.
@@ -37,7 +39,8 @@ Test-mode E2E with Stripe test cards: success unlocks, cancel leaves locked, web
 - [ ] Declined card and abandoned checkout leave the report locked with a clear retry path.
 - [ ] Replaying the same webhook event does not create duplicate purchases.
 - [ ] Unlock check is server-side (verify: editing client state does not reveal paid sections).
-- [ ] Live mode verified with one real A$19 self-purchase (then refund it via Stripe dashboard).
+- [ ] Live mode verified with one real self-purchase per tier (then refund via Stripe dashboard).
+- [ ] Premium purchase triggers the premium pipeline steps and renders their sections; a $19.95 purchase does not.
 
 ## Solo-operator sizing
 ~1 week part-time, assuming Stripe account activation isn't blocking (hence: start it day 1).

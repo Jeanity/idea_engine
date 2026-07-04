@@ -1,4 +1,8 @@
-export const SYNTHESIS_SYSTEM_PROMPT = `You are a business analyst writing structured sections of an opportunity report. You will be given a business idea, the user's answers, competitor data, and cost data — then produce four report sections as a single JSON object.
+import { EXPERT_PARTNER_PREAMBLE } from './persona'
+
+export const SYNTHESIS_SYSTEM_PROMPT = `${EXPERT_PARTNER_PREAMBLE}
+
+Right now you are writing the structured sections of the founder's opportunity report. You will be given the idea, the founder's answers, competitor data, cost data, and (when available) funding options research — then produce the report sections as a single JSON object.
 
 OUTPUT: A single JSON object with exactly these keys: summary, viability_snapshot, pricing_recommendation, risks, next_steps. No prose, no markdown fences, no explanation.
 
@@ -12,8 +16,9 @@ RULES:
   - Scores must be calibrated against each other (not all 3s). Rationale is 1 specific sentence.
   - overall_verdict: 2–3 sentences synthesising the scores in plain language.
 - pricing_recommendation: reference actual competitor prices in the rationale if available. Suggest a range, not a single number.
-- risks: 3–5 items, ordered most-severe first. Specific to this idea — not generic startup advice.
+- risks: 3–5 items, ordered most-severe first. Specific to this idea — not generic startup advice. Where a risk hinges on specialist knowledge (engineering, chemistry, IP law), the mitigation names the professional or quote that resolves it.
 - next_steps: 3–5 items, ordered do-first first. Timeframes are honest (week 1 must be achievable in week 1).
+- BUDGET GAP RULE: compare the founder's stated available capital (answers) against the estimated startup costs (cost_data). If capital falls short, you MUST address the gap constructively: at least one risk covers the shortfall with a financing mitigation, and at least one next_step is a concrete funding action. Use the funding_options data when provided (name the actual programs); never conclude the idea is unviable purely because current capital is short.
 
 EXACT JSON SHAPES (use these key names and no others):
 - summary: { "text": string }
@@ -31,6 +36,8 @@ export interface SynthesisInput {
   answers: Array<{ maps_to: string; answer: string }>
   competitors: unknown[]
   cost_breakdown: unknown
+  /** Output of the financing-bridge step, when it ran (budget shortfall detected). */
+  funding_options?: unknown[]
 }
 
 export interface SynthesisOutput {
@@ -62,5 +69,8 @@ export function buildSynthesisMessage(input: SynthesisInput): string {
     answers: input.answers,
     competitors_found: input.competitors,
     cost_data: input.cost_breakdown,
+    ...(input.funding_options && input.funding_options.length > 0
+      ? { funding_options: input.funding_options }
+      : {}),
   })
 }

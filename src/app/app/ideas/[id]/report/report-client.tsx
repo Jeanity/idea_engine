@@ -306,6 +306,16 @@ function SeverityBadge({ severity }: { severity: string }) {
   )
 }
 
+function FundingTypeBadge({ type }: { type: string }) {
+  const highlighted = type === 'grant' || type === 'tax_incentive'
+  const label = (type ?? '').replace(/_/g, ' ')
+  return (
+    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${highlighted ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+      {label}
+    </span>
+  )
+}
+
 function currencySymbol(currency: string) {
   return currency === 'AUD' ? 'A$' : currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$'
 }
@@ -340,6 +350,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
   const compliance = s.legal_compliance
   const risks = s.risks
   const nextSteps = s.next_steps
+  const fundingOptions = s.funding_options
 
   const competitorsCount = Array.isArray(competitors) ? competitors.length : null
 
@@ -591,6 +602,42 @@ function FullReportViewer({ report }: { report: ReportData }) {
               )
             })()
             : <UnavailableSection title="Pricing Recommendation" />}
+
+        {isUnavailable(fundingOptions)
+          ? <UnavailableSection title="Funding Options" reason={fundingOptions.reason} />
+          : Array.isArray(fundingOptions) && fundingOptions.length > 0
+            ? (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">Funding Options</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Your stated capital is below the estimated startup cost — realistic ways to bridge the gap</p>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {(fundingOptions as Array<Record<string, string>>).map((item, i) => (
+                    <div key={i} className="px-5 py-4">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <a href={item.url} target="_blank" rel="noopener noreferrer"
+                          className="font-medium text-indigo-600 hover:underline text-sm break-words">{item.name}</a>
+                        <FundingTypeBadge type={item.type} />
+                      </div>
+                      <p className="text-xs text-gray-400 mb-2">{item.jurisdiction}</p>
+                      <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                      {item.eligibility && (
+                        <p className="text-xs text-gray-500 mb-2">
+                          <span className="font-medium">Eligibility: </span>{item.eligibility}
+                        </p>
+                      )}
+                      {item.fit_note && (
+                        <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
+                          <span className="font-bold">Why this fits: </span>{item.fit_note}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+            : null}
       </div>
 
       {/* Panel 4: Legal & Compliance */}

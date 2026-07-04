@@ -16,6 +16,7 @@ import {
   COST_ESTIMATION_SYSTEM_PROMPT,
   buildCostEstimationMessage,
 } from '@/lib/prompts/cost-estimation'
+import { FINANCING_SYSTEM_PROMPT, buildFinancingMessage } from '@/lib/prompts/financing'
 
 interface Question {
   key: string
@@ -194,6 +195,52 @@ export const generateReport = inngest.createFunction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
 
+    // ── Step 2b: Financing bridge (conditional) ───────────────
+    // Only runs when the founder's stated available capital falls short of
+    // the estimated startup cost range — otherwise there's no gap to bridge.
+    const statedCapital = parseNumber(mapsTo['cost.startup_capital'])
+    const cb = costBreakdown as { startup_costs?: Array<{ estimate_low: number; estimate_high: number }>; currency?: string } | null
+    const startupLow = Array.isArray(cb?.startup_costs) && cb.startup_costs.length > 0
+      ? cb.startup_costs.reduce((sum, item) => sum + item.estimate_low, 0)
+      : null
+    const startupHigh = Array.isArray(cb?.startup_costs) && cb.startup_costs.length > 0
+      ? cb.startup_costs.reduce((sum, item) => sum + item.estimate_high, 0)
+      : null
+
+    if (statedCapital !== null && startupLow !== null && statedCapital < startupLow) {
+      try {
+        const res = await step.run('financing-bridge', (): Promise<StepResult<unknown[]>> => withRetry('financing-bridge', async () => {
+          const { text, costUsd } = await callAI({
+            messages: [{ role: 'user', content: buildFinancingMessage({
+              idea_raw_text: idea.raw_text,
+              archetype: idea.archetype,
+              location_country: idea.location_country,
+              location_region: idea.location_region,
+              restatement: idea.restatement,
+              stated_capital: mapsTo['cost.startup_capital'] ?? null,
+              estimated_startup_low: startupLow,
+              estimated_startup_high: startupHigh,
+              currency: cb?.currency ?? null,
+            }) }],
+            system: FINANCING_SYSTEM_PROMPT,
+            maxTokens: 2048,
+            tag: 'report:financing',
+            tools: webSearchTool(3),
+          })
+          const parsed = extractJson(text)
+          if (!Array.isArray(parsed)) throw new Error('Financing response not an array')
+          return { value: parsed, costUsd }
+        }))
+        totalCostUsd += res.costUsd
+        sections.funding_options = res.value
+      } catch (err) {
+        console.error('financing-bridge failed:', err)
+        sections.funding_options = UNAVAILABLE('Funding research could not be completed.')
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    }
+
     // ── Step 3: Compliance check ──────────────────────────────
     let legalCompliance: unknown
     try {
@@ -240,6 +287,7 @@ export const generateReport = inngest.createFunction(
             answers,
             competitors: Array.isArray(competitors) ? competitors : [],
             cost_breakdown: costBreakdown,
+            funding_options: Array.isArray(sections.funding_options) ? sections.funding_options : undefined,
           }) }],
           system: SYNTHESIS_SYSTEM_PROMPT,
           // The synthesis JSON (summary + 4 scored dimensions + pricing +
