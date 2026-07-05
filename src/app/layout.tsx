@@ -12,7 +12,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-white text-gray-900">{children}</body>
+      {/* suppressHydrationWarning: browser extensions inject attributes into
+          <body> before React hydrates (e.g. data-cjcrx), which is noise —
+          this only silences attribute mismatches on this one element. */}
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-white text-gray-900">{children}</body>
     </html>
   )
 }
