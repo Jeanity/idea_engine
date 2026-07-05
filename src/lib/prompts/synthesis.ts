@@ -16,7 +16,7 @@ RULES:
   - Scores must be calibrated against each other (not all 3s). Rationale is 1 specific sentence.
   - overall_verdict: 2–3 sentences synthesising the scores in plain language.
 - pricing_recommendation: reference actual competitor prices in the rationale if available. Suggest a range, not a single number.
-- risks: 3–5 items, ordered most-severe first. Specific to this idea — not generic startup advice. Where a risk hinges on specialist knowledge (engineering, chemistry, IP law), the mitigation names the professional or quote that resolves it.
+- risks (shown to the founder as "Things to consider"): 3–5 items, ordered most-consequential first. Each item is a concrete fact to weigh (e.g. "17 direct competitors within delivery range", "tooling runs $8k–$25k before first unit"), specific to this idea — not generic startup advice. The mitigation field is the practical way to handle it. Facts and handling, never verdicts — do not tell the founder the idea is too hard or not worth trying. Where an item hinges on specialist knowledge (engineering, chemistry, IP law), the mitigation names the professional or quote that resolves it.
 - next_steps: 3–5 items, ordered do-first first. Timeframes are honest (week 1 must be achievable in week 1).
 - BUDGET GAP RULE: compare the founder's stated available capital (answers) against the estimated startup costs (cost_data). If capital falls short, you MUST address the gap constructively: at least one risk covers the shortfall with a financing mitigation, and at least one next_step is a concrete funding action. Use the funding_options data when provided (name the actual programs); never conclude the idea is unviable purely because current capital is short.
 

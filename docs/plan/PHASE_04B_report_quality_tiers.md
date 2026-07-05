@@ -28,6 +28,10 @@ Run 2 ideas per archetype (14 reports ≈ US$6–10 total) through the full pipe
 **Model: human (Danny), with a Fable recommendation memo from the 4B.3 data.**
 Decide exactly which sections/steps are Tier 1 vs Tier 2. Record the decision + rationale in the log below. Feeds directly into Phase 5 (two Stripe prices, `report_tier` on purchases, tier-gated pipeline steps).
 
+### 4B.5 Headline scores for real reports (queued 2026-07-05)
+**Model: Fable/Opus (prompt design) + Sonnet (wiring).**
+Landing cards show two ring scores — **Viability** (can it be done) and **Success outlook** (can it earn) — colored via the shared `src/lib/score-bands.ts` config (amber floor, no red, per the no-discouragement rule; "Success outlook" wording chosen over "Success chance" to avoid implying a measured probability). When real reports feed public showcases, define the derivation of both 0–100 scores from the synthesis viability dimensions (market_opportunity, execution_difficulty, capital_required, time_to_revenue) in the synthesis prompt, and render the same rings in the report viewer.
+
 ## Premium-tier ($49.95) candidate steps — build with/after Phase 5, NOT before
 Each is one extra search-enabled or reasoning-heavy call (~US$0.20–0.50 each, measure in 4B.3 style before locking):
 1. **Financing deep-dive** — expanded version of 4B.2 (more searches, application requirements, deadlines) for every premium report, not just budget-gap ones.

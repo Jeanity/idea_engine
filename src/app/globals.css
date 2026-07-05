@@ -89,13 +89,24 @@
   background-size: 28px 28px;
 }
 
+/* Score ring entrance: stroke draws in from empty to its final offset. */
+.score-ring-progress {
+  animation: score-ring-draw 0.8s ease-out forwards;
+}
+
+@keyframes score-ring-draw {
+  from { stroke-dashoffset: var(--score-ring-circumference, 0); }
+  to { stroke-dashoffset: var(--score-ring-final-offset, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-blob-1,
   .animate-blob-2,
   .animate-blob-3,
   .animate-pulse-dot,
   .gradient-text,
-  .marquee-track {
+  .marquee-track,
+  .score-ring-progress {
     animation: none !important;
   }
 

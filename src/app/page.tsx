@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ScrollReveal } from '@/components/scroll-reveal'
+import { bandFor } from '@/lib/score-bands'
 
 // TODO: replace with real numbers before production launch
 const DEMO_STATS = {
@@ -17,6 +18,9 @@ interface ReportCardData {
       visible even on redacted cards so visitors see worldwide usage. */
   location: string
   score: number
+  /** Secondary "Success outlook" ring — a demo value, plausibly near
+      (above or below) the viability score. */
+  success: number
   competitors: number
   cost: string
   rotate: string
@@ -29,6 +33,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Homemade pet treats',
     location: 'Brisbane, Australia',
     score: 78,
+    success: 72,
     competitors: 14,
     cost: '$3,200',
     rotate: '-rotate-1',
@@ -37,6 +42,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Mobile car detailing',
     location: 'Austin, USA',
     score: 64,
+    success: 58,
     competitors: 9,
     cost: '$6,800',
     rotate: 'rotate-1',
@@ -45,6 +51,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Kids coding classes',
     location: 'Manchester, UK',
     score: 82,
+    success: 79,
     competitors: 6,
     cost: '$2,150',
     rotate: '-rotate-1',
@@ -53,6 +60,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Refillable cleaning co.',
     location: 'Portland, USA',
     score: 71,
+    success: 63,
     competitors: 11,
     cost: '$4,900',
     rotate: 'rotate-1',
@@ -61,6 +69,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Selvet marlin ratchet coil',
     location: 'Perth, Australia',
     score: 74,
+    success: 68,
     competitors: 12,
     cost: '$18,500',
     rotate: '-rotate-1',
@@ -70,6 +79,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Vintage furniture flip',
     location: 'Leeds, UK',
     score: 59,
+    success: 61,
     competitors: 17,
     cost: '$1,800',
     rotate: 'rotate-1',
@@ -78,6 +88,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Meal-prep delivery',
     location: 'Denver, USA',
     score: 87,
+    success: 83,
     competitors: 8,
     cost: '$8,400',
     rotate: 'rotate-1',
@@ -86,6 +97,7 @@ const REPORT_CARDS: ReportCardData[] = [
     title: 'Copper lantern biscuit fen',
     location: 'Oslo, Norway',
     score: 81,
+    success: 77,
     competitors: 7,
     cost: '$5,600',
     rotate: '-rotate-1',
@@ -166,8 +178,8 @@ const REPORT_FEATURES = [
     description: 'Grants, loans, and financing paths matched to your idea and location.',
   },
   {
-    title: 'Risk register',
-    description: 'The failure points most likely to sink ideas like yours — named up front.',
+    title: 'Things to consider',
+    description: 'Competitor density, costs, and effort factors named up front — each with how to handle it.',
   },
   {
     title: 'Prioritised next steps',
@@ -175,13 +187,61 @@ const REPORT_FEATURES = [
   },
 ]
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreRing({ score, label, size = 64 }: { score: number; label: string; size?: number }) {
+  const band = bandFor(score)
+  const strokeWidth = size * 0.11
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference * (1 - score / 100)
+
   return (
-    <div className="h-1.5 w-full rounded-full bg-white/10">
-      <div
-        className="h-1.5 rounded-full bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400"
-        style={{ width: `${score}%` }}
-      />
+    <div className="flex flex-col items-center" style={{ width: size }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="score-ring"
+        role="img"
+        aria-label={`${label}: ${score} out of 100`}
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={band.trackColor}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          className="score-ring-progress"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={band.color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          style={{
+            transform: 'rotate(-90deg)',
+            transformOrigin: '50% 50%',
+            ['--score-ring-circumference' as string]: circumference,
+            ['--score-ring-final-offset' as string]: offset,
+            strokeDashoffset: offset,
+          }}
+        />
+        <text
+          x="50%"
+          y="50%"
+          dy="0.32em"
+          textAnchor="middle"
+          className="fill-white text-sm font-semibold"
+          style={{ fontSize: size * 0.22 }}
+        >
+          {score}
+        </text>
+      </svg>
+      <span className="mt-1 text-[10px] text-slate-400">{label}</span>
     </div>
   )
 }
@@ -210,12 +270,9 @@ function ReportCard({ card }: { card: ReportCardData }) {
         <p className="mt-0.5 text-[11px] text-slate-400">{card.location}</p>
       </div>
 
-      <div className="mb-3 space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span>Viability score</span>
-          <span className="font-medium text-slate-200">{card.score}/100</span>
-        </div>
-        <ScoreBar score={card.score} />
+      <div className="mb-3 flex items-center justify-around gap-2">
+        <ScoreRing score={card.score} label="Viability" size={60} />
+        <ScoreRing score={card.success} label="Success outlook" size={60} />
       </div>
 
       <div className="mb-3 space-y-1.5 select-none blur-[3px]" aria-hidden="true">

@@ -268,7 +268,7 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
             'Cost breakdown — materials, labour, power, margin',
             'Pricing strategy with comparable market rates',
             'Legal & compliance checklist with official source links',
-            'Risk register with mitigations',
+            'Things to consider — with how to handle each',
             'Complete prioritised next steps',
           ].map(item => (
             <li key={item} className="flex gap-2 items-start">
@@ -333,7 +333,7 @@ const REPORT_TABS = [
   { key: 'competitors', label: 'Competitors' },
   { key: 'costs', label: 'Costs & Pricing' },
   { key: 'legal', label: 'Legal & Compliance' },
-  { key: 'risks', label: 'Risks & Next Steps' },
+  { key: 'risks', label: 'Considerations & Next Steps' },
 ] as const
 
 type ReportTabKey = typeof REPORT_TABS[number]['key']
@@ -681,12 +681,12 @@ function FullReportViewer({ report }: { report: ReportData }) {
       {/* Panel 5: Risks & Next Steps */}
       <div className={`${panelClass('risks')} space-y-6 break-inside-avoid`}>
         {isUnavailable(risks)
-          ? <UnavailableSection title="Key Risks" reason={risks.reason} />
+          ? <UnavailableSection title="Things to consider" reason={risks.reason} />
           : Array.isArray(risks) && risks.length > 0
             ? (
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900">Key Risks</h2>
+                  <h2 className="font-semibold text-gray-900">Things to consider</h2>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {(risks as Array<Record<string, string>>).map((risk, i) => {
@@ -700,7 +700,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
                         {description && <p className="text-sm text-gray-600 mb-2">{description}</p>}
                         {risk.mitigation && (
                           <p className="text-xs text-indigo-700 bg-indigo-50 rounded px-2 py-1.5">
-                            <span className="font-medium">Mitigation: </span>{risk.mitigation}
+                            <span className="font-medium">How to handle it: </span>{risk.mitigation}
                           </p>
                         )}
                       </div>
@@ -709,7 +709,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
                 </div>
               </div>
             )
-            : <UnavailableSection title="Key Risks" />}
+            : <UnavailableSection title="Things to consider" />}
 
         {isUnavailable(nextSteps)
           ? <UnavailableSection title="Next Steps" reason={nextSteps.reason} />
