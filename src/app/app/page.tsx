@@ -54,7 +54,7 @@ export default async function DashboardPage() {
       <AppHeader email={user.email!} />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm mb-12">
+        <div id="new" className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm mb-12 scroll-mt-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">What&apos;s the idea?</h1>
           <p className="text-sm text-gray-500 mb-6">
             Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.

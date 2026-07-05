@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import AccountForm from './account-form'
@@ -20,6 +21,9 @@ export default async function AccountPage() {
     <main className="min-h-screen bg-gray-50">
       <AppHeader email={user.email!} />
       <div className="max-w-xl mx-auto px-6 py-12">
+        <Link href="/app" className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-6">
+          ← Back to your ideas
+        </Link>
         <h1 className="text-2xl font-semibold text-gray-900 mb-1">Account</h1>
         <p className="text-sm text-gray-500 mb-8">Manage your profile and preferences.</p>
         <div className="rounded-xl border border-gray-200 bg-white px-6 py-6">

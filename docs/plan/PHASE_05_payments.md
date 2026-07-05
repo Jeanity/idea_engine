@@ -34,6 +34,18 @@ Purchased reports get a "Download PDF" button. Approach: `@react-pdf/renderer` (
 **Model: Haiku** — simple list against existing data.
 Dashboard section listing reports with status + unlocked badge + Download PDF link for purchased reports; Stripe's receipt email covers receipts — build nothing custom.
 
+### 5.6b Report updates & paid regeneration (added 2026-07-05, Danny)
+**Model: Opus/Fable (flow + diff design) + Sonnet (implementation).**
+Users with an existing report can reopen the wizard ("Update details"), change answers, and pay to regenerate:
+- **Teaser refresh — indicative US$1** (⚠ pricing flag: Stripe takes ~$0.33 of a $1 charge, and a teaser run costs ~$0.02–0.05 — net ~$0.60. Consider $1.95, or free teaser refresh bundled with any full-report purchase. Decide at 5.1 with the 4B.3 cost data.)
+- **Updated full report — US$9.95** (upgrade pricing vs $19.95 new — rewards returning users)
+
+Build requirements:
+1. **Reopen flow**: "Update details" action on ready ideas (dashboard + report page) transitions status back to `questioning` with answers editable; the questions page currently hard-redirects `ready` ideas away — that guard becomes tier-aware.
+2. **Snapshot before regeneration**: copy the current `sections` to a `previous_sections` column (or a report_versions table) so nothing is lost and diffing is possible.
+3. **"What's new" treatment**: the regeneration pipeline receives the previous report content and the changed answers; prompts must NOT re-present unchanged findings as fresh insight. Viewer highlights genuinely new/changed items (badge or a "New since your last report" box per section). This is the diff-design piece for Opus/Fable.
+4. Purchases rows carry type: `new_full` | `teaser_refresh` | `full_update`.
+
 ### 5.7 Payment-flow tests
 **Model: Haiku** — scripted, low-ambiguity.
 Test-mode E2E with Stripe test cards: success unlocks, cancel leaves locked, webhook replay stays idempotent, second user cannot access first user's unlocked report.
