@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface ReportData {
   id: string
@@ -70,6 +70,78 @@ function Cog({ className, size, color }: { className?: string; size: number; col
       />
       <circle cx="50" cy="50" r="16" fill="var(--gear-hole-bg, #020617)" />
     </svg>
+  )
+}
+
+/**
+ * A glow blob that drifts around its parent with a random direction/speed
+ * and bounces off the edges. fx/fy = starting position as a fraction of the
+ * available space. Static (no drift) under prefers-reduced-motion.
+ */
+function BouncingBlob({ sizePx, className, fx, fy }: {
+  sizePx: number
+  className: string
+  fx: number
+  fy: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const parent = el.parentElement
+    if (!parent) return
+
+    let w = parent.clientWidth
+    let h = parent.clientHeight
+    let x = fx * Math.max(0, w - sizePx)
+    let y = fy * Math.max(0, h - sizePx)
+
+    const place = () => { el.style.transform = `translate3d(${x}px, ${y}px, 0)` }
+    place()
+    el.style.opacity = '1'
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    // Random gentle drift: 25–50 px/s in a random direction.
+    const speed = 25 + Math.random() * 25
+    const angle = Math.random() * Math.PI * 2
+    let vx = Math.cos(angle) * speed
+    let vy = Math.sin(angle) * speed
+
+    const onResize = () => { w = parent.clientWidth; h = parent.clientHeight }
+    window.addEventListener('resize', onResize)
+
+    let raf = 0
+    let last = performance.now()
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.05)
+      last = now
+      x += vx * dt
+      y += vy * dt
+      const maxX = Math.max(0, w - sizePx)
+      const maxY = Math.max(0, h - sizePx)
+      if (x <= 0) { x = 0; vx = Math.abs(vx) }
+      else if (x >= maxX) { x = maxX; vx = -Math.abs(vx) }
+      if (y <= 0) { y = 0; vy = Math.abs(vy) }
+      else if (y >= maxY) { y = maxY; vy = -Math.abs(vy) }
+      place()
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [sizePx, fx, fy])
+
+  return (
+    <div
+      ref={ref}
+      className={`absolute top-0 left-0 rounded-full blur-3xl will-change-transform opacity-0 transition-opacity duration-700 ${className}`}
+      style={{ width: sizePx, height: sizePx }}
+    />
   )
 }
 
@@ -188,8 +260,9 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
     return (
       <div className="relative min-h-[calc(100vh-62px)] bg-slate-950 dot-grid overflow-hidden">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-24 -left-16 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl" />
-          <div className="animate-blob-2 absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
+          <BouncingBlob sizePx={384} className="bg-indigo-600/30" fx={0.05} fy={0.08} />
+          <BouncingBlob sizePx={384} className="bg-violet-600/20" fx={0.9} fy={0.85} />
+          <BouncingBlob sizePx={280} className="bg-cyan-500/15" fx={0.55} fy={0.4} />
         </div>
         <div className="relative z-10 max-w-2xl mx-auto px-6 py-24 text-center">
           <p className="text-red-300 text-sm mb-4">{error}</p>
