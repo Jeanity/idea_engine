@@ -20,6 +20,14 @@ Set `AI_PROVIDER` in `.env.local` to tweak/test without spending API money:
 - `mock` — every `callAI` call returns a canned fixture from `src/lib/fixtures/` keyed by tag. Free, instant, fully offline. Regenerate fixtures with `npx tsx scripts/capture-fixtures.ts`.
 - `ollama` — routes non-search calls to a local Ollama server (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`). Calls needing web search (competitors/compliance/financing) can't run locally and fall back to the mock fixture instead.
 
+Report generation runs through Inngest. Locally that needs `INNGEST_DEV=1` in `.env.local` **and** the Inngest dev server running alongside `npm run dev`:
+
+```bash
+npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
+```
+
+Without it, starting a report fails with a 500 (events have nowhere to go). Production uses Inngest cloud and needs neither.
+
 ## Repo visibility
 
 This repo is **public** on the Vercel Hobby plan: the private-repo tier blocks deployments when the committing GitHub account isn't the exact account connected to the Vercel project, and no repo secrets are stored in git (see `.gitignore`), so public is the zero-cost fix.

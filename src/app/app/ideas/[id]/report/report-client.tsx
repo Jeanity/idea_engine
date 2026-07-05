@@ -44,8 +44,10 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idea_id: ideaId }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to start report generation')
+      // Server errors can return an empty/non-JSON body — don't let the
+      // parse error ("Unexpected end of JSON input") mask the real status.
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error ?? `Report generation failed to start (server error ${res.status}). Please try again.`)
       setReport(prev => prev ?? { id: data.reportId, status: data.status, sections: {}, preview_sections: {}, error: null })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start generation')
@@ -794,8 +796,8 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
         body: JSON.stringify({ idea_id: ideaId }),
       })
       if (!res.ok) {
-        const d = await res.json()
-        alert(d.error ?? 'Failed to start full report')
+        const d = await res.json().catch(() => ({}))
+        alert(d.error ?? `Failed to start full report (server error ${res.status})`)
         return
       }
       onStart()
