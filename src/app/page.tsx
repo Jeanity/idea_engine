@@ -13,9 +13,9 @@ interface ReportCardData {
       CSS blur is trivially removable in devtools, so the underlying text
       must never be (or resemble) a real idea. */
   title: string
-  /** Redacted cards show location separately and keep it visible, so
-      visitors still see the engine is used worldwide. */
-  location?: string
+  /** Rendered on its own line under the title on every card; stays
+      visible even on redacted cards so visitors see worldwide usage. */
+  location: string
   score: number
   competitors: number
   cost: string
@@ -26,28 +26,32 @@ interface ReportCardData {
 
 const REPORT_CARDS: ReportCardData[] = [
   {
-    title: 'Homemade pet treats — Brisbane',
+    title: 'Homemade pet treats',
+    location: 'Brisbane, Australia',
     score: 78,
     competitors: 14,
     cost: '$3,200',
     rotate: '-rotate-1',
   },
   {
-    title: 'Mobile car detailing — Austin',
+    title: 'Mobile car detailing',
+    location: 'Austin, USA',
     score: 64,
     competitors: 9,
     cost: '$6,800',
     rotate: 'rotate-1',
   },
   {
-    title: 'Kids coding classes — Manchester',
+    title: 'Kids coding classes',
+    location: 'Manchester, UK',
     score: 82,
     competitors: 6,
     cost: '$2,150',
     rotate: '-rotate-1',
   },
   {
-    title: 'Refillable cleaning co. — Portland',
+    title: 'Refillable cleaning co.',
+    location: 'Portland, USA',
     score: 71,
     competitors: 11,
     cost: '$4,900',
@@ -63,14 +67,16 @@ const REPORT_CARDS: ReportCardData[] = [
     redactedLabel: 'Invention — details kept private',
   },
   {
-    title: 'Vintage furniture flip — Leeds',
+    title: 'Vintage furniture flip',
+    location: 'Leeds, UK',
     score: 59,
     competitors: 17,
     cost: '$1,800',
     rotate: 'rotate-1',
   },
   {
-    title: 'Meal-prep delivery — Denver',
+    title: 'Meal-prep delivery',
+    location: 'Denver, USA',
     score: 87,
     competitors: 8,
     cost: '$8,400',
@@ -185,24 +191,24 @@ function ReportCard({ card }: { card: ReportCardData }) {
     <div
       className={`w-[280px] shrink-0 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/30 backdrop-blur transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl ${card.rotate}`}
     >
-      {card.redactedLabel ? (
-        <div className="mb-3">
-          <p className="select-none text-sm font-semibold text-white blur-[5px]" aria-hidden="true">
-            {card.title}
-          </p>
-          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300">
-            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-            </svg>
-            {card.redactedLabel}
-          </p>
-          {card.location && (
-            <p className="mt-0.5 text-[11px] text-slate-400">{card.location}</p>
-          )}
-        </div>
-      ) : (
-        <p className="mb-3 text-sm font-semibold text-white">{card.title}</p>
-      )}
+      <div className="mb-3">
+        {card.redactedLabel ? (
+          <>
+            <p className="select-none text-sm font-semibold text-white blur-[5px]" aria-hidden="true">
+              {card.title}
+            </p>
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300">
+              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              {card.redactedLabel}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm font-semibold text-white">{card.title}</p>
+        )}
+        <p className="mt-0.5 text-[11px] text-slate-400">{card.location}</p>
+      </div>
 
       <div className="mb-3 space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-slate-400">
