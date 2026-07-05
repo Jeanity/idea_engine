@@ -32,7 +32,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const isAdmin = user.email === process.env.ADMIN_EMAIL
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-slate-950">
       <AppHeader email={user.email!} />
       <ReportClient
         ideaId={id}

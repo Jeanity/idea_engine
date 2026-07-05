@@ -134,6 +134,22 @@
   animation: cursor-blink 1s step-start infinite;
 }
 
+/* ---------------------------------------------------------------------- */
+/* Print — report export/PDF path must stay black-on-white regardless of   */
+/* the app's dark theme.                                                   */
+/* ---------------------------------------------------------------------- */
+
+@media print {
+  body { background: #fff !important; }
+  .print-force-light, .print-force-light * {
+    background: transparent !important;
+    color: #000 !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-blob-1,
   .animate-blob-2,

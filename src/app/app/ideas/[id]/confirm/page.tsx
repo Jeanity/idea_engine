@@ -32,25 +32,25 @@ export default async function ConfirmPage({ params }: { params: Promise<{ id: st
   if (idea.status !== 'draft') redirect(`/app/ideas/${id}/questions`)
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-slate-950">
       <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Does this sound right?</h1>
-        <p className="text-gray-500 text-sm mb-8">
+        <h1 className="text-2xl font-semibold text-white mb-2">Does this sound right?</h1>
+        <p className="text-slate-400 text-sm mb-8">
           We read your idea and classified it. Confirm or adjust before we continue.
         </p>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Your idea</p>
-          <p className="text-gray-700 text-sm">{idea.raw_text}</p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-6 mb-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Your idea</p>
+          <p className="text-slate-300 text-sm">{idea.raw_text}</p>
         </div>
 
-        <div className="bg-indigo-50 rounded-lg border border-indigo-100 p-6 mb-8">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-1">
+        <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-6 mb-8">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 mb-1">
             We read this as
           </p>
-          <p className="text-gray-900 font-medium mb-3">{idea.restatement}</p>
-          <span className="inline-block rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1">
+          <p className="text-white font-medium mb-3">{idea.restatement}</p>
+          <span className="inline-block rounded-full bg-indigo-500/15 text-indigo-300 text-xs font-semibold px-3 py-1">
             {ARCHETYPE_LABELS[idea.archetype] ?? idea.archetype}
           </span>
         </div>

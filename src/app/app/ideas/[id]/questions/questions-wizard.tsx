@@ -40,7 +40,7 @@ function encodeValue(value: string | string[]): string {
 function TextInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <textarea
-      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+      className="w-full rounded-lg bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
       rows={4}
       value={value}
       onChange={e => onChange(e.target.value)}
@@ -53,7 +53,7 @@ function NumberInput({ value, onChange }: { value: string; onChange: (v: string)
   return (
     <input
       type="number"
-      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      className="w-full rounded-lg bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder="Enter a number…"
@@ -72,9 +72,9 @@ function SelectInput({ value, options, onChange }: { value: string; options: str
             value={opt}
             checked={value === opt}
             onChange={() => onChange(opt)}
-            className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="h-4 w-4 border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500"
           />
-          <span className={`text-sm ${value === opt ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-gray-900'}`}>
+          <span className={`text-sm ${value === opt ? 'text-white font-medium' : 'text-slate-300 group-hover:text-white'}`}>
             {opt}
           </span>
         </label>
@@ -96,15 +96,15 @@ function MultiSelectInput({ value, options, onChange }: { value: string[]; optio
             value={opt}
             checked={value.includes(opt)}
             onChange={() => toggle(opt)}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="h-4 w-4 rounded border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500"
           />
-          <span className={`text-sm ${value.includes(opt) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-gray-900'}`}>
+          <span className={`text-sm ${value.includes(opt) ? 'text-white font-medium' : 'text-slate-300 group-hover:text-white'}`}>
             {opt}
           </span>
         </label>
       ))}
       {value.length > 0 && (
-        <p className="text-xs text-indigo-600 mt-1">{value.length} selected</p>
+        <p className="text-xs text-indigo-400 mt-1">{value.length} selected</p>
       )}
     </div>
   )
@@ -261,14 +261,14 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
       </div>
     )
   }
 
   if (questions.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500 text-sm">
+      <div className="text-center py-12 text-slate-400 text-sm">
         No questions available for this idea type.
       </div>
     )
@@ -284,12 +284,12 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
       {/* Progress */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-gray-400 font-medium">
+          <span className="text-xs text-slate-500 font-medium">
             Question {currentIndex + 1} of {questions.length}
           </span>
-          <span className="text-xs text-gray-400">{progressPct}%</span>
+          <span className="text-xs text-slate-500">{progressPct}%</span>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-gray-200">
+        <div className="h-1.5 w-full rounded-full bg-white/10">
           <div
             className="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"
             style={{ width: `${progressPct}%` }}
@@ -298,15 +298,15 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
       </div>
 
       {/* Question card */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-6">
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">{q.text}</span>
+          <span className="text-sm font-medium text-white">{q.text}</span>
           {!q.required && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">Optional</span>
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-400">Optional</span>
           )}
         </div>
         {q.subtext && (
-          <p className="mb-5 text-xs text-gray-500">{q.subtext}</p>
+          <p className="mb-5 text-xs text-slate-400">{q.subtext}</p>
         )}
         {!q.subtext && <div className="mb-5" />}
 
@@ -338,7 +338,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
         )}
 
         {validationError && (
-          <p className="mt-3 text-xs text-red-600">{validationError}</p>
+          <p className="mt-3 text-xs text-red-300">{validationError}</p>
         )}
       </div>
 
@@ -347,7 +347,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
         <button
           onClick={handleBack}
           disabled={currentIndex === 0 || saving}
-          className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="text-sm text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ← Back
         </button>
@@ -357,7 +357,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
             <button
               onClick={handleSkip}
               disabled={saving}
-              className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-30"
+              className="text-sm text-slate-400 hover:text-slate-200 disabled:opacity-30"
             >
               Skip
             </button>
@@ -365,7 +365,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
           <button
             onClick={handleNext}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving && (
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />

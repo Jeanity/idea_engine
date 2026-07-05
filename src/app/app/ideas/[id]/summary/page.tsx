@@ -51,33 +51,33 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
   const rows = answers ?? []
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-slate-950">
       <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">
           Step 3 of 3 — Review
         </p>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Your answers</h1>
-        <p className="text-gray-500 text-sm mb-8">
+        <h1 className="text-2xl font-semibold text-white mb-1">Your answers</h1>
+        <p className="text-slate-400 text-sm mb-8">
           {idea.restatement}
-          <span className="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+          <span className="ml-2 inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
             {ARCHETYPE_LABELS[idea.archetype] ?? idea.archetype}
           </span>
         </p>
 
         {rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-gray-400 text-sm">
+          <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/80 p-8 text-center text-slate-500 text-sm">
             No answers yet.{' '}
-            <Link href={`/app/ideas/${id}/questions`} className="text-indigo-600 hover:underline">
+            <Link href={`/app/ideas/${id}/questions`} className="text-indigo-400 hover:underline">
               Start the questionnaire
             </Link>
           </div>
         ) : (
           <div className="space-y-3 mb-8">
             {rows.map(row => (
-              <div key={row.question_key} className="rounded-lg border border-gray-200 bg-white px-5 py-4">
-                <p className="text-xs text-gray-500 mb-1">{row.question_text}</p>
-                <p className="text-sm text-gray-900 font-medium">{formatAnswer(row.answer_text)}</p>
+              <div key={row.question_key} className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-4">
+                <p className="text-xs text-slate-400 mb-1">{row.question_text}</p>
+                <p className="text-sm text-white font-medium">{formatAnswer(row.answer_text)}</p>
               </div>
             ))}
           </div>
@@ -86,14 +86,14 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
         <div className="flex items-center justify-between pt-2">
           <Link
             href={`/app/ideas/${id}/questions`}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-slate-300 hover:text-white"
           >
             ← Edit answers
           </Link>
           {(idea.status === 'researching' || idea.status === 'ready') ? (
             <Link
               href={`/app/ideas/${id}/report`}
-              className="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 transition-colors"
             >
               View report →
             </Link>
@@ -101,7 +101,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
             rows.length > 0 && (
               <Link
                 href={`/app/ideas/${id}/report`}
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 transition-colors"
               >
                 Generate report →
               </Link>

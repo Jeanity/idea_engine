@@ -25,15 +25,15 @@ export default async function QuestionsPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-slate-950">
       <AppHeader email={user.email!} />
       <div className="max-w-2xl mx-auto px-6 py-10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-400 mb-2">
           Step 2 of 3 — Tell us more
         </p>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">A few quick questions</h1>
+        <h1 className="text-2xl font-semibold text-white mb-2">A few quick questions</h1>
         {idea.restatement && (
-          <p className="text-gray-500 text-sm mb-8">{idea.restatement}</p>
+          <p className="text-slate-400 text-sm mb-8">{idea.restatement}</p>
         )}
         <QuestionsWizard ideaId={id} />
       </div>
