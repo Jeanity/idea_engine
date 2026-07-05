@@ -36,6 +36,8 @@ Dashboard section listing reports with status + unlocked badge + Download PDF li
 
 ### 5.6b Report updates & paid regeneration (added 2026-07-05, Danny)
 **Model: Opus/Fable (flow + diff design) + Sonnet (implementation).**
+> **All prices in this task are placeholders** (Danny, 2026-07-05) — real numbers get set at 5.1 once the 4B.3 matrix produces true per-run costs.
+
 Users with an existing report can reopen the wizard ("Update details"), change answers, and pay to regenerate:
 - **Teaser refresh — indicative US$1** (⚠ pricing flag: Stripe takes ~$0.33 of a $1 charge, and a teaser run costs ~$0.02–0.05 — net ~$0.60. Consider $1.95, or free teaser refresh bundled with any full-report purchase. Decide at 5.1 with the 4B.3 cost data.)
 - **Updated full report — US$9.95** (upgrade pricing vs $19.95 new — rewards returning users)
