@@ -22,6 +22,7 @@ All work is committed and pushed to `main` (deploys via Vercel automatically). F
 4. **Task 4B.4**: tier-boundary decision from that data → then Phase 5 payments can start (Stripe account setup should begin now-ish regardless — activation takes days).
 5. Consider later (4B backlog): server-side URL liveness check (drop 404/410s, keep 403s — bot-blockers) for financing/compliance/competitor links.
 6. **PDF download** (added 2026-07-05, Danny): purchased reports downloadable as PDF — planned as PHASE_05 task 5.5 (@react-pdf/renderer, purchase-gated API route). Build with the payments work.
+7. **Privacy consent in the wizard** (added 2026-07-05, Danny): add a question to the idea flow asking what the user is comfortable making public, with a checkbox to keep the idea fully private while leaving only the location visible — feeds the landing-page showcase with real (consented) reports at launch. Rule from the landing marquee applies everywhere: anything visually blurred in public UI must be nonsense text underneath (CSS blur is removable in devtools), never the real idea.
 
 ## Gotchas for the next session
 - Prompt JSON schemas must pin exact key names (unpinned risks schema → empty cards; fixed by "EXACT JSON SHAPES" block in synthesis).

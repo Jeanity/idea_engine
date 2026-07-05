@@ -9,13 +9,19 @@ const DEMO_STATS = {
 }
 
 interface ReportCardData {
+  /** For redacted cards this is NONSENSE filler with title-like rhythm —
+      CSS blur is trivially removable in devtools, so the underlying text
+      must never be (or resemble) a real idea. */
   title: string
+  /** Redacted cards show location separately and keep it visible, so
+      visitors still see the engine is used worldwide. */
+  location?: string
   score: number
   competitors: number
   cost: string
   rotate: string
-  /** Invention cards blur the title itself — a visible privacy statement. */
-  redacted?: boolean
+  /** Presence makes this a redacted card; the label explains why. */
+  redactedLabel?: string
 }
 
 const REPORT_CARDS: ReportCardData[] = [
@@ -48,12 +54,13 @@ const REPORT_CARDS: ReportCardData[] = [
     rotate: 'rotate-1',
   },
   {
-    title: 'Self-cleaning water filter design — Perth',
+    title: 'Selvet marlin ratchet coil',
+    location: 'Perth, Australia',
     score: 74,
     competitors: 12,
     cost: '$18,500',
     rotate: '-rotate-1',
-    redacted: true,
+    redactedLabel: 'Invention — details kept private',
   },
   {
     title: 'Vintage furniture flip — Leeds',
@@ -68,6 +75,15 @@ const REPORT_CARDS: ReportCardData[] = [
     competitors: 8,
     cost: '$8,400',
     rotate: 'rotate-1',
+  },
+  {
+    title: 'Copper lantern biscuit fen',
+    location: 'Oslo, Norway',
+    score: 81,
+    competitors: 7,
+    cost: '$5,600',
+    rotate: '-rotate-1',
+    redactedLabel: "Details kept secret at user's request",
   },
 ]
 
@@ -169,17 +185,20 @@ function ReportCard({ card }: { card: ReportCardData }) {
     <div
       className={`w-[280px] shrink-0 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/30 backdrop-blur transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl ${card.rotate}`}
     >
-      {card.redacted ? (
+      {card.redactedLabel ? (
         <div className="mb-3">
           <p className="select-none text-sm font-semibold text-white blur-[5px]" aria-hidden="true">
             {card.title}
           </p>
           <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
-            Invention — details kept private
+            {card.redactedLabel}
           </p>
+          {card.location && (
+            <p className="mt-0.5 text-[11px] text-slate-400">{card.location}</p>
+          )}
         </div>
       ) : (
         <p className="mb-3 text-sm font-semibold text-white">{card.title}</p>
