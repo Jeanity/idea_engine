@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ScrollReveal } from '@/components/scroll-reveal'
 import { bandFor } from '@/lib/score-bands'
 
@@ -312,12 +313,7 @@ export default function LandingPage() {
 
         <header className="relative z-10 px-6 py-5 flex items-center justify-between">
           <span className="font-semibold tracking-tight text-white">Idea Engine</span>
-          <Link
-            href="/sign-in"
-            className="text-sm text-slate-200 hover:text-white font-medium transition-colors"
-          >
-            Sign in
-          </Link>
+          <HeaderAuthLink />
         </header>
 
         <div className="relative z-10 flex flex-col items-center px-6 pt-16 pb-28 text-center sm:pt-20 sm:pb-36">
