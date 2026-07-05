@@ -1,0 +1,25 @@
+[
+  {
+    "key": "baking_capacity_per_week",
+    "text": "How many loaves can you realistically bake per week with your current oven setup?",
+    "subtext": "This drives the batch-cost and revenue-ceiling estimates in your report.",
+    "input_type": "number",
+    "options": null,
+    "required": false,
+    "maps_to": "operations.production_capacity"
+  },
+  {
+    "key": "wholesale_interest",
+    "text": "Have any local cafes or shops already expressed interest in stocking your bread?",
+    "subtext": null,
+    "input_type": "select",
+    "options": [
+      "Yes, verbal interest",
+      "Yes, in discussion",
+      "Not yet",
+      "Not planning to pursue wholesale"
+    ],
+    "required": false,
+    "maps_to": "market.channel_validation"
+  }
+]

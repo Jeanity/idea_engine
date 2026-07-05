@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "text": "This is a small-batch sourdough bakery selling through weekend farmers markets in Portland, Oregon, with early interest from local cafes for wholesale. The archetype fits physical_product cleanly given the operator bakes everything themselves. Demand for artisan bread at markets is well established, but margins depend heavily on ingredient and labour costs per loaf."
+  },
+  "viability_snapshot": {
+    "scores": {
+      "market_opportunity": {
+        "score": 3,
+        "rationale": "Farmers-market artisan bread is a proven but crowded niche with modest per-unit revenue ceilings."
+      },
+      "execution_difficulty": {
+        "score": 2,
+        "rationale": "Sourdough baking at this scale is a well-understood, repeatable process once a routine is established."
+      },
+      "capital_required": {
+        "score": 1,
+        "rationale": "Home-kitchen and market-stall setup needs minimal upfront equipment spend."
+      },
+      "time_to_revenue": {
+        "score": 1,
+        "rationale": "A market stall can generate its first sale within days of setup."
+      }
+    },
+    "overall_verdict": "Low-risk, low-capital way to test demand quickly, but revenue growth will depend on securing wholesale accounts beyond weekend markets."
+  },
+  "next_steps_preview": [
+    {
+      "action": "Confirm local cottage-food or food-safety registration requirements",
+      "timeframe": "Week 1"
+    },
+    {
+      "action": "Bake a trial batch and price-test at one farmers market",
+      "timeframe": "Week 2"
+    }
+  ]
+}

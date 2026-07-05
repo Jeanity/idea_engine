@@ -1,0 +1,37 @@
+[
+  {
+    "item": "ACMA Supplier's Declaration of Conformity (SDoC) & RCM Labelling — Radiocommunications & EMC",
+    "summary": "The charging hub's built-in WiFi repeater and wireless charging transmitter are intentional radio transmitters subject to the Radiocommunications Act 1992. Before supply, the responsible manufacturer must prepare a Supplier's Declaration of Conformity (SDoC) and affix the RCM mark demonstrating compliance with ACMA standards for RF performance, EMC, and EME exposure.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.acma.gov.au/step-1-check-rules-follow"
+  },
+  {
+    "item": "Electrical Equipment Safety System (EESS) — Responsible Supplier Registration & Equipment Registration",
+    "summary": "As a manufacturer of in-scope low-voltage electrical equipment (USB hub with mains-connected wireless charging), you must register as a Responsible Supplier on the EESS national database and register the equipment at the appropriate risk level before it can be sold. Queensland is a full EESS signatory and this is a legal prerequisite to supply.",
+    "severity": "required",
+    "jurisdiction": "Queensland, Australia",
+    "official_source_url": "https://www.business.qld.gov.au/industries/manufacturing-retail/retail-wholesale/selling-electrical-equipment/in-scope"
+  },
+  {
+    "item": "IP Australia — Standard Patent Application (Provisional + Complete)",
+    "summary": "As a novel hardware invention combining retractable multi-connector charging with a WiFi repeater, filing a provisional patent (from $100) establishes a priority date and 12 months of 'patent pending' protection while the full standard patent application is prepared. A granted standard patent provides up to 20 years of exclusive rights in Australia.",
+    "severity": "recommended",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.ipaustralia.gov.au/patents"
+  },
+  {
+    "item": "Australian Business Number (ABN) Registration",
+    "summary": "An ABN is legally required to operate as a business entity in Australia, issue invoices, and register as a Responsible Supplier under the EESS (which mandates an ABN holder). Registration is free via the Australian Business Register and is a foundational step before any product can be commercially supplied.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://business.gov.au/registrations/register-an-australian-business-number-abn"
+  },
+  {
+    "item": "GEMS / MEPS — Energy Efficiency Compliance for External Power Supplies",
+    "summary": "If the charging hub incorporates a single-output external power supply unit (AC adapter up to 250W), it may fall under the Greenhouse and Energy Minimum Standards (GEMS) determination requiring MEPS compliance and an energy performance mark. The Australian Government also announced in December 2025 that MEPS coverage for external power supplies will be broadened, so the inventor should monitor this regulation closely.",
+    "severity": "fyi",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.energyrating.gov.au/industry-information/products/external-power-supplies"
+  }
+]

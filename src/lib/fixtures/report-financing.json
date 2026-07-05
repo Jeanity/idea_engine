@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Boss Grants for Small Business",
+    "type": "grant",
+    "jurisdiction": "Queensland, Australia",
+    "summary": "Co-funded grant covering up to 50% of eligible project costs (typically AUD 10,000-50,000) for small businesses investing in specialised equipment, business expansion, or building business capability.",
+    "eligibility": "Must be a registered small business in Queensland with fewer than 20 employees, an ABN, and a co-contribution of at least 50% of the project cost.",
+    "url": "https://www.business.qld.gov.au/running-business/grants-assistance/grants/business-boost",
+    "fit_note": "Directly offsets the equipment and tooling line items in the startup cost estimate, halving the founder's out-of-pocket exposure on the largest capital line."
+  },
+  {
+    "name": "R&D Tax Incentive",
+    "type": "tax_incentive",
+    "jurisdiction": "Federal, Australia",
+    "summary": "Refundable tax offset (up to 43.5%) on eligible R&D expenditure for companies with aggregated turnover under AUD 20 million, claimed annually via the ATO after registering activities with AusIndustry.",
+    "eligibility": "Must be an incorporated entity conducting registered core or supporting R&D activities involving genuine technical uncertainty; annual registration deadline is 10 months after the end of the income year.",
+    "url": "https://business.gov.au/grants-and-programs/research-and-development-tax-incentive",
+    "fit_note": "Useful once the founder incorporates and formalises the prototyping work already underway — offsets a meaningful share of iteration costs even though it lags the initial cash outlay."
+  },
+  {
+    "name": "Prospa Small Business Loan",
+    "type": "loan",
+    "jurisdiction": "Federal, Australia",
+    "summary": "Unsecured small business term loan from AUD 5,000-500,000 with terms of 3-24 months, funded within 24 hours of approval; typical simple interest rates start around 9.9% p.a. for qualifying businesses.",
+    "eligibility": "Minimum 6 months trading history, AUD 5,000+ monthly revenue, and an Australian business number; sole traders and early-stage businesses with limited revenue history may not qualify.",
+    "url": "https://www.prospa.com/business-loans",
+    "fit_note": "A fallback bridge for the remaining shortfall after grant and bootstrap options are applied, best used only once the business has enough trading history to qualify."
+  }
+]

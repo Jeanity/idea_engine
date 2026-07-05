@@ -1,0 +1,10 @@
+{
+  "archetype": "physical_product",
+  "confidence": 0.91,
+  "one_line_restatement": "Sell small-batch artisan sourdough bread at weekend farmers markets and to local cafes.",
+  "detected_signals": [
+    "homemade tangible good",
+    "bread produced by operator",
+    "farmers market distribution channel"
+  ]
+}

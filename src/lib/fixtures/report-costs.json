@@ -1,0 +1,97 @@
+{
+  "notes": "The dominant cost risk is regulatory certification — ACMA/RCM compliance for a combined mains-power + WiFi RF device is non-trivial and a single failed test requiring a PCB redesign can add A$10,000–$30,000 and 3–6 months. The integrated WiFi repeater is the feature that differentiates the product but also the feature that most complicates certification, thermal management, and firmware support; removing it would halve development cost and risk if early traction stalls. With a founder budget of A$2,000–$10,000 the product cannot reach production — realistically A$60,000–$150,000 is required to reach a certifiable, retail-ready unit, meaning external funding or a staged crowdfunding (Kickstarter) approach is necessary. All figures are AI-generated estimates only — validate every line item with real quotes from a contract electronics manufacturer, a patent attorney, and an NATA-accredited test laboratory before committing capital.",
+  "currency": "AUD",
+  "per_unit": {
+    "power": null,
+    "materials": 38,
+    "packaging": 4.5,
+    "total_cogs": 48,
+    "active_labour": 3.5,
+    "passive_labour": 2
+  },
+  "ongoing_costs": [
+    {
+      "item": "Product liability insurance",
+      "note": "Essential for a mains-powered consumer electronics product. Annual premium ~A$2,500–$4,000 for a small hardware startup; higher once revenue grows.",
+      "estimate_monthly": 250
+    },
+    {
+      "item": "E-commerce hosting & platform fees (Shopify + payment processing)",
+      "note": "Shopify Basic ~A$56/month plus ~2–3% transaction fees. Budget A$120/month at low volumes including domain, email, and app subscriptions.",
+      "estimate_monthly": 120
+    },
+    {
+      "item": "Digital marketing (Google/Meta ads minimum floor)",
+      "note": "A$500/month is a bare minimum to test paid acquisition. Realistic growth budget is A$1,500–$3,000/month. Below A$500 data is too thin to optimise.",
+      "estimate_monthly": 500
+    },
+    {
+      "item": "Firmware / software maintenance (WiFi repeater embedded firmware updates)",
+      "note": "Retainer for a part-time embedded developer or contractor to push security patches and compatibility updates for the WiFi chipset. Non-negotiable for a networked device.",
+      "estimate_monthly": 400
+    },
+    {
+      "item": "Warranty returns & repair buffer",
+      "note": "Assume 2–4% return/defect rate on a complex multi-function device. A$300/month covers postage, replacement units, and admin at modest sales volumes (~50–100 units/month).",
+      "estimate_monthly": 300
+    },
+    {
+      "item": "Storage & fulfilment (3PL or home fulfilment consumables)",
+      "note": "If using a 3PL in Brisbane/Gold Coast, expect A$150–$400/month for storage plus per-unit pick/pack (~A$4–$7/order). Home fulfilment saves cash but not time.",
+      "estimate_monthly": 250
+    }
+  ],
+  "startup_costs": [
+    {
+      "item": "Engineering design & electronics schematics (contract hardware engineer)",
+      "note": "Custom PCB combining USB-A, USB-C, wireless Qi coil, and WiFi repeater chipset (e.g. MT7628) requires specialist RF and power electronics design. Remote Australian freelancers or offshore firms (Vietnam, Shenzhen) will sit at lower end.",
+      "estimate_low": 8000,
+      "estimate_high": 35000
+    },
+    {
+      "item": "Prototype iterations (3–5 rounds via PCB manufacturer + 3D-printed housing)",
+      "note": "Each PCB spin from JLCPCB/PCBWay ~A$500–$2,000 plus components. Expect 3–5 iterations to resolve thermal, RF interference, and mechanical retraction issues. Housing tooling at prototype stage via SLA/FDM printing.",
+      "estimate_low": 5000,
+      "estimate_high": 25000
+    },
+    {
+      "item": "Provisional patent application (Australian + PCT)",
+      "note": "Provisional AU filing via a registered patent attorney ~A$3,000–$5,000. Adding PCT (international) application increases this significantly. Without IP protection the product is easily copied offshore.",
+      "estimate_low": 3000,
+      "estimate_high": 8000
+    },
+    {
+      "item": "Regulatory certification — ACMA/RCM (AU/NZ), WiFi (ISED/FCC if exporting)",
+      "note": "RCM mark mandatory in Australia for mains-connected and wireless devices. WiFi/RF modules require ACMA compliance testing. Lab testing fees plus a regulatory consultant are unavoidable. Costs blow out if redesigns are needed post-testing.",
+      "estimate_low": 4000,
+      "estimate_high": 18000
+    },
+    {
+      "item": "Injection-mould tooling for production housing",
+      "note": "A retractable-connector mechanism adds mould complexity. Single-cavity aluminium prototype tool (China) ~A$8,000–$15,000; steel production tool ~A$20,000–$40,000. This is the single largest capital commitment.",
+      "estimate_low": 8000,
+      "estimate_high": 40000
+    },
+    {
+      "item": "First production run (500–1,000 units MOQ, contract manufacturer)",
+      "note": "At ~A$38 BOM + assembly per unit (Shenzhen CM), a 500-unit run is ~A$20,000–$25,000 landed. A 1,000-unit run improves unit economics but ties up more capital. Freight, import duty (5%), and GST add ~15–20% on top of ex-works price.",
+      "estimate_low": 20000,
+      "estimate_high": 55000
+    },
+    {
+      "item": "Packaging design & print (retail-ready box, insert, cable)",
+      "note": "Graphic design for retail box ~A$1,500–$2,500. Print run of 500–1,000 custom boxes ~A$1,500–$3,500. Retail channel (JB Hi-Fi, Officeworks) will require professional retail-ready packaging.",
+      "estimate_low": 2000,
+      "estimate_high": 6000
+    }
+  ],
+  "suggested_price": 149,
+  "estimation_flags": {
+    "materials": "estimated",
+    "packaging": "estimated",
+    "total_cogs": "estimated",
+    "active_labour": "estimated",
+    "passive_labour": "estimated"
+  },
+  "gross_margin_pct": 67.8
+}

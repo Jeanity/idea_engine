@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "text": "This Hervey Bay-based invention concept targets the gap between standalone charging hubs (ALOGIC, Anker, Satechi) and dedicated mesh WiFi systems (TP-Link Deco, NETGEAR Orbi) by combining USB-A, USB-C, wireless Qi charging, and a WiFi repeater into a single retractable-connector unit. The core market signal is real: no product on the Australian market currently merges whole-home WiFi coverage with multi-device charging, and consumers routinely purchase both categories separately, spending A$99–A$299 on mesh nodes plus A$79–A$169 on charging hubs. However, this is a pre-idea-stage hardware invention with no IP protection, no prototype, and a founder budget of A$2,000–A$10,000 against a realistic development cost of A$60,000–A$150,000, making the current capital position the single most constraining factor. The product archetype is a true invention — not a resale or service business — meaning execution requires engineering expertise, regulatory certification (ACMA/RCM for a mains-powered WiFi device), and injection-mould tooling before a single unit can be sold."
+  },
+  "viability_snapshot": {
+    "scores": {
+      "time_to_revenue": {
+        "score": 5,
+        "rationale": "From idea stage, reaching a sellable unit requires engineering design, prototype iterations, regulatory testing, tooling, and a production run — a realistic minimum timeline of 18–24 months even with external funding secured immediately."
+      },
+      "capital_required": {
+        "score": 5,
+        "rationale": "Realistic path to a certifiable, retail-ready 500-unit production run requires A$60,000–A$150,000; the founder's stated budget of A$2,000–A$10,000 covers less than the cost of a single prototype PCB spin and a provisional patent filing."
+      },
+      "market_opportunity": {
+        "score": 3,
+        "rationale": "The charging hub market is proven and active in Australia (Anker, ALOGIC, Satechi all sell nationally), but the WiFi-repeater-integrated variant is an unvalidated sub-niche with no direct comparable sales data, capping confidence at mid-range."
+      },
+      "execution_difficulty": {
+        "score": 5,
+        "rationale": "A custom PCB combining USB power delivery, Qi coils, a WiFi RF chipset, and a retractable mechanical connector mechanism requires multi-discipline hardware engineering, 3–5 prototype iterations, and mandatory ACMA/RCM RF certification — one of the most technically complex consumer electronics launches possible for a solo founder."
+      }
+    },
+    "overall_verdict": "All four dimensions score at the high end of difficulty, which is typical for a hardware invention with no prototype or IP. The concept has genuine differentiation and a real market gap, but the funding shortfall is not marginal — it is approximately 6–15× the founder's available capital, meaning the idea cannot progress without a significant external funding event, crowdfunding campaign, or a licensing-to-manufacturer strategy. Pursuing this without closing that capital gap first is the primary risk."
+  },
+  "pricing_recommendation": {
+    "rationale": "Competitors occupy two price bands: charging-only hubs cluster at A$79–A$169 (ALOGIC A$120, Satechi A$119–A$149, Anker mid-range A$69–A$149), while entry-level mesh WiFi nodes start at A$99–A$149 (TP-Link Deco M4 2-pack A$99, NETGEAR extender A$149.95). A consumer replacing both a charging hub and a WiFi extender would spend A$169–A$319 for separate products. Pricing this combined unit at A$179–A$249 positions it as cheaper than buying both separately while maintaining a premium above pure charging hubs. At a COGS of approximately A$48 per unit, a retail price of A$199 delivers a gross margin of roughly 76% direct-to-consumer, or approximately 40–50% if sold through a retail channel like JB Hi-Fi (which typically takes 40–50% margin). Do not price below A$149 — BatteryMate's A$38.95 budget hubs anchor the low end and any sub-A$150 price will signal commodity quality inconsistent with the WiFi-repeater premium feature.",
+    "suggested_range_aud": "A$179–A$249"
+  },
+  "risks": [
+    {
+      "rank": 1,
+      "risk": "Fatal capital shortfall before prototype exists",
+      "detail": "The A$2,000–A$10,000 founder budget is insufficient to complete even the engineering and first prototype phase, estimated at A$13,000–A$60,000. Without external funding (angel, crowdfunding, or grants such as the ATO R&D Tax Incentive), the idea cannot physically progress. Running out of money mid-prototype — after IP and engineering spend but before certification — results in total loss with no sellable asset."
+    },
+    {
+      "rank": 2,
+      "risk": "ACMA/RCM regulatory certification failure requiring PCB redesign",
+      "detail": "A combined mains-power and WiFi RF device must carry the RCM mark for legal sale in Australia. A single failed RF emissions or conducted interference test triggers a PCB redesign cycle adding A$10,000–A$30,000 and 3–6 months. The retractable-connector mechanism introduces additional mechanical safety requirements. This risk is non-waivable — selling an uncertified mains-powered device in Australia is illegal and creates unlimited product liability exposure."
+    },
+    {
+      "rank": 3,
+      "risk": "TP-Link or a Shenzhen OEM launches a comparable product first",
+      "detail": "TP-Link (Deco range) and major Shenzhen electronics manufacturers have the engineering resources, certification infrastructure, and distribution to bring a charging-hub-with-WiFi-repeater product to market in 12–18 months if the concept gains visibility. With no IP filing yet, the idea has zero legal protection. A provisional patent application (A$3,000–A$5,000) is the minimum necessary step before any public disclosure, including Kickstarter."
+    },
+    {
+      "rank": 4,
+      "risk": "WiFi repeater performance will be technically inferior to dedicated mesh systems",
+      "detail": "A cost-constrained integrated WiFi chipset (e.g. MT7628-class) will deliver noticeably lower throughput and range than TP-Link Deco or NETGEAR Orbi nodes retailing at similar price points. Tech-literate buyers will benchmark it directly against dedicated mesh systems and find it wanting on networking performance, potentially generating negative reviews that undermine the charging-hub value proposition simultaneously."
+    },
+    {
+      "rank": 5,
+      "risk": "Retractable connector mechanism creates ongoing reliability and warranty costs",
+      "detail": "Mechanical retractable connectors (Lightning, USB-C, Micro-USB) are subject to high wear cycles and are a known failure point in consumer electronics. A 2–4% return/defect rate assumed in cost modelling may be optimistic for a first-production retractable mechanism. Connector breakage claims will dominate warranty support and, if the mechanism is mains-connected, trigger product liability concerns."
+    }
+  ],
+  "next_steps": [
+    {
+      "order": 1,
+      "action": "File a provisional patent application before any public disclosure",
+      "detail": "Contact a registered Australian patent attorney (search IP Australia's register at ipaustralia.gov.au) for a provisional application covering the combined charging-hub-plus-WiFi-repeater architecture and retractable connector system. Budget A$3,000–A$5,000. This gives 12 months of 'patent pending' status to develop and pitch without permanently losing IP rights. Do not post on LinkedIn, Reddit, or Kickstarter before this is filed.",
+      "timeframe": "Week 1–2"
+    },
+    {
+      "order": 2,
+      "action": "Validate consumer willingness to pay with a no-hardware test",
+      "detail": "Create a simple landing page (Carrd or Shopify, under A$50/month) showing a rendered concept image, the A$199 price point, and a 'register interest / pre-order deposit' button. Run A$300–A$500 in Meta or Google ads targeting Australian homeowners aged 30–55 interested in home networking and tech gadgets. A conversion rate above 1.5% on the deposit page is a meaningful signal of real demand before spending on engineering.",
+      "timeframe": "Week 2–4"
+    },
+    {
+      "order": 3,
+      "action": "Get real quotes from a contract hardware engineer and a regulatory testing lab",
+      "detail": "Post a brief on Upwork or Freelancer for an Australian or Shenzhen-based PCB/firmware engineer experienced with WiFi chipsets (MT7628 or similar) and USB PD design. Simultaneously, contact an NATA-accredited EMC/RF test laboratory (e.g. NTS Australia, Bureau Veritas) for a written quote on RCM certification for a combined mains + WiFi device. These two quotes will give you a defensible revised budget to present to any investor or grant body.",
+      "timeframe": "Week 3–6"
+    },
+    {
+      "order": 4,
+      "action": "Apply for the ATO R&D Tax Incentive and identify grant pathways",
+      "detail": "This project likely qualifies for the Australian Government's R&D Tax Incentive (43.5% refundable offset for companies with turnover under A$20M), which can return a significant portion of eligible engineering and prototype costs. Register at business.gov.au. Also assess the Entrepreneurs' Programme and any Queensland state innovation grants (DSITI). This does not replace external funding but reduces cash burn on qualifying R&D spend.",
+      "timeframe": "Month 1–2"
+    },
+    {
+      "order": 5,
+      "action": "Plan a Kickstarter campaign as the primary funding and validation vehicle",
+      "detail": "A Kickstarter campaign at A$179–A$199 per unit with a A$80,000–A$120,000 funding goal is the most realistic path to closing the capital gap without giving up equity. Successful hardware Kickstarters require professional product renders, a 2–3 minute video, and a clear delivery timeline. Budget A$3,000–A$5,000 for render/video production. Research comparable campaigns (charging hubs, smart home devices) on Kickstarter for backer expectation benchmarks before launching.",
+      "timeframe": "Month 3–6 (launch after provisional patent filed and prototype renders complete)"
+    }
+  ]
+}
