@@ -17,6 +17,10 @@ export default async function AccountPage() {
     .eq('id', user.id)
     .single()
 
+  const initialSource = profile?.display_name ?? profile?.username ?? user.email!
+  const initial = initialSource.trim().charAt(0).toUpperCase()
+  const identityName = profile?.display_name ?? profile?.username ?? user.email!
+
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader email={user.email!} />
@@ -26,6 +30,17 @@ export default async function AccountPage() {
         </Link>
         <h1 className="text-2xl font-semibold text-gray-900 mb-1">Account</h1>
         <p className="text-sm text-gray-500 mb-8">Manage your profile and preferences.</p>
+
+        <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 mb-6 flex items-center gap-4">
+          <div className="flex-shrink-0 h-14 w-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl font-semibold text-white">
+            {initial}
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-semibold truncate">{identityName}</p>
+            <p className="text-indigo-200 text-sm truncate">{user.email}</p>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-gray-200 bg-white px-6 py-6">
           <AccountForm
             email={user.email!}

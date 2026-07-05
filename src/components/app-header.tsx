@@ -20,9 +20,9 @@ export function AppHeader({ email }: { email: string }) {
       <div className="flex items-center gap-4">
         <Link
           href="/app/account"
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm text-gray-600 hover:text-indigo-600 font-medium transition-colors"
         >
-          {email}
+          My account
         </Link>
         <SignOutButton />
       </div>

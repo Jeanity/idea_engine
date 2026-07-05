@@ -27,6 +27,103 @@ const STEPS = [
   { key: 'summary', label: 'Writing your report' },
 ]
 
+const TICKER_LINES: Record<string, string[]> = {
+  competitors: [
+    'Scanning competitor sites…',
+    'Reading pricing pages…',
+    'Comparing local operators…',
+    'Mapping gaps in the market…',
+  ],
+  cost_breakdown: [
+    'Pricing materials and inputs…',
+    'Calculating power draw…',
+    'Splitting active vs passive labour…',
+    'Modelling margins…',
+  ],
+  legal_compliance: [
+    'Checking permits and registrations…',
+    'Reading official sources…',
+    'Flagging what applies to you…',
+  ],
+  summary: [
+    'Weighing the evidence…',
+    'Scoring viability…',
+    'Writing your next steps…',
+  ],
+}
+
+// One cog path reused at three sizes/colors/speeds via CSS classes.
+function Cog({ className, size, color }: { className?: string; size: number; color: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className={className}
+      style={{ color, filter: `drop-shadow(0 0 8px ${color}66)` }}
+      aria-hidden="true"
+    >
+      <path
+        fill="currentColor"
+        opacity={0.7}
+        d="M50 4a4 4 0 0 1 4 3.4l1.2 8.3a37.9 37.9 0 0 1 9.6 4l7-4.8a4 4 0 0 1 5 .5l6.8 6.8a4 4 0 0 1 .5 5l-4.8 7a37.9 37.9 0 0 1 4 9.6l8.3 1.2a4 4 0 0 1 3.4 4v9.6a4 4 0 0 1-3.4 4l-8.3 1.2a37.9 37.9 0 0 1-4 9.6l4.8 7a4 4 0 0 1-.5 5l-6.8 6.8a4 4 0 0 1-5 .5l-7-4.8a37.9 37.9 0 0 1-9.6 4l-1.2 8.3a4 4 0 0 1-4 3.4h-9.6a4 4 0 0 1-4-3.4l-1.2-8.3a37.9 37.9 0 0 1-9.6-4l-7 4.8a4 4 0 0 1-5-.5l-6.8-6.8a4 4 0 0 1-.5-5l4.8-7a37.9 37.9 0 0 1-4-9.6l-8.3-1.2a4 4 0 0 1-3.4-4v-9.6a4 4 0 0 1 3.4-4l8.3-1.2a37.9 37.9 0 0 1 4-9.6l-4.8-7a4 4 0 0 1 .5-5l6.8-6.8a4 4 0 0 1 5-.5l7 4.8a37.9 37.9 0 0 1 9.6-4l1.2-8.3a4 4 0 0 1 4-3.4z"
+      />
+      <circle cx="50" cy="50" r="16" fill="var(--gear-hole-bg, #020617)" />
+    </svg>
+  )
+}
+
+function GearCluster() {
+  return (
+    <div className="relative flex items-center justify-center h-28 mb-2" aria-hidden="true">
+      {/* Large gear, back-left, slowest */}
+      <div className="gear-spin absolute" style={{ animationDuration: '13s', left: 'calc(50% - 58px)', top: 'calc(50% - 8px)' }}>
+        <Cog size={56} color="#818cf8" />
+      </div>
+      {/* Middle gear, center, reversed */}
+      <div className="gear-spin-reverse absolute" style={{ animationDuration: '9s' }}>
+        <Cog size={72} color="#a78bfa" />
+      </div>
+      {/* Small gear, front-right, fastest */}
+      <div className="gear-spin absolute" style={{ animationDuration: '6s', left: 'calc(50% + 28px)', top: 'calc(50% - 46px)' }}>
+        <Cog size={40} color="#22d3ee" />
+      </div>
+    </div>
+  )
+}
+
+function ConsoleTicker({ stepKey }: { stepKey: string }) {
+  const lines = TICKER_LINES[stepKey] ?? []
+  const [index, setIndex] = useState(0)
+  const [reducedMotion, setReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  useEffect(() => {
+    setIndex(0)
+    if (reducedMotion || lines.length <= 1) return
+    const interval = setInterval(() => {
+      setIndex(i => (i + 1) % lines.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [stepKey, reducedMotion, lines.length])
+
+  if (lines.length === 0) return null
+
+  return (
+    <p className="mt-1 font-mono text-xs text-cyan-300/80">
+      {lines[index]}
+      <span className="cursor-blink inline-block w-1.5 h-3 bg-cyan-300/80 ml-1 align-middle" />
+    </p>
+  )
+}
+
 function ProgressScreen({ ideaId, restatement, onComplete }: {
   ideaId: string
   restatement: string | null
@@ -82,55 +179,96 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
 
   const completedKeys = Object.keys(report?.sections ?? {})
 
+  const activeKey = STEPS.find(({ key }, i) => {
+    const done = completedKeys.includes(key)
+    return !done && (i === 0 || completedKeys.includes(STEPS[i - 1]?.key ?? ''))
+  })?.key
+
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-        <p className="text-red-600 text-sm mb-4">{error}</p>
-        <button
-          onClick={() => { setError(null); triggerGeneration() }}
-          className="text-sm text-indigo-600 hover:underline"
-        >
-          Try again
-        </button>
+      <div className="max-w-2xl mx-auto px-6 py-16">
+        <div className="relative overflow-hidden rounded-2xl bg-slate-950 border border-white/10 dot-grid px-6 py-16 text-center">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="animate-blob-1 absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
+          </div>
+          <div className="relative z-10">
+            <p className="text-red-300 text-sm mb-4">{error}</p>
+            <button
+              onClick={() => { setError(null); triggerGeneration() }}
+              className="text-sm text-indigo-400 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100 mb-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+      <div className="relative overflow-hidden rounded-2xl bg-slate-950 border border-white/10 dot-grid px-6 py-10 sm:px-10">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="animate-blob-1 absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
         </div>
-        <h1 className="text-xl font-semibold text-gray-900 mb-2">Generating your report</h1>
-        {restatement && <p className="text-sm text-gray-500">{restatement}</p>}
-      </div>
 
-      <div className="space-y-3">
-        {STEPS.map(({ key, label }, i) => {
-          const done = completedKeys.includes(key)
-          const active = !done && (i === 0 || completedKeys.includes(STEPS[i - 1]?.key ?? ''))
-          return (
-            <div key={key} className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors
-              ${done ? 'border-green-200 bg-green-50' : active ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
-              <span className={`flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-xs
-                ${done ? 'bg-green-500 text-white' : active ? 'bg-indigo-500' : 'bg-gray-200'}`}>
-                {done ? '✓' : active ? (
-                  <span className="h-2.5 w-2.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                ) : ''}
-              </span>
-              <span className={`text-sm ${done ? 'text-green-700' : active ? 'text-indigo-700 font-medium' : 'text-gray-400'}`}>
-                {label}{done ? '…done' : active ? '…' : ''}
-              </span>
-            </div>
-          )
-        })}
-      </div>
+        <div className="relative z-10">
+          <div className="text-center mb-4">
+            <h1 className="text-xl font-semibold text-white mb-2">Generating your report</h1>
+            {restatement && <p className="text-sm text-slate-400">{restatement}</p>}
+          </div>
 
-      {!generating && !report && (
-        <p className="text-center text-xs text-gray-400 mt-6">Starting up…</p>
-      )}
-      <p className="text-center text-xs text-gray-400 mt-4">This usually takes 1–3 minutes.</p>
+          <GearCluster />
+
+          <div className="space-y-0">
+            {STEPS.map(({ key, label }, i) => {
+              const done = completedKeys.includes(key)
+              const active = !done && key === activeKey
+              const isLast = i === STEPS.length - 1
+              return (
+                <div key={key} className="relative flex gap-4 pb-8 last:pb-0">
+                  {!isLast && (
+                    <div className="absolute left-[9px] top-5 bottom-0 w-0.5 bg-slate-700 overflow-hidden rounded-full">
+                      <div
+                        className="w-full bg-gradient-to-b from-indigo-400 to-cyan-400 transition-all duration-500"
+                        style={{ height: done ? '100%' : '0%' }}
+                      />
+                    </div>
+                  )}
+
+                  <span className="relative flex-shrink-0 mt-0.5">
+                    {active && (
+                      <span className="absolute inset-0 rounded-full bg-indigo-500/40 animate-ping" />
+                    )}
+                    <span
+                      className={`relative flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold
+                        ${done
+                          ? 'bg-emerald-500 text-white'
+                          : active
+                            ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/25'
+                            : 'bg-slate-900 border border-slate-700 text-transparent'}`}
+                    >
+                      {done ? '✓' : ''}
+                    </span>
+                  </span>
+
+                  <div className="min-w-0">
+                    <span className={`text-sm ${done ? 'text-slate-300' : active ? 'text-white font-medium' : 'text-slate-500'}`}>
+                      {label}
+                    </span>
+                    {active && <ConsoleTicker stepKey={key} />}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {!generating && !report && (
+            <p className="text-center text-xs text-slate-500 mt-2">Starting up…</p>
+          )}
+        </div>
+      </div>
+      <p className="text-center text-xs text-slate-500 mt-4">This usually takes 1–3 minutes.</p>
     </div>
   )
 }
