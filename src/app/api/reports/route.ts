@@ -31,11 +31,23 @@ export async function POST(request: NextRequest) {
 
   const { data: existing } = await supabase
     .from('reports')
-    .select('id, status')
+    .select('id, status, created_at, generation_started_at')
     .eq('idea_id', idea_id)
     .single()
 
-  if (existing && existing.status !== 'failed' && !force) {
+  // A queued report whose event was lost (or a run that died) would block
+  // regeneration forever — treat it as stale and re-fire instead of returning it.
+  const STALE_MS = 10 * 60 * 1000
+  const age = existing ? Date.now() - new Date(existing.created_at).getTime() : 0
+  const startedAge = existing?.generation_started_at
+    ? Date.now() - new Date(existing.generation_started_at).getTime()
+    : null
+  const stale =
+    existing != null &&
+    ((existing.status === 'queued' && existing.generation_started_at === null && age > STALE_MS) ||
+      (existing.status === 'running' && startedAge !== null && startedAge > STALE_MS))
+
+  if (existing && existing.status !== 'failed' && !force && !stale) {
     return NextResponse.json({ reportId: existing.id, status: existing.status })
   }
 
