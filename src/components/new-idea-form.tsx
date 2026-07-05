@@ -3,11 +3,17 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function NewIdeaForm() {
+export default function NewIdeaForm({
+  defaultCountry = '',
+  defaultRegion = '',
+}: {
+  defaultCountry?: string
+  defaultRegion?: string
+}) {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
-  const [country, setCountry] = useState('')
-  const [region, setRegion] = useState('')
+  const [country, setCountry] = useState(defaultCountry)
+  const [region, setRegion] = useState(defaultRegion)
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -50,8 +56,9 @@ export default function NewIdeaForm() {
         <textarea
           id="raw_text"
           required
-          rows={5}
+          rows={4}
           maxLength={4000}
+          autoFocus
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
           placeholder="e.g. I want to make homemade dog treats and sell them at local markets…"
@@ -97,15 +104,17 @@ export default function NewIdeaForm() {
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading || rawText.trim().length < 3}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white
-                   hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
-                   disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isLoading ? 'Reading your idea…' : 'Analyse my idea →'}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={isLoading || rawText.trim().length < 3}
+          className="rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white
+                     hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Starting…' : 'Start the engine'}
+        </button>
+      </div>
     </form>
   )
 }

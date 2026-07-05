@@ -2,6 +2,7 @@ import { createDbClient } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AppHeader } from '@/components/app-header'
+import NewIdeaForm from '@/components/new-idea-form'
 
 export const metadata = { title: 'Dashboard — Idea Engine' }
 
@@ -43,35 +44,31 @@ export default async function DashboardPage() {
 
   const { data: ideas } = await supabase
     .from('ideas')
-    .select('id, raw_text, archetype, status, created_at')
+    .select('id, raw_text, archetype, status, created_at, location_country, location_region')
     .order('created_at', { ascending: false })
+
+  const mostRecent = ideas?.[0]
 
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader email={user.email!} />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Your ideas</h1>
-          <Link
-            href="/app/new"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                       hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            + New idea
-          </Link>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm mb-12">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">What&apos;s the idea?</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
+          </p>
+          <NewIdeaForm
+            defaultCountry={mostRecent?.location_country ?? ''}
+            defaultRegion={mostRecent?.location_region ?? ''}
+          />
         </div>
 
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Your ideas</h2>
+
         {!ideas?.length ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-            <p className="text-gray-500 text-sm mb-4">You haven&apos;t added any ideas yet.</p>
-            <Link
-              href="/app/new"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
-            >
-              Describe your first idea →
-            </Link>
-          </div>
+          <p className="text-sm text-gray-500">Your ideas will appear here.</p>
         ) : (
           <ul className="space-y-3">
             {ideas.map((idea) => (
