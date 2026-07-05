@@ -186,32 +186,34 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-16">
-        <div className="relative overflow-hidden rounded-2xl bg-slate-950 border border-white/10 dot-grid px-6 py-16 text-center">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <div className="animate-blob-1 absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
-          </div>
-          <div className="relative z-10">
-            <p className="text-red-300 text-sm mb-4">{error}</p>
-            <button
-              onClick={() => { setError(null); triggerGeneration() }}
-              className="text-sm text-indigo-400 hover:underline"
-            >
-              Try again
-            </button>
-          </div>
+      <div className="relative min-h-[calc(100vh-62px)] bg-slate-950 dot-grid overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="animate-blob-1 absolute -top-24 -left-16 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl" />
+          <div className="animate-blob-2 absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-2xl mx-auto px-6 py-24 text-center">
+          <p className="text-red-300 text-sm mb-4">{error}</p>
+          <button
+            onClick={() => { setError(null); triggerGeneration() }}
+            className="text-sm text-indigo-400 hover:underline"
+          >
+            Try again
+          </button>
         </div>
       </div>
     )
   }
 
+  // Full-bleed engine bay — the whole area below the header goes dark so
+  // the generating state reads as a place, not a card floating on white.
   return (
-    <div className="max-w-2xl mx-auto px-6 py-16">
-      <div className="relative overflow-hidden rounded-2xl bg-slate-950 border border-white/10 dot-grid px-6 py-10 sm:px-10">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
-        </div>
+    <div className="relative min-h-[calc(100vh-62px)] bg-slate-950 dot-grid overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="animate-blob-1 absolute -top-24 -left-16 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl" />
+        <div className="animate-blob-2 absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl" />
+      </div>
 
+      <div className="max-w-2xl mx-auto px-6 py-16 sm:py-20">
         <div className="relative z-10">
           <div className="text-center mb-4">
             <h1 className="text-xl font-semibold text-white mb-2">Generating your report</h1>
