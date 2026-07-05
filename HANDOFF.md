@@ -13,13 +13,8 @@ Local dev mode active: `AI_PROVIDER=mock` in .env.local (all AI calls return fix
 - **Whole signed-in app converted to dark theme** (commit 642244e): all screens + report viewer. **Print stays black-on-white** via `.print-force-light` + @media print rule in globals.css.
 - **Fixes**: Inngest local setup (INNGEST_DEV=1 + dev server), stale queued/running report auto-recovery (10-min threshold in /api/reports), readable error messages on generation failure.
 
-## IN PROGRESS at save: light mode
-Danny wants a light-mode toggle ("turn the lights on"). Decisions made:
-- **Dark stays the default**; light is opt-in, persisted in localStorage('theme').
-- **Scope: signed-in app only** for now (landing + sign-in stay dark-only; extend later if wanted).
-- Infra DONE (committed): `src/components/theme-toggle.tsx` (sun/moon button, in AppHeader right side), pre-paint init script in `src/app/layout.tsx`, `@custom-variant light (&:where(.light, .light *))` in globals.css.
-- REMAINING: add `light:` overrides across signed-in screens. Pattern: keep dark classes as base, add light equivalents — `bg-slate-950 light:bg-gray-50`, `bg-slate-900/80 light:bg-white`, `border-white/10 light:border-gray-200`, `text-white light:text-gray-900`, `text-slate-300/400 light:text-gray-600/500`, inputs `bg-white/5 light:bg-white light:border-gray-300 light:text-gray-900`, chips `bg-x-500/15 text-x-300 light:bg-x-100 light:text-x-700`, indigo buttons unchanged (work on both). Files: app-header, new-idea-form, theme-toggle (has its own already), app/page, account/*, ideas/[id]/confirm/*, questions/*, summary/*, report/* (report-client is the big one — tab bar, all panels; engine bay MAY stay dark in light mode by design — a dark engine room is fine, Danny's call).
-- If two Sonnet agents were spawned for this (app shell / report viewer split — same split as the dark conversion), check `git log` for their commit; if absent, the overrides never landed — re-run with the pattern above.
+## Light mode — ✅ DONE (commit 340af0d, 2026-07-06)
+Dark is the default; sun/moon toggle in the AppHeader (persisted in localStorage('theme'), no-flash init script in layout.tsx, `@custom-variant light` in globals.css). Every signed-in screen has `light:` overrides. Deliberate choices: the generating "engine bay" stays dark in BOTH themes (signature moment); landing + sign-in are dark-only for now (extend later if Danny wants). Danny has NOT yet visually reviewed light mode — first thing to sanity-check next session.
 
 ## Standing queue (unchanged)
 1. Regenerate charger report on Anthropic mode (~US$0.30–0.75) — verify funding options card + partner voice + engine bay animation at real speed.
