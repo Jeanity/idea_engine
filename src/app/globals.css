@@ -4,6 +4,11 @@
   --font-sans: var(--font-geist);
 }
 
+/* Dark is the app default; users opt into light mode via a .light class on
+   <html> (ThemeToggle component + layout init script). Style light overrides
+   with the light: variant, e.g. bg-slate-950 light:bg-gray-50. */
+@custom-variant light (&:where(.light, .light *));
+
 /* ---------------------------------------------------------------------- */
 /* Landing page animations                                                 */
 /* ---------------------------------------------------------------------- */

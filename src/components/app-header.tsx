@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SignOutButton from '@/app/app/sign-out-button'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export function AppHeader({ email }: { email: string }) {
   return (
@@ -18,6 +19,7 @@ export function AppHeader({ email }: { email: string }) {
         </nav>
       </div>
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <Link
           href="/app/account"
           className="text-sm text-slate-300 hover:text-white font-medium transition-colors"
