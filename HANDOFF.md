@@ -21,6 +21,7 @@ All work is committed and pushed to `main` (deploys via Vercel automatically). F
 3. **Task 4B.3**: run the 14-report cost/quality matrix (2 ideas × 7 archetypes — Danny enters them through the wizard). Then `npx tsx scripts/dump-quality-log.ts` prints the markdown table for docs/QUALITY_LOG.md; Danny fills the Grade column.
 4. **Task 4B.4**: tier-boundary decision from that data → then Phase 5 payments can start (Stripe account setup should begin now-ish regardless — activation takes days).
 5. Consider later (4B backlog): server-side URL liveness check (drop 404/410s, keep 403s — bot-blockers) for financing/compliance/competitor links.
+6. **PDF download** (added 2026-07-05, Danny): purchased reports downloadable as PDF — planned as PHASE_05 task 5.5 (@react-pdf/renderer, purchase-gated API route). Build with the payments work.
 
 ## Gotchas for the next session
 - Prompt JSON schemas must pin exact key names (unpinned risks schema → empty cards; fixed by "EXACT JSON SHAPES" block in synthesis).

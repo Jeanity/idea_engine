@@ -26,11 +26,15 @@ Two Stripe products in test mode: **US$19.95 full report** and **US$49.95 premiu
 **Model: Sonnet** — small integration.
 Resend (free tier): on purchase, email "Your report is ready" with a link to the report (behind auth — no public URLs in MVP). Plain, deliverable HTML.
 
-### 5.5 "My reports" page
-**Model: Haiku** — simple list against existing data.
-Dashboard section listing reports with status + unlocked badge; Stripe's receipt email covers receipts — build nothing custom.
+### 5.5 PDF download (added 2026-07-05, reverses the earlier "print stylesheet is enough" cut)
+**Model: Sonnet** — library integration with layout care.
+Purchased reports get a "Download PDF" button. Approach: `@react-pdf/renderer` (pure JS, no headless browser — Puppeteer/Playwright is too heavy for Vercel serverless) rendering the same section data as the web viewer into a clean branded document; API route `GET /api/reports/[id]/pdf` checks purchase server-side, streams the file. All sections included per the buyer's tier; disclaimer block on every PDF. The print stylesheet stays as a fallback.
 
-### 5.6 Payment-flow tests
+### 5.6 "My reports" page
+**Model: Haiku** — simple list against existing data.
+Dashboard section listing reports with status + unlocked badge + Download PDF link for purchased reports; Stripe's receipt email covers receipts — build nothing custom.
+
+### 5.7 Payment-flow tests
 **Model: Haiku** — scripted, low-ambiguity.
 Test-mode E2E with Stripe test cards: success unlocks, cancel leaves locked, webhook replay stays idempotent, second user cannot access first user's unlocked report.
 
@@ -41,6 +45,7 @@ Test-mode E2E with Stripe test cards: success unlocks, cancel leaves locked, web
 - [ ] Unlock check is server-side (verify: editing client state does not reveal paid sections).
 - [ ] Live mode verified with one real self-purchase per tier (then refund via Stripe dashboard).
 - [ ] Premium purchase triggers the premium pipeline steps and renders their sections; a $19.95 purchase does not.
+- [ ] Purchased report downloads as a clean PDF (all tier sections + disclaimer); non-purchasers get 403 from the PDF route.
 
 ## Solo-operator sizing
 ~1 week part-time, assuming Stripe account activation isn't blocking (hence: start it day 1).

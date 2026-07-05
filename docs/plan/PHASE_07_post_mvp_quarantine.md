@@ -19,9 +19,9 @@ Deferred, **highest legal risk — do not touch without counsel**. Taking equity
 
 ### E. Smaller cut features (deferred for speed, not risk)
 - **Idea Vault / idea comparison & scoring across ideas** — MVP has a plain ideas list; comparison is a feature to sell to power users later.
-- **Three report tiers ($1.95 / $9.95 / $49.95)** — MVP ships free preview + one A$19 tier. Tiering is a pricing experiment for after there are buyers.
+- ~~**Three report tiers ($1.95 / $9.95 / $49.95)** — MVP ships free preview + one A$19 tier.~~ **Superseded 2026-07-05:** two tiers (US$19.95 / US$49.95) locked — see PHASE_04B.
 - **Validation experiments** (landing-page tests, demand tests) — a whole coaching product; the MVP report's "next steps" section covers the advice-level version.
-- **Report export libraries (PDF generation)** — print stylesheet covers export at MVP quality.
+- ~~**Report export libraries (PDF generation)** — print stylesheet covers export at MVP quality.~~ **Un-deferred 2026-07-05** (Danny): downloadable PDF is part of the paid product — now task 5.5 in PHASE_05.
 - **Team/agency accounts, saved templates, API access** — no signal yet that anyone wants them.
 
 ## Architecture guarantees that keep the quarantine cheap
