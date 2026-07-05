@@ -44,13 +44,13 @@ export default function NewIdeaForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {errorMsg && (
-        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-400/20 bg-red-400/10 light:border-red-100 light:bg-red-50 p-3 text-sm text-red-300 light:text-red-600">
           {errorMsg}
         </div>
       )}
 
       <div>
-        <label htmlFor="raw_text" className="block text-sm font-medium text-slate-300 mb-1">
+        <label htmlFor="raw_text" className="block text-sm font-medium text-slate-300 light:text-gray-700 mb-1">
           Your idea
         </label>
         <textarea
@@ -63,15 +63,16 @@ export default function NewIdeaForm({
           onChange={(e) => setRawText(e.target.value)}
           placeholder="e.g. I want to make homemade dog treats and sell them at local markets…"
           className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-slate-500
+                     light:bg-white light:border-gray-300 light:text-gray-900 light:placeholder-gray-400
                      focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500
                      resize-none"
         />
-        <p className="mt-1 text-xs text-slate-500 text-right">{rawText.length}/4000</p>
+        <p className="mt-1 text-xs text-slate-500 light:text-gray-400 text-right">{rawText.length}/4000</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="country" className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="country" className="block text-sm font-medium text-slate-300 light:text-gray-700 mb-1">
             Country <span className="text-red-400">*</span>
           </label>
           <input
@@ -83,13 +84,14 @@ export default function NewIdeaForm({
             onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))}
             placeholder="AU"
             className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-slate-500
+                       light:bg-white light:border-gray-300 light:text-gray-900 light:placeholder-gray-400
                        focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500
                        uppercase"
           />
-          <p className="mt-1 text-xs text-slate-500">ISO code, e.g. AU, US, GB</p>
+          <p className="mt-1 text-xs text-slate-500 light:text-gray-400">ISO code, e.g. AU, US, GB</p>
         </div>
         <div>
-          <label htmlFor="region" className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="region" className="block text-sm font-medium text-slate-300 light:text-gray-700 mb-1">
             City / region
           </label>
           <input
@@ -99,6 +101,7 @@ export default function NewIdeaForm({
             onChange={(e) => setRegion(e.target.value)}
             placeholder="Brisbane, QLD"
             className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-slate-500
+                       light:bg-white light:border-gray-300 light:text-gray-900 light:placeholder-gray-400
                        focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>

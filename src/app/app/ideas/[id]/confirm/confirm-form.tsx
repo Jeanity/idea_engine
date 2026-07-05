@@ -39,13 +39,13 @@ export default function ConfirmForm({ ideaId, currentArchetype, archetypeLabels 
   return (
     <div className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-400/20 bg-red-400/10 light:bg-red-50 light:border-red-100 p-3 text-sm text-red-300 light:text-red-600">
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="archetype" className="block text-sm font-medium text-slate-300 mb-1">
+        <label htmlFor="archetype" className="block text-sm font-medium text-slate-300 light:text-gray-700 mb-1">
           Not quite right? Change the type:
         </label>
         <select
@@ -53,6 +53,7 @@ export default function ConfirmForm({ ideaId, currentArchetype, archetypeLabels 
           value={archetype}
           onChange={(e) => setArchetype(e.target.value)}
           className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white
+                     light:bg-white light:border-gray-300 light:text-gray-900
                      focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           {Object.entries(archetypeLabels).map(([value, label]) => (
@@ -60,7 +61,7 @@ export default function ConfirmForm({ ideaId, currentArchetype, archetypeLabels 
           ))}
         </select>
         {isOverride && (
-          <p className="mt-1 text-xs text-indigo-400">
+          <p className="mt-1 text-xs text-indigo-400 light:text-indigo-700">
             You&apos;re overriding our classification — we&apos;ll use your choice.
           </p>
         )}

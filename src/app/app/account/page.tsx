@@ -22,14 +22,14 @@ export default async function AccountPage() {
   const identityName = profile?.display_name ?? profile?.username ?? user.email!
 
   return (
-    <main className="min-h-screen bg-slate-950">
+    <main className="min-h-screen bg-slate-950 light:bg-gray-50">
       <AppHeader email={user.email!} />
       <div className="max-w-xl mx-auto px-6 py-12">
         <Link href="/app" className="inline-flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 font-medium mb-6">
           ← Back to your ideas
         </Link>
-        <h1 className="text-2xl font-semibold text-white mb-1">Account</h1>
-        <p className="text-sm text-slate-400 mb-8">Manage your profile and preferences.</p>
+        <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Account</h1>
+        <p className="text-sm text-slate-400 light:text-gray-500 mb-8">Manage your profile and preferences.</p>
 
         <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 mb-6 flex items-center gap-4">
           <div className="flex-shrink-0 h-14 w-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl font-semibold text-white">
@@ -41,7 +41,7 @@ export default async function AccountPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-6 py-6">
+        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-6">
           <AccountForm
             email={user.email!}
             profile={{

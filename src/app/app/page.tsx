@@ -25,10 +25,10 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLOURS: Record<string, string> = {
-  draft: 'bg-slate-500/15 text-slate-300',
-  questioning: 'bg-yellow-500/15 text-yellow-300',
-  researching: 'bg-blue-500/15 text-blue-300',
-  ready: 'bg-emerald-500/15 text-emerald-300',
+  draft: 'bg-slate-500/15 text-slate-300 light:bg-slate-100 light:text-slate-700',
+  questioning: 'bg-yellow-500/15 text-yellow-300 light:bg-yellow-100 light:text-yellow-700',
+  researching: 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700',
+  ready: 'bg-emerald-500/15 text-emerald-300 light:bg-emerald-100 light:text-emerald-700',
 }
 
 function ideaHref(id: string, status: string) {
@@ -50,10 +50,10 @@ export default async function DashboardPage() {
   const mostRecent = ideas?.[0]
 
   return (
-    <main className="relative min-h-screen bg-slate-950 overflow-hidden">
-      <div className="absolute inset-0 dot-grid opacity-40" aria-hidden="true" />
+    <main className="relative min-h-screen bg-slate-950 light:bg-gray-50 overflow-hidden">
+      <div className="absolute inset-0 dot-grid opacity-40 light:hidden" aria-hidden="true" />
       <div
-        className="pointer-events-none absolute -top-32 left-1/3 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl"
+        className="pointer-events-none absolute -top-32 left-1/3 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl light:hidden"
         aria-hidden="true"
       />
 
@@ -61,9 +61,9 @@ export default async function DashboardPage() {
         <AppHeader email={user.email!} />
 
         <div className="max-w-4xl mx-auto px-6 py-12">
-          <div id="new" className="relative z-10 rounded-2xl border border-white/10 bg-slate-900/80 p-8 mb-12 scroll-mt-6">
-            <h1 className="text-2xl font-semibold text-white mb-1">What&apos;s the idea?</h1>
-            <p className="text-sm text-slate-400 mb-6">
+          <div id="new" className="relative z-10 rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm p-8 mb-12 scroll-mt-6">
+            <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">What&apos;s the idea?</h1>
+            <p className="text-sm text-slate-400 light:text-gray-500 mb-6">
               Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
             </p>
             <NewIdeaForm
@@ -72,10 +72,10 @@ export default async function DashboardPage() {
             />
           </div>
 
-          <h2 className="text-lg font-semibold text-white mb-4">Your ideas</h2>
+          <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-4">Your ideas</h2>
 
           {!ideas?.length ? (
-            <p className="text-sm text-slate-400">Your ideas will appear here.</p>
+            <p className="text-sm text-slate-400 light:text-gray-500">Your ideas will appear here.</p>
           ) : (
             <ul className="space-y-3">
               {ideas.map((idea) => (
@@ -83,11 +83,12 @@ export default async function DashboardPage() {
                   <Link
                     href={ideaHref(idea.id, idea.status)}
                     className="flex items-center justify-between gap-4 rounded-2xl border border-white/10
-                               bg-slate-900/80 px-5 py-4 hover:border-indigo-400/50 hover:bg-white/5 transition-colors"
+                               bg-slate-900/80 px-5 py-4 hover:border-indigo-400/50 hover:bg-white/5 transition-colors
+                               light:border-gray-200 light:bg-white light:shadow-sm light:hover:bg-gray-50"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{idea.raw_text}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-sm font-medium text-white light:text-gray-900 truncate">{idea.raw_text}</p>
+                      <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
                         {ARCHETYPE_LABELS[idea.archetype] ?? idea.archetype}
                       </p>
                     </div>

@@ -354,7 +354,7 @@ function ScoreBar({ score }: { score: number }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map(i => (
-        <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= score ? 'bg-indigo-400' : 'bg-white/10'}`} />
+        <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= score ? 'bg-indigo-400' : 'bg-white/10 light:bg-gray-200'}`} />
       ))}
     </div>
   )
@@ -366,9 +366,9 @@ function isUnavailable(v: unknown): v is { status: 'unavailable'; reason: string
 
 function UnavailableSection({ title, reason }: { title: string; reason?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-4">
-      <h2 className="font-semibold text-white mb-1">{title}</h2>
-      <p className="text-sm text-slate-500">{reason ?? 'This section was unavailable.'}</p>
+    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4">
+      <h2 className="font-semibold text-white light:text-gray-900 mb-1">{title}</h2>
+      <p className="text-sm text-slate-500 light:text-gray-400">{reason ?? 'This section was unavailable.'}</p>
     </div>
   )
 }
@@ -384,22 +384,22 @@ function ViabilitySnapshot({ vs }: {
   vs: { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string }
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-5">
-      <h2 className="font-semibold text-white mb-4">Viability Snapshot</h2>
+    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+      <h2 className="font-semibold text-white light:text-gray-900 mb-4">Viability Snapshot</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         {Object.entries(vs.scores).map(([key, val]) => (
           <div key={key}>
-            <div className="flex justify-between text-xs text-slate-400 mb-1">
+            <div className="flex justify-between text-xs text-slate-400 light:text-gray-500 mb-1">
               <span>{SCORE_LABELS[key] ?? key}</span>
-              <span className="font-medium text-slate-300">{val.score}/5</span>
+              <span className="font-medium text-slate-300 light:text-gray-700">{val.score}/5</span>
             </div>
             <ScoreBar score={val.score} />
-            <p className="text-xs text-slate-500 mt-1">{val.rationale}</p>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{val.rationale}</p>
           </div>
         ))}
       </div>
-      <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-4 py-3">
-        <p className="text-sm text-indigo-200">{vs.overall_verdict}</p>
+      <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 px-4 py-3">
+        <p className="text-sm text-indigo-200 light:text-indigo-900">{vs.overall_verdict}</p>
       </div>
     </div>
   )
@@ -409,10 +409,10 @@ function ViabilitySnapshot({ vs }: {
 
 function LockedSection({ title }: { title: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-        <h2 className="font-semibold text-white">{title}</h2>
-        <span className="text-xs text-slate-500 flex items-center gap-1">
+    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/10 light:border-gray-200 flex items-center justify-between">
+        <h2 className="font-semibold text-white light:text-gray-900">{title}</h2>
+        <span className="text-xs text-slate-500 light:text-gray-400 flex items-center gap-1">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
           </svg>
@@ -421,11 +421,11 @@ function LockedSection({ title }: { title: string }) {
       </div>
       <div className="px-5 py-4 blur-sm select-none pointer-events-none" aria-hidden>
         <div className="space-y-2">
-          <div className="h-3 bg-white/10 rounded w-full" />
-          <div className="h-3 bg-white/10 rounded w-5/6" />
-          <div className="h-3 bg-white/10 rounded w-4/6" />
-          <div className="h-3 bg-white/10 rounded w-5/6 mt-2" />
-          <div className="h-3 bg-white/10 rounded w-3/6" />
+          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-full" />
+          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-5/6" />
+          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-4/6" />
+          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-5/6 mt-2" />
+          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-3/6" />
         </div>
       </div>
     </div>
@@ -450,34 +450,34 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
 
       {summary?.text ? (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-5">
-          <h2 className="font-semibold text-white mb-3">Summary</h2>
-          <p className="text-sm text-slate-300 leading-relaxed">{summary.text}</p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+          <h2 className="font-semibold text-white light:text-gray-900 mb-3">Summary</h2>
+          <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{summary.text}</p>
         </div>
       ) : <UnavailableSection title="Summary" />}
 
       {vs?.scores ? <ViabilitySnapshot vs={vs} /> : <UnavailableSection title="Viability Snapshot" />}
 
       {nextStepsPreview.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/10">
-            <h2 className="font-semibold text-white">Where to start</h2>
-            <p className="text-xs text-slate-500 mt-0.5">2 of your personalised next steps</p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+            <h2 className="font-semibold text-white light:text-gray-900">Where to start</h2>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">2 of your personalised next steps</p>
           </div>
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-white/10 light:divide-gray-100">
             {nextStepsPreview.map((step, i) => (
               <div key={i} className="px-5 py-3 flex gap-3 items-baseline">
                 <span className="flex-shrink-0 text-xs font-semibold text-indigo-300">{step.timeframe}</span>
-                <p className="text-sm text-slate-300">{step.action}</p>
+                <p className="text-sm text-slate-300 light:text-gray-700">{step.action}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="rounded-2xl border-2 border-dashed border-white/15 bg-white/5 px-5 py-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">Included in full report</p>
-        <ul className="space-y-2 text-sm text-slate-300">
+      <div className="rounded-2xl border-2 border-dashed border-white/15 bg-white/5 light:border-gray-200 light:bg-gray-50 px-5 py-6">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 light:text-gray-400 mb-3">Included in full report</p>
+        <ul className="space-y-2 text-sm text-slate-300 light:text-gray-600">
           {[
             '5–8 real competitors with pricing and gap analysis',
             'Cost breakdown — materials, labour, power, margin',
@@ -487,7 +487,7 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
             'Complete prioritised next steps',
           ].map(item => (
             <li key={item} className="flex gap-2 items-start">
-              <svg className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-4 h-4 text-slate-500 light:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
               {item}
@@ -510,12 +510,12 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
 
 function SeverityBadge({ severity }: { severity: string }) {
   const styles: Record<string, string> = {
-    required: 'bg-red-500/15 text-red-300',
-    recommended: 'bg-yellow-500/15 text-yellow-300',
-    fyi: 'bg-blue-500/15 text-blue-300',
+    required: 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700',
+    recommended: 'bg-yellow-500/15 text-yellow-300 light:bg-yellow-100 light:text-yellow-700',
+    fyi: 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700',
   }
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles[severity] ?? 'bg-white/10 text-slate-400'}`}>
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles[severity] ?? 'bg-white/10 text-slate-400 light:bg-gray-100 light:text-gray-700'}`}>
       {severity}
     </span>
   )
@@ -525,7 +525,7 @@ function FundingTypeBadge({ type }: { type: string }) {
   const highlighted = type === 'grant' || type === 'tax_incentive'
   const label = (type ?? '').replace(/_/g, ' ')
   return (
-    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${highlighted ? 'bg-indigo-500/15 text-indigo-300' : 'bg-white/10 text-slate-400'}`}>
+    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${highlighted ? 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-100 light:text-indigo-700' : 'bg-white/10 text-slate-400 light:bg-gray-100 light:text-gray-700'}`}>
       {label}
     </span>
   )
@@ -582,7 +582,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
     <div className="print-force-light max-w-3xl mx-auto px-6 py-10 print:py-4">
 
       {/* Tab bar */}
-      <div className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur -mx-6 px-6 mb-6 border-b border-white/10 overflow-x-auto print:hidden">
+      <div className="sticky top-0 z-10 bg-slate-950/90 light:bg-gray-50/95 backdrop-blur -mx-6 px-6 mb-6 border-b border-white/10 light:border-gray-200 overflow-x-auto print:hidden">
         <div className="flex gap-1 whitespace-nowrap">
           {REPORT_TABS.map(tab => {
             const isActive = activeTab === tab.key
@@ -592,12 +592,12 @@ function FullReportViewer({ report }: { report: ReportData }) {
                 onClick={() => handleTabChange(tab.key)}
                 className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors
                   ${isActive
-                    ? 'border-indigo-400 text-white'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                    ? 'border-indigo-400 text-white light:text-indigo-700'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 light:text-gray-500 light:hover:text-gray-700'}`}
               >
                 {tab.label}
                 {tab.key === 'competitors' && competitorsCount !== null && (
-                  <span className={`ml-1.5 ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>
+                  <span className={`ml-1.5 ${isActive ? 'text-indigo-300' : 'text-slate-500 light:text-gray-400'}`}>
                     · {competitorsCount}
                   </span>
                 )}
@@ -613,9 +613,9 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Summary" reason={summary.reason} />
           : summary && (summary as { text: string }).text
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-5">
-                <h2 className="font-semibold text-white mb-3">Summary</h2>
-                <p className="text-sm text-slate-300 leading-relaxed">{(summary as { text: string }).text}</p>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                <h2 className="font-semibold text-white light:text-gray-900 mb-3">Summary</h2>
+                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{(summary as { text: string }).text}</p>
               </div>
             )
             : <UnavailableSection title="Summary" />}
@@ -633,28 +633,28 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Competitors" reason={competitors.reason} />
           : Array.isArray(competitors) && competitors.length > 0
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10">
-                  <h2 className="font-semibold text-white">Competitors</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">{competitors.length} found</p>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                  <h2 className="font-semibold text-white light:text-gray-900">Competitors</h2>
+                  <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{competitors.length} found</p>
                 </div>
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(competitors as Array<Record<string, string>>).map((c, i) => (
                     <div key={i} className="px-5 py-4">
                       <div className="mb-2">
                         <div className="min-w-0">
                           <a href={c.url} target="_blank" rel="noopener noreferrer"
                             className="font-medium text-indigo-300 hover:underline text-sm break-words">{c.name}</a>
-                          <span className="text-xs text-slate-500 ml-2">{c.location}</span>
+                          <span className="text-xs text-slate-500 light:text-gray-400 ml-2">{c.location}</span>
                         </div>
                         {c.pricing_summary && (
-                          <p className="text-xs font-medium text-slate-300 mt-0.5 break-words">{c.pricing_summary}</p>
+                          <p className="text-xs font-medium text-slate-300 light:text-gray-700 mt-0.5 break-words">{c.pricing_summary}</p>
                         )}
                       </div>
-                      <p className="text-sm text-slate-400 mb-2">
-                        <span className="font-medium text-slate-300">Positioning: </span>{c.positioning_angle}
+                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">
+                        <span className="font-medium text-slate-300 light:text-gray-700">Positioning: </span>{c.positioning_angle}
                       </p>
-                      <p className="text-xs text-emerald-200 bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-1.5">
+                      <p className="text-xs text-emerald-200 bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 light:text-emerald-800 rounded px-2 py-1.5">
                         <span className="font-medium">Gap: </span>{c.gap_notes}
                       </p>
                     </div>
@@ -690,9 +690,9 @@ function FullReportViewer({ report }: { report: ReportData }) {
                 { key: 'passive_labour', label: 'Passive labour' },
               ]
               return (
-                <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-5">
-                  <h2 className="font-semibold text-white mb-4">
-                    Cost Breakdown <span className="text-xs font-normal text-slate-500">{cb.currency}</span>
+                <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                  <h2 className="font-semibold text-white light:text-gray-900 mb-4">
+                    Cost Breakdown <span className="text-xs font-normal text-slate-500 light:text-gray-400">{cb.currency}</span>
                   </h2>
                   {cb.per_unit ? (
                     <>
@@ -704,36 +704,36 @@ function FullReportViewer({ report }: { report: ReportData }) {
                           return (
                             <div key={key} className="flex justify-between items-center text-sm">
                               <div className="flex items-center gap-2">
-                                <span className="text-slate-400">{label}</span>
+                                <span className="text-slate-400 light:text-gray-500">{label}</span>
                                 {flag === 'estimated' && (
-                                  <span className="text-xs text-yellow-300 bg-yellow-500/15 px-1.5 py-0.5 rounded">est.</span>
+                                  <span className="text-xs text-yellow-300 bg-yellow-500/15 light:bg-yellow-50 light:text-yellow-700 light:border light:border-yellow-200 px-1.5 py-0.5 rounded">est.</span>
                                 )}
                               </div>
-                              <span className="font-medium text-slate-200">
+                              <span className="font-medium text-slate-200 light:text-gray-800">
                                 {val !== null && val !== undefined ? fmt(sym, val) : '—'}
                               </span>
                             </div>
                           )
                         })}
                         {cb.per_unit.total_cogs !== null && cb.per_unit.total_cogs !== undefined && (
-                          <div className="flex justify-between items-center text-sm border-t border-white/10 pt-2">
-                            <span className="font-semibold text-slate-300">Total COGS</span>
-                            <span className="font-bold text-white">{fmt(sym, cb.per_unit.total_cogs as number)}</span>
+                          <div className="flex justify-between items-center text-sm border-t border-white/10 light:border-gray-200 pt-2">
+                            <span className="font-semibold text-slate-300 light:text-gray-700">Total COGS</span>
+                            <span className="font-bold text-white light:text-gray-900">{fmt(sym, cb.per_unit.total_cogs as number)}</span>
                           </div>
                         )}
                       </div>
                       {(cb.suggested_price !== null || cb.gross_margin_pct !== null) && (
-                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 flex justify-between items-center mb-3">
+                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 px-4 py-3 flex justify-between items-center mb-3">
                           {cb.suggested_price !== null && (
                             <div>
-                              <p className="text-xs text-emerald-200 mb-0.5">Suggested price</p>
-                              <p className="text-xl font-bold text-emerald-200">{fmt(sym, cb.suggested_price)}</p>
+                              <p className="text-xs text-emerald-200 light:text-emerald-800 mb-0.5">Suggested price</p>
+                              <p className="text-xl font-bold text-emerald-200 light:text-emerald-800">{fmt(sym, cb.suggested_price)}</p>
                             </div>
                           )}
                           {cb.gross_margin_pct !== null && (
                             <div className="text-right">
-                              <p className="text-xs text-emerald-200 mb-0.5">Gross margin</p>
-                              <p className="text-xl font-bold text-emerald-200">{cb.gross_margin_pct}%</p>
+                              <p className="text-xs text-emerald-200 light:text-emerald-800 mb-0.5">Gross margin</p>
+                              <p className="text-xl font-bold text-emerald-200 light:text-emerald-800">{cb.gross_margin_pct}%</p>
                             </div>
                           )}
                         </div>
@@ -744,8 +744,8 @@ function FullReportViewer({ report }: { report: ReportData }) {
                   {cb.startup_costs && cb.startup_costs.length > 0 && (
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-sm font-semibold text-slate-300">Estimated startup costs</h3>
-                        <span className="text-xs text-yellow-300 bg-yellow-500/15 rounded px-1.5 py-0.5">
+                        <h3 className="text-sm font-semibold text-slate-300 light:text-gray-700">Estimated startup costs</h3>
+                        <span className="text-xs text-yellow-300 bg-yellow-500/15 light:bg-yellow-50 light:text-yellow-700 light:border light:border-yellow-200 rounded px-1.5 py-0.5">
                           AI estimates — validate with real quotes
                         </span>
                       </div>
@@ -753,17 +753,17 @@ function FullReportViewer({ report }: { report: ReportData }) {
                         {cb.startup_costs.map((item, i) => (
                           <div key={i} className="flex justify-between items-start text-sm gap-4">
                             <div className="min-w-0">
-                              <p className="text-slate-300">{item.item}</p>
-                              {item.note && <p className="text-xs text-slate-500 mt-0.5">{item.note}</p>}
+                              <p className="text-slate-300 light:text-gray-700">{item.item}</p>
+                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{item.note}</p>}
                             </div>
-                            <span className="font-medium text-slate-200 whitespace-nowrap">
+                            <span className="font-medium text-slate-200 light:text-gray-800 whitespace-nowrap">
                               {fmt0(sym, item.estimate_low)}–{fmt0(sym, item.estimate_high)}
                             </span>
                           </div>
                         ))}
-                        <div className="flex justify-between items-center text-sm border-t border-white/10 pt-2">
-                          <span className="font-semibold text-slate-400">Total (range)</span>
-                          <span className="font-semibold text-slate-300">
+                        <div className="flex justify-between items-center text-sm border-t border-white/10 light:border-gray-200 pt-2">
+                          <span className="font-semibold text-slate-400 light:text-gray-500">Total (range)</span>
+                          <span className="font-semibold text-slate-300 light:text-gray-700">
                             {fmt0(sym, cb.startup_costs.reduce((sum, item) => sum + item.estimate_low, 0))}
                             –
                             {fmt0(sym, cb.startup_costs.reduce((sum, item) => sum + item.estimate_high, 0))}
@@ -775,15 +775,15 @@ function FullReportViewer({ report }: { report: ReportData }) {
 
                   {cb.ongoing_costs && cb.ongoing_costs.length > 0 && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-slate-300 mb-2">Estimated ongoing costs</h3>
+                      <h3 className="text-sm font-semibold text-slate-300 light:text-gray-700 mb-2">Estimated ongoing costs</h3>
                       <div className="space-y-2">
                         {cb.ongoing_costs.map((item, i) => (
                           <div key={i} className="flex justify-between items-start text-sm gap-4">
                             <div className="min-w-0">
-                              <p className="text-slate-300">{item.item}</p>
-                              {item.note && <p className="text-xs text-slate-500 mt-0.5">{item.note}</p>}
+                              <p className="text-slate-300 light:text-gray-700">{item.item}</p>
+                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{item.note}</p>}
                             </div>
-                            <span className="font-medium text-slate-200 whitespace-nowrap">
+                            <span className="font-medium text-slate-200 light:text-gray-800 whitespace-nowrap">
                               {fmt0(sym, item.estimate_monthly)}/mo
                             </span>
                           </div>
@@ -792,7 +792,7 @@ function FullReportViewer({ report }: { report: ReportData }) {
                     </div>
                   )}
 
-                  {cb.notes && <p className="text-xs text-slate-500 leading-relaxed">{cb.notes}</p>}
+                  {cb.notes && <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">{cb.notes}</p>}
                 </div>
               )
             })()
@@ -804,15 +804,15 @@ function FullReportViewer({ report }: { report: ReportData }) {
             ? (() => {
               const p = pricing as { model: string; suggested_price_or_range: string; rationale: string; comparable_market_rates: string }
               return (
-                <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-5">
-                  <h2 className="font-semibold text-white mb-1">Pricing Recommendation</h2>
-                  <p className="text-xs text-slate-500 mb-4">{p.model}</p>
-                  <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-4 py-3 mb-3">
-                    <p className="text-xs text-indigo-200 mb-0.5">Suggested price</p>
-                    <p className="text-lg font-semibold text-indigo-200">{p.suggested_price_or_range}</p>
+                <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                  <h2 className="font-semibold text-white light:text-gray-900 mb-1">Pricing Recommendation</h2>
+                  <p className="text-xs text-slate-500 light:text-gray-400 mb-4">{p.model}</p>
+                  <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 px-4 py-3 mb-3">
+                    <p className="text-xs text-indigo-200 light:text-indigo-900 mb-0.5">Suggested price</p>
+                    <p className="text-lg font-semibold text-indigo-200 light:text-indigo-900">{p.suggested_price_or_range}</p>
                   </div>
-                  <p className="text-sm text-slate-300 mb-2">{p.rationale}</p>
-                  <p className="text-xs text-slate-500">{p.comparable_market_rates}</p>
+                  <p className="text-sm text-slate-300 light:text-gray-700 mb-2">{p.rationale}</p>
+                  <p className="text-xs text-slate-500 light:text-gray-400">{p.comparable_market_rates}</p>
                 </div>
               )
             })()
@@ -822,12 +822,12 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Funding Options" reason={fundingOptions.reason} />
           : Array.isArray(fundingOptions) && fundingOptions.length > 0
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10">
-                  <h2 className="font-semibold text-white">Funding Options</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Your stated capital is below the estimated startup cost — realistic ways to bridge the gap</p>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                  <h2 className="font-semibold text-white light:text-gray-900">Funding Options</h2>
+                  <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">Your stated capital is below the estimated startup cost — realistic ways to bridge the gap</p>
                 </div>
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(fundingOptions as Array<Record<string, string>>).map((item, i) => (
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-start justify-between gap-3 mb-1">
@@ -835,15 +835,15 @@ function FullReportViewer({ report }: { report: ReportData }) {
                           className="font-medium text-indigo-300 hover:underline text-sm break-words">{item.name}</a>
                         <FundingTypeBadge type={item.type} />
                       </div>
-                      <p className="text-xs text-slate-500 mb-2">{item.jurisdiction}</p>
-                      <p className="text-sm text-slate-400 mb-2">{item.summary}</p>
+                      <p className="text-xs text-slate-500 light:text-gray-400 mb-2">{item.jurisdiction}</p>
+                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{item.summary}</p>
                       {item.eligibility && (
-                        <p className="text-xs text-slate-500 mb-2">
+                        <p className="text-xs text-slate-500 light:text-gray-400 mb-2">
                           <span className="font-medium">Eligibility: </span>{item.eligibility}
                         </p>
                       )}
                       {item.fit_note && (
-                        <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1.5">
+                        <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
                           <span className="font-bold">Why this fits: </span>{item.fit_note}
                         </p>
                       )}
@@ -861,19 +861,19 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Legal & Compliance" reason={compliance.reason} />
           : Array.isArray(compliance) && compliance.length > 0
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10">
-                  <h2 className="font-semibold text-white">Legal & Compliance</h2>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                  <h2 className="font-semibold text-white light:text-gray-900">Legal & Compliance</h2>
                 </div>
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(compliance as Array<Record<string, string>>).map((item, i) => (
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="text-sm font-medium text-slate-200">{item.item}</p>
+                        <p className="text-sm font-medium text-slate-200 light:text-gray-800">{item.item}</p>
                         <SeverityBadge severity={item.severity} />
                       </div>
-                      <p className="text-xs text-slate-500 mb-2">{item.jurisdiction}</p>
-                      <p className="text-sm text-slate-400 mb-2">{item.summary}</p>
+                      <p className="text-xs text-slate-500 light:text-gray-400 mb-2">{item.jurisdiction}</p>
+                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{item.summary}</p>
                       {item.official_source_url && (
                         <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
                           className="text-xs text-indigo-300 hover:underline break-all">
@@ -883,8 +883,8 @@ function FullReportViewer({ report }: { report: ReportData }) {
                     </div>
                   ))}
                 </div>
-                <div className="px-5 py-4 bg-amber-500/10 border-t border-amber-500/20">
-                  <p className="text-xs text-amber-200 leading-relaxed">
+                <div className="px-5 py-4 bg-amber-500/10 border-t border-amber-500/20 light:bg-amber-50 light:border-amber-100">
+                  <p className="text-xs text-amber-200 light:text-amber-900 leading-relaxed">
                     <span className="font-semibold">Not legal advice.</span> The compliance items above are for informational purposes only. Requirements vary by location, business structure, and circumstances. Consult a qualified lawyer, accountant, or relevant government body before acting on any item listed here.
                   </p>
                 </div>
@@ -899,11 +899,11 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Things to consider" reason={risks.reason} />
           : Array.isArray(risks) && risks.length > 0
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10">
-                  <h2 className="font-semibold text-white">Things to consider</h2>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                  <h2 className="font-semibold text-white light:text-gray-900">Things to consider</h2>
                 </div>
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(risks as Array<Record<string, string>>).map((risk, i) => {
                     // Tolerate alternate key names from older reports whose
                     // prompt didn't pin the schema (risk/detail vs title/description).
@@ -911,10 +911,10 @@ function FullReportViewer({ report }: { report: ReportData }) {
                     const description = risk.description ?? risk.detail
                     return (
                       <div key={i} className="px-5 py-4">
-                        {title && <p className="text-sm font-medium text-slate-200 mb-1">{title}</p>}
-                        {description && <p className="text-sm text-slate-400 mb-2">{description}</p>}
+                        {title && <p className="text-sm font-medium text-slate-200 light:text-gray-800 mb-1">{title}</p>}
+                        {description && <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{description}</p>}
                         {risk.mitigation && (
-                          <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1.5">
+                          <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
                             <span className="font-medium">How to handle it: </span>{risk.mitigation}
                           </p>
                         )}
@@ -930,12 +930,12 @@ function FullReportViewer({ report }: { report: ReportData }) {
           ? <UnavailableSection title="Next Steps" reason={nextSteps.reason} />
           : Array.isArray(nextSteps) && nextSteps.length > 0
             ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 overflow-hidden">
-                <div className="px-5 py-4 border-b border-white/10">
-                  <h2 className="font-semibold text-white">Next Steps</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">In order of priority</p>
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                  <h2 className="font-semibold text-white light:text-gray-900">Next Steps</h2>
+                  <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">In order of priority</p>
                 </div>
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(nextSteps as Array<Record<string, string>>).map((step, i) => (
                     <div key={i} className="px-5 py-4 flex gap-3">
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/15 flex items-center justify-center mt-0.5">
@@ -943,8 +943,8 @@ function FullReportViewer({ report }: { report: ReportData }) {
                       </div>
                       <div>
                         <span className="text-xs font-semibold text-indigo-300">{step.timeframe}</span>
-                        <p className="text-sm text-slate-200 mt-0.5">{step.action}</p>
-                        {(step.rationale ?? step.detail) && <p className="text-xs text-slate-500 mt-1">{step.rationale ?? step.detail}</p>}
+                        <p className="text-sm text-slate-200 light:text-gray-800 mt-0.5">{step.action}</p>
+                        {(step.rationale ?? step.detail) && <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{step.rationale ?? step.detail}</p>}
                       </div>
                     </div>
                   ))}
@@ -981,7 +981,7 @@ function RegenerateButton({ ideaId, label, onStart }: { ideaId: string; label: s
     <button
       onClick={handleClick}
       disabled={loading}
-      className="text-xs text-slate-500 hover:text-slate-300 disabled:opacity-40 underline underline-offset-2"
+      className="text-xs text-slate-500 hover:text-slate-300 light:text-gray-400 light:hover:text-gray-700 disabled:opacity-40 underline underline-offset-2"
     >
       {loading ? 'Starting…' : label}
     </button>
@@ -1020,9 +1020,9 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
   }
 
   return (
-    <div className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center">
-      <p className="text-xs font-semibold text-amber-200 mb-1">Admin — Test mode</p>
-      <p className="text-xs text-amber-300 mb-3">
+    <div className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-5 py-4 text-center">
+      <p className="text-xs font-semibold text-amber-200 light:text-amber-900 mb-1">Admin — Test mode</p>
+      <p className="text-xs text-amber-300 light:text-amber-700 mb-3">
         Runs the full research pipeline. ~US$0.30–0.60 per run.
       </p>
       <button
@@ -1051,7 +1051,7 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
         <FullReportViewer report={report!} />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
           {isAdmin && generationCost !== undefined && (
-            <p className="text-xs text-slate-500">Generation cost: US${generationCost.toFixed(2)}</p>
+            <p className="text-xs text-slate-500 light:text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
           )}
           <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
         </div>
