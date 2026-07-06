@@ -25,14 +25,14 @@ export function HeaderAuthLink() {
   return signedIn ? (
     <Link
       href="/app"
-      className="rounded-lg bg-indigo-500/20 border border-indigo-400/30 px-3 py-1.5 text-sm text-indigo-200 hover:bg-indigo-500/30 hover:text-white font-medium transition-colors"
+      className="rounded-lg bg-indigo-500/20 border border-indigo-400/30 px-3 py-1.5 text-sm text-indigo-200 hover:bg-indigo-500/30 hover:text-white font-medium transition-colors light:bg-indigo-100 light:border-indigo-200 light:text-indigo-700 light:hover:bg-indigo-200"
     >
       Open dashboard →
     </Link>
   ) : (
     <Link
       href="/sign-in"
-      className="text-sm text-slate-200 hover:text-white font-medium transition-colors"
+      className="text-sm text-slate-200 hover:text-white font-medium transition-colors light:text-gray-600 light:hover:text-gray-900"
     >
       Sign in
     </Link>

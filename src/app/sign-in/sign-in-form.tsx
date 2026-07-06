@@ -60,7 +60,7 @@ export default function SignInForm() {
 
   if (status === 'sent') {
     return (
-      <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-300 text-center">
+      <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-300 text-center light:border-emerald-200 light:bg-emerald-50 light:text-emerald-700">
         Check your inbox — we sent a magic link to <strong>{email}</strong>.
       </div>
     )
@@ -69,7 +69,7 @@ export default function SignInForm() {
   return (
     <div className="space-y-5">
       {(callbackError || errorMsg) && (
-        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300">
+        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300 light:border-red-200 light:bg-red-50 light:text-red-600">
           {errorMsg || 'Sign-in link expired or invalid. Please try again.'}
         </div>
       )}
@@ -81,7 +81,7 @@ export default function SignInForm() {
         className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-2
                    text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50
                    focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900
-                   disabled:opacity-50 disabled:cursor-not-allowed"
+                   disabled:opacity-50 disabled:cursor-not-allowed light:border-gray-300"
       >
         <svg className="h-4 w-4 shrink-0" viewBox="0 0 48 48" aria-hidden="true">
           <path
@@ -105,14 +105,14 @@ export default function SignInForm() {
       </button>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-white/10" />
-        <span className="text-xs text-slate-500">or</span>
-        <div className="h-px flex-1 bg-white/10" />
+        <div className="h-px flex-1 bg-white/10 light:bg-gray-200" />
+        <span className="text-xs text-slate-500 light:text-gray-400">or</span>
+        <div className="h-px flex-1 bg-white/10 light:bg-gray-200" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1 light:text-gray-700">
             Email address
           </label>
           <input
@@ -124,7 +124,8 @@ export default function SignInForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-500 shadow-sm
-                       focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                       focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400
+                       light:border-gray-300 light:bg-white light:text-gray-900 light:placeholder-gray-400"
           />
         </div>
         <button

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ScrollReveal } from '@/components/scroll-reveal'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { bandFor } from '@/lib/score-bands'
 
 // TODO: replace with real numbers before production launch
@@ -236,13 +237,13 @@ function ScoreRing({ score, label, size = 64 }: { score: number; label: string; 
           y="50%"
           dy="0.32em"
           textAnchor="middle"
-          className="fill-white text-sm font-semibold"
+          className="fill-white light:fill-gray-900 text-sm font-semibold"
           style={{ fontSize: size * 0.22 }}
         >
           {score}
         </text>
       </svg>
-      <span className="mt-1 text-[10px] text-slate-400">{label}</span>
+      <span className="mt-1 text-[10px] text-slate-400 light:text-gray-500">{label}</span>
     </div>
   )
 }
@@ -250,15 +251,15 @@ function ScoreRing({ score, label, size = 64 }: { score: number; label: string; 
 function ReportCard({ card }: { card: ReportCardData }) {
   return (
     <div
-      className={`w-[280px] shrink-0 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/30 backdrop-blur transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl ${card.rotate}`}
+      className={`w-[280px] shrink-0 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-xl shadow-black/30 backdrop-blur transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl light:border-gray-200 light:bg-white light:shadow-md light:shadow-black/5 ${card.rotate}`}
     >
       <div className="mb-3">
         {card.redactedLabel ? (
           <>
-            <p className="select-none text-sm font-semibold text-white blur-[5px]" aria-hidden="true">
+            <p className="select-none text-sm font-semibold text-white blur-[5px] light:text-gray-900" aria-hidden="true">
               {card.title}
             </p>
-            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300">
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300 light:text-violet-700">
               <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
@@ -266,9 +267,9 @@ function ReportCard({ card }: { card: ReportCardData }) {
             </p>
           </>
         ) : (
-          <p className="text-sm font-semibold text-white">{card.title}</p>
+          <p className="text-sm font-semibold text-white light:text-gray-900">{card.title}</p>
         )}
-        <p className="mt-0.5 text-[11px] text-slate-400">{card.location}</p>
+        <p className="mt-0.5 text-[11px] text-slate-400 light:text-gray-500">{card.location}</p>
       </div>
 
       <div className="mb-3 flex items-center justify-around gap-2">
@@ -277,16 +278,16 @@ function ReportCard({ card }: { card: ReportCardData }) {
       </div>
 
       <div className="mb-3 space-y-1.5 select-none blur-[3px]" aria-hidden="true">
-        <div className="h-2 w-full rounded bg-white/10" />
-        <div className="h-2 w-5/6 rounded bg-white/10" />
-        <div className="h-2 w-4/6 rounded bg-white/10" />
+        <div className="h-2 w-full rounded bg-white/10 light:bg-gray-200" />
+        <div className="h-2 w-5/6 rounded bg-white/10 light:bg-gray-200" />
+        <div className="h-2 w-4/6 rounded bg-white/10 light:bg-gray-200" />
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-1 text-[11px] font-medium text-indigo-300">
+        <span className="inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-1 text-[11px] font-medium text-indigo-300 light:bg-indigo-100 light:border light:border-indigo-200 light:text-indigo-700">
           {card.competitors} competitors found
         </span>
-        <span className="select-none blur-[3px] text-[11px] text-slate-400" aria-hidden="true">
+        <span className="select-none blur-[3px] text-[11px] text-slate-400 light:text-gray-500" aria-hidden="true">
           {card.cost} est.
         </span>
       </div>
@@ -302,32 +303,35 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Hero                                                               */}
       {/* ------------------------------------------------------------------ */}
-      <section className="relative overflow-hidden bg-slate-950">
-        <div className="absolute inset-0 dot-grid opacity-40" aria-hidden="true" />
+      <section className="relative overflow-hidden bg-slate-950 light:bg-gray-100">
+        <div className="absolute inset-0 dot-grid opacity-40 light:opacity-40" aria-hidden="true" />
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-32 -left-24 h-96 w-96 rounded-full bg-indigo-600/40 blur-3xl" />
-          <div className="animate-blob-2 absolute top-1/3 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-600/30 blur-3xl" />
-          <div className="animate-blob-3 absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-cyan-500/25 blur-3xl" />
+          <div className="animate-blob-1 absolute -top-32 -left-24 h-96 w-96 rounded-full bg-indigo-600/40 blur-3xl light:opacity-50" />
+          <div className="animate-blob-2 absolute top-1/3 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-600/30 blur-3xl light:opacity-50" />
+          <div className="animate-blob-3 absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-cyan-500/25 blur-3xl light:opacity-50" />
         </div>
 
         <header className="relative z-10 px-6 py-5 flex items-center justify-between">
-          <span className="font-semibold tracking-tight text-white">Idea Engine</span>
-          <HeaderAuthLink />
+          <span className="font-semibold tracking-tight text-white light:text-gray-900">Idea Engine</span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <HeaderAuthLink />
+          </div>
         </header>
 
         <div className="relative z-10 flex flex-col items-center px-6 pt-16 pb-28 text-center sm:pt-20 sm:pb-36">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200 backdrop-blur">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200 backdrop-blur light:border-gray-200 light:bg-white light:text-gray-700 light:shadow-sm">
             <span className="animate-pulse-dot h-1.5 w-1.5 rounded-full bg-indigo-400" aria-hidden="true" />
             {DEMO_STATS.ideasLast30Days} ideas became reality in the last 30 days
           </div>
 
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-white sm:text-6xl">
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight text-white sm:text-6xl light:text-gray-900">
             From raw idea to{' '}
             <span className="gradient-text">real-world plan</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg text-slate-400">
+          <p className="mt-6 max-w-xl text-lg text-slate-400 light:text-gray-500">
             Describe your business idea. We classify it, ask the right questions, research your
             market with live web search, and deliver a structured report — competitors, costs,
             legal, and funding included.
@@ -345,7 +349,7 @@ export default function LandingPage() {
             <a
               href="#how-it-works"
               className="inline-block rounded-lg border border-white/15 px-7 py-3.5 text-sm font-semibold text-slate-100
-                         transition-colors hover:border-white/30 hover:bg-white/5"
+                         transition-colors hover:border-white/30 hover:bg-white/5 light:border-gray-300 light:text-gray-700 light:hover:border-gray-400 light:hover:bg-gray-100"
             >
               See how it works
             </a>
@@ -353,7 +357,7 @@ export default function LandingPage() {
 
           <Link
             href="/sample-report"
-            className="mt-6 text-sm text-slate-300 hover:text-white transition-colors"
+            className="mt-6 text-sm text-slate-300 hover:text-white transition-colors light:text-gray-600 light:hover:text-gray-900"
           >
             or see a sample report →
           </Link>
@@ -363,7 +367,7 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Fuzzed report showcase                                             */}
       {/* ------------------------------------------------------------------ */}
-      <section className="relative -mt-16 bg-slate-950 pb-24 sm:-mt-20">
+      <section className="relative -mt-16 bg-slate-950 pb-24 sm:-mt-20 light:bg-gray-100">
         <div className="marquee-group overflow-hidden py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
           {/* One animated track holding two identical card sets. Each set
               carries its own internal gap AND trailing padding equal to that
@@ -389,22 +393,22 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       <section
         id="how-it-works"
-        className="relative bg-gradient-to-b from-slate-950 via-slate-950 to-gray-50 px-6 pb-24 pt-4 sm:pt-8"
+        className="relative bg-gradient-to-b from-slate-950 via-slate-950 to-gray-50 px-6 pb-24 pt-4 sm:pt-8 light:from-gray-100 light:via-gray-100"
       >
         <div className="mx-auto max-w-6xl">
           <ScrollReveal className="mb-14 text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">What we do</h2>
-            <p className="mt-3 text-slate-400">Four steps between a raw idea and a real plan.</p>
+            <h2 className="text-3xl font-bold text-white sm:text-4xl light:text-gray-900">What we do</h2>
+            <p className="mt-3 text-slate-400 light:text-gray-500">Four steps between a raw idea and a real plan.</p>
           </ScrollReveal>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {WHAT_WE_DO_STEPS.map((step, i) => (
               <ScrollReveal key={step.number} delayMs={i * 100}>
-                <div className="group h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-lg hover:shadow-indigo-500/10">
+                <div className="group h-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/50 hover:shadow-lg hover:shadow-indigo-500/10 light:border-gray-200 light:bg-white light:shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
                     <span className="text-xs font-semibold text-indigo-400">{step.number}</span>
                     <svg
-                      className="h-6 w-6 text-slate-400 transition-colors group-hover:text-indigo-400"
+                      className="h-6 w-6 text-slate-400 transition-colors group-hover:text-indigo-400 light:text-gray-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -413,8 +417,8 @@ export default function LandingPage() {
                       {step.icon}
                     </svg>
                   </div>
-                  <h3 className="mb-2 text-base font-semibold text-white">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-slate-400">{step.description}</p>
+                  <h3 className="mb-2 text-base font-semibold text-white light:text-gray-900">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-slate-400 light:text-gray-500">{step.description}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -465,14 +469,14 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Bottom CTA band                                                    */}
       {/* ------------------------------------------------------------------ */}
-      <section className="relative overflow-hidden bg-slate-950 px-6 py-24 text-center">
+      <section className="relative overflow-hidden bg-slate-950 px-6 py-24 text-center light:bg-gray-100">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
-          <div className="animate-blob-2 absolute -bottom-20 right-1/4 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
+          <div className="animate-blob-1 absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl light:opacity-50" />
+          <div className="animate-blob-2 absolute -bottom-20 right-1/4 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl light:opacity-50" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-2xl">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl light:text-gray-900">
             Stop guessing. Start with a plan.
           </h2>
           <div className="mt-8 flex flex-col items-center gap-3">
@@ -484,7 +488,7 @@ export default function LandingPage() {
             >
               Get early access
             </Link>
-            <p className="text-xs text-slate-500">No credit card required — join the early list</p>
+            <p className="text-xs text-slate-500 light:text-gray-400">No credit card required — join the early list</p>
           </div>
         </div>
       </section>

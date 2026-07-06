@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { HeaderAuthLink } from '@/components/header-auth-link'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { SAMPLE_IDEA } from '@/lib/sample-report'
 import { SampleReportClient } from './sample-report-client'
 
@@ -18,7 +19,10 @@ export default function SampleReportPage() {
         <Link href="/" className="font-semibold tracking-tight text-white light:text-gray-900">
           Idea Engine
         </Link>
-        <HeaderAuthLink />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <HeaderAuthLink />
+        </div>
       </header>
 
       {/* Sample banner */}
@@ -54,8 +58,8 @@ export default function SampleReportPage() {
       {/* Bottom CTA band */}
       <section className="relative overflow-hidden bg-slate-950 light:bg-gray-50 px-6 py-24 text-center border-t border-white/10 light:border-gray-200">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl" />
-          <div className="animate-blob-2 absolute -bottom-20 right-1/4 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
+          <div className="animate-blob-1 absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl light:opacity-50" />
+          <div className="animate-blob-2 absolute -bottom-20 right-1/4 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl light:opacity-50" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-2xl">
