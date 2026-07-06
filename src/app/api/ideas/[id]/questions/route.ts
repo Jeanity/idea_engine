@@ -30,8 +30,8 @@ const SUCCESS_QUESTION: Question = {
 const COUNTRY_QUESTION: Question = {
   key: 'founder_location_country',
   text: 'What country are you in?',
-  subtext: '2-letter country code, e.g. AU, US, GB. This drives currency, compliance, and financing research in your report.',
-  input_type: 'text',
+  subtext: 'This drives the currency, compliance, and financing research in your report.',
+  input_type: 'country',
   required: true,
   maps_to: 'founder.location_country',
 }
@@ -57,10 +57,12 @@ function loadBank(archetype: string) {
   } catch {
     bank = []
   }
-  const withLocation = LOCATION_SENSITIVE_ARCHETYPES.includes(archetype)
-    ? [...bank, COUNTRY_QUESTION, REGION_QUESTION]
-    : [...bank, COUNTRY_QUESTION]
-  return [...withLocation, SUCCESS_QUESTION]
+  // Country comes FIRST so later money questions can render in the founder's
+  // own currency symbol (the wizard reads the country answer live).
+  const locationLead = LOCATION_SENSITIVE_ARCHETYPES.includes(archetype)
+    ? [COUNTRY_QUESTION, REGION_QUESTION]
+    : [COUNTRY_QUESTION]
+  return [...locationLead, ...bank, SUCCESS_QUESTION]
 }
 
 async function generateDynamicQuestions(

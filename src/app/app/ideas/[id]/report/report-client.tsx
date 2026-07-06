@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { symbolForCurrency } from '@/lib/countries'
+import { ScoreRing } from '@/components/score-ring'
+import { deriveHeadlineScore } from '@/lib/viability-score'
 
 interface ReportData {
   id: string
@@ -386,7 +389,10 @@ function ViabilitySnapshot({ vs }: {
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
-      <h2 className="font-semibold text-white light:text-gray-900 mb-4">Viability Snapshot</h2>
+      <div className="flex items-center gap-3 mb-4">
+        <ScoreRing score={deriveHeadlineScore(vs.scores)} label="" size={48} />
+        <h2 className="font-semibold text-white light:text-gray-900">Viability Snapshot</h2>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         {Object.entries(vs.scores).map(([key, val]) => (
           <div key={key}>
@@ -511,6 +517,19 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
 
 // ── Full report section components ───────────────────────────
 
+// Feather Icons' "external-link" glyph (MIT) — mirrors the PDF's LinkIcon
+// (src/lib/pdf/components.tsx) so both surfaces use the same visual cue for
+// "this opens elsewhere," rather than relying on color/underline alone.
+function ExternalLinkIcon({ className = 'w-3 h-3' }: { className?: string }) {
+  return (
+    <svg className={`inline-block shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
+}
+
 function SeverityBadge({ severity }: { severity: string }) {
   const styles: Record<string, string> = {
     required: 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700',
@@ -535,7 +554,7 @@ function FundingTypeBadge({ type }: { type: string }) {
 }
 
 function currencySymbol(currency: string) {
-  return currency === 'AUD' ? 'A$' : currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$'
+  return symbolForCurrency(currency)
 }
 
 function fmt(sym: string, n: number) {
@@ -685,7 +704,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                       <div className="mb-2">
                         <div className="min-w-0">
                           <a href={c.url} target="_blank" rel="noopener noreferrer"
-                            className="font-medium text-indigo-300 hover:underline text-sm break-words">{c.name}</a>
+                            className="inline-flex items-center gap-1 font-medium text-indigo-300 underline underline-offset-2 text-sm break-words">{c.name}<ExternalLinkIcon /></a>
                           <span className="text-xs text-slate-500 light:text-gray-400 ml-2">{c.location}</span>
                         </div>
                         {c.pricing_summary && (
@@ -873,7 +892,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <a href={item.url} target="_blank" rel="noopener noreferrer"
-                          className="font-medium text-indigo-300 hover:underline text-sm break-words">{item.name}</a>
+                          className="inline-flex items-center gap-1 font-medium text-indigo-300 underline underline-offset-2 text-sm break-words">{item.name}<ExternalLinkIcon /></a>
                         <FundingTypeBadge type={item.type} />
                       </div>
                       <p className="text-xs text-slate-500 light:text-gray-400 mb-2">{item.jurisdiction}</p>
@@ -917,8 +936,12 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                       <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{item.summary}</p>
                       {item.official_source_url && (
                         <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-indigo-300 hover:underline break-all">
+                          className="text-xs text-indigo-300 underline underline-offset-2 break-all">
                           {item.official_source_url}
+                          {/* Plain inline flow (not inline-flex) — this is a long URL that
+                              can wrap across lines, so the icon should ride the text flow
+                              and land after the last character, not center on the block. */}
+                          <ExternalLinkIcon className="w-3 h-3 ml-1 align-[-2px]" />
                         </a>
                       )}
                     </div>
@@ -966,18 +989,23 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-3 mb-1">
-                              <p className="text-sm font-medium text-slate-200 light:text-gray-800">
+                              <p className="min-w-0 text-sm font-medium text-slate-200 light:text-gray-800">
                                 {ch.link
-                                  ? <a href={ch.link} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:underline break-words">{ch.name}</a>
+                                  ? <a href={ch.link} target="_blank" rel="noopener noreferrer" className="text-indigo-300 underline underline-offset-2 break-words">{ch.name}<ExternalLinkIcon className="w-3 h-3 ml-1 align-[-2px]" /></a>
                                   : ch.name}
                               </p>
                               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ch.channel_type === 'free'
                                 ? 'bg-emerald-500/15 text-emerald-200 light:bg-emerald-100 light:text-emerald-700'
                                 : 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-100 light:text-indigo-700'}`}>
-                                {ch.channel_type === 'free' ? 'Free' : ch.est_cost}
+                                {ch.channel_type === 'free' ? 'Free' : 'Paid'}
                               </span>
                             </div>
                             <p className="text-sm text-slate-400 light:text-gray-500 mb-1">{ch.why_this_channel}</p>
+                            {ch.channel_type !== 'free' && ch.est_cost && (
+                              <p className="text-xs text-slate-300 light:text-gray-600 mb-1">
+                                <span className="font-medium text-slate-200 light:text-gray-700">Cost: </span>{ch.est_cost}
+                              </p>
+                            )}
                             {ch.how_to_start && (
                               <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
                                 <span className="font-medium">How to start: </span>{ch.how_to_start}
@@ -1129,6 +1157,51 @@ export function FullReportViewer({ report }: { report: ReportData }) {
 
 // ── Action buttons ────────────────────────────────────────────
 
+function DownloadPdfButton({ ideaId }: { ideaId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleClick() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/ideas/${ideaId}/report/pdf`)
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        setError(d.error ?? 'Could not generate the PDF. Please try again.')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `idea-engine-report-${ideaId.slice(0, 8)}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError('Could not generate the PDF. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="inline-flex items-center gap-2 rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {loading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+        {loading ? 'Preparing PDF…' : 'Download PDF'}
+      </button>
+      {error && <p className="text-xs text-red-300 light:text-red-600">{error}</p>}
+    </div>
+  )
+}
+
 function RegenerateButton({ ideaId, label, onStart }: { ideaId: string; label: string; onStart: () => void }) {
   const [loading, setLoading] = useState(false)
 
@@ -1218,7 +1291,8 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
     return (
       <div>
         <FullReportViewer report={report!} />
-        <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
+        <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-3 print:hidden">
+          <DownloadPdfButton ideaId={ideaId} />
           {isAdmin && generationCost !== undefined && (
             <p className="text-xs text-slate-500 light:text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
           )}

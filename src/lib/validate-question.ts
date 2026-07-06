@@ -20,7 +20,9 @@ export interface Question {
   key: string
   text: string
   subtext?: string | null
-  input_type: 'text' | 'select' | 'number' | 'multiselect'
+  // 'country' renders a native country dropdown and stores the 2-letter code;
+  // it is only used by route-injected questions, never by dynamic generation.
+  input_type: 'text' | 'select' | 'number' | 'multiselect' | 'country'
   options?: string[]
   required: boolean
   maps_to: string

@@ -1,6 +1,8 @@
 // Deterministic cost calculator for physical_product archetype.
 // All values derived from wizard answers via maps_to keys.
 
+import { currencyForCountry } from '@/lib/countries'
+
 const ELECTRICITY_RATES_PER_KWH: Record<string, number> = {
   AU: 0.30, NZ: 0.30,
   US: 0.15, CA: 0.12,
@@ -8,19 +10,12 @@ const ELECTRICITY_RATES_PER_KWH: Record<string, number> = {
   DE: 0.38, FR: 0.22,
 }
 
-const CURRENCIES: Record<string, string> = {
-  AU: 'AUD', NZ: 'NZD',
-  US: 'USD', CA: 'CAD',
-  GB: 'GBP', IE: 'EUR',
-  DE: 'EUR', FR: 'EUR',
-}
-
 function kwh(country: string): number {
   return ELECTRICITY_RATES_PER_KWH[country] ?? 0.20
 }
 
 export function currencyFor(country: string): string {
-  return CURRENCIES[country] ?? 'USD'
+  return currencyForCountry(country)
 }
 
 export interface CostInputs {

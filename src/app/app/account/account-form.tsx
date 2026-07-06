@@ -1,51 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-
-const COUNTRIES = [
-  { code: 'AU', name: 'Australia' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'IN', name: 'India' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'US', name: 'United States' },
-  { code: '', name: '─────────────' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'CN', name: 'China' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'EG', name: 'Egypt' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'FR', name: 'France' },
-  { code: 'GH', name: 'Ghana' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'KE', name: 'Kenya' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'NO', name: 'Norway' },
-  { code: 'NP', name: 'Nepal' },
-  { code: 'PH', name: 'Philippines' },
-  { code: 'PK', name: 'Pakistan' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'TH', name: 'Thailand' },
-  { code: 'TR', name: 'Turkey' },
-  { code: 'TZ', name: 'Tanzania' },
-  { code: 'UA', name: 'Ukraine' },
-  { code: 'UG', name: 'Uganda' },
-  { code: 'VN', name: 'Vietnam' },
-  { code: 'ZW', name: 'Zimbabwe' },
-]
+import { COUNTRIES } from '@/lib/countries'
 
 interface Profile {
   username: string | null

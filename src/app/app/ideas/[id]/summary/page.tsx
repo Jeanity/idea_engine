@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
+import { COUNTRIES } from '@/lib/countries'
 
 export const metadata = { title: 'Review Answers — Idea Engine' }
 
@@ -16,7 +17,11 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-function formatAnswer(text: string): string {
+function formatAnswer(text: string, questionKey?: string): string {
+  if (questionKey === 'founder_location_country') {
+    const country = COUNTRIES.find(c => c.code === text.toUpperCase())
+    if (country) return country.name
+  }
   try {
     const parsed = JSON.parse(text)
     if (Array.isArray(parsed)) return parsed.join(', ')
@@ -82,7 +87,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
               >
                 <div>
                   <p className="text-xs text-slate-400 light:text-gray-500 mb-1">{row.question_text}</p>
-                  <p className="text-sm text-white light:text-gray-900 font-medium">{formatAnswer(row.answer_text)}</p>
+                  <p className="text-sm text-white light:text-gray-900 font-medium">{formatAnswer(row.answer_text, row.question_key)}</p>
                 </div>
                 <span className="shrink-0 mt-0.5 text-xs text-slate-500 group-hover:text-indigo-400 light:text-gray-400 light:group-hover:text-indigo-600 transition-colors">
                   Edit ✎

@@ -11,9 +11,14 @@
 
 /* Native <select> popups follow the browser color-scheme, not our CSS — without
    this, dark mode renders white option text on the OS's white popup background.
+   Chromium also derives the popup PANEL colour from the select's own
+   background-color, so the near-transparent utility classes (bg-white/5)
+   composite to a white panel — the select must have a solid background.
    The explicit option colors cover browsers that style options directly. */
 select {
   color-scheme: dark;
+  background-color: #0f172a; /* solid slate-900 — popup panel inherits this */
+  color: #fff;
 }
 select option {
   background-color: #0f172a; /* slate-900 */
@@ -21,6 +26,8 @@ select option {
 }
 .light select {
   color-scheme: light;
+  background-color: #fff;
+  color: #111827; /* gray-900 */
 }
 .light select option {
   background-color: #fff;

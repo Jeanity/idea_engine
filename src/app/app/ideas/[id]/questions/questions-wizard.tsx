@@ -2,14 +2,35 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { COUNTRIES, symbolForCountry } from '@/lib/countries'
 
 interface Question {
   key: string
   text: string
   subtext?: string | null
-  input_type: 'text' | 'select' | 'number' | 'multiselect'
+  input_type: 'text' | 'select' | 'number' | 'multiselect' | 'country'
   options?: string[]
   required: boolean
+  maps_to?: string
+}
+
+const COUNTRY_QUESTION_KEY = 'founder_location_country'
+
+// Number questions whose answer is an amount of money (as opposed to watts,
+// minutes, batch counts…) — these get the currency-symbol prefix.
+const MONEY_MAPS_TO = new Set([
+  'cost.materials',
+  'cost.packaging_per_unit',
+  'cost.hourly_rate',
+  'cost.unit_cost_estimate',
+])
+
+// Money-flavoured option strings in the static banks are written with a plain
+// "$" (e.g. "$500–$2,000"). Once the founder's country is known, show — and
+// store — them in the founder's own currency symbol.
+function localiseCurrency(text: string, symbol: string): string {
+  if (!symbol || symbol === '$') return text
+  return text.replace(/(?<![A-Za-z])\$/g, symbol)
 }
 
 interface ExistingAnswer {
@@ -49,15 +70,41 @@ function TextInput({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
-function NumberInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function NumberInput({ value, onChange, symbol }: { value: string; onChange: (v: string) => void; symbol?: string }) {
   return (
-    <input
-      type="number"
-      className="w-full rounded-lg bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-500 light:bg-white light:border-gray-300 light:text-gray-900 light:placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+    <div className="relative">
+      {symbol && (
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400 light:text-gray-500 pointer-events-none">
+          {symbol}
+        </span>
+      )}
+      <input
+        type="number"
+        className={`w-full rounded-lg bg-white/5 border border-white/10 ${symbol ? 'pl-12' : 'px-4'} pr-4 py-3 text-sm text-white placeholder-slate-500 light:bg-white light:border-gray-300 light:text-gray-900 light:placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500`}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Enter a number…"
+      />
+    </div>
+  )
+}
+
+function CountrySelectInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      placeholder="Enter a number…"
-    />
+      className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-3 text-sm text-white
+                 light:bg-white light:border-gray-300 light:text-gray-900
+                 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+    >
+      <option value="">Select your country…</option>
+      {COUNTRIES.map(c => (
+        <option key={`${c.code}-${c.name}`} value={c.code} disabled={!c.code}>
+          {c.name}
+        </option>
+      ))}
+    </select>
   )
 }
 
@@ -294,6 +341,15 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   const answeredCount = questions.filter(qq => answers.has(qq.key)).length
   const progressPct = Math.round((answeredCount / questions.length) * 100)
 
+  // Country is the first question, so money questions after it can render in
+  // the founder's own currency symbol.
+  const answeredCountry = answers.get(COUNTRY_QUESTION_KEY) ?? ''
+  const currencySymbol = answeredCountry ? symbolForCountry(answeredCountry) : ''
+  const isMoneyQuestion = !!q.maps_to && (q.maps_to.startsWith('price.') || MONEY_MAPS_TO.has(q.maps_to))
+  const localisedOptions = q.options && currencySymbol
+    ? q.options.map(o => localiseCurrency(o, currencySymbol))
+    : q.options
+
   return (
     <div className="space-y-8">
       {/* Progress (hidden when editing a single answer) */}
@@ -337,19 +393,26 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
           <NumberInput
             value={currentValue as string}
             onChange={v => setCurrentValue(v)}
+            symbol={isMoneyQuestion && currencySymbol ? currencySymbol : undefined}
           />
         )}
-        {q.input_type === 'select' && q.options && (
-          <SelectInput
+        {q.input_type === 'country' && (
+          <CountrySelectInput
             value={currentValue as string}
-            options={q.options}
             onChange={v => setCurrentValue(v)}
           />
         )}
-        {q.input_type === 'multiselect' && q.options && (
+        {q.input_type === 'select' && localisedOptions && (
+          <SelectInput
+            value={currentValue as string}
+            options={localisedOptions}
+            onChange={v => setCurrentValue(v)}
+          />
+        )}
+        {q.input_type === 'multiselect' && localisedOptions && (
           <MultiSelectInput
             value={currentValue as string[]}
-            options={q.options}
+            options={localisedOptions}
             onChange={v => setCurrentValue(v)}
           />
         )}
