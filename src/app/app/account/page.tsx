@@ -138,17 +138,27 @@ export default async function AccountPage() {
                       </Link>
 
                       <div className="shrink-0 flex flex-col items-end gap-1.5">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          isFailed ? 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
-                          : isGenerating ? 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700'
-                          // The pipeline never flips ideas.status past 'researching' when a
-                          // report completes — a finished report is what canDownload detects,
-                          // so trust that over the stale idea status.
-                          : canDownload ? 'bg-emerald-500/15 text-emerald-300 light:bg-emerald-100 light:text-emerald-700'
-                          : STATUS_COLOURS[idea.status] ?? 'bg-slate-500/15 text-slate-300'
-                        }`}>
-                          {isFailed ? 'Failed' : isGenerating ? 'Generating…' : canDownload ? 'Report ready' : STATUS_LABELS[idea.status] ?? idea.status}
-                        </span>
+                        {/* A finished report gets an action button, not a status badge —
+                            ideas.status never advances past 'researching' when a report
+                            completes, so canDownload (a finished report existing) is the
+                            trustworthy signal. */}
+                        {canDownload && !isGenerating && !isFailed ? (
+                          <Link
+                            href={`/app/ideas/${idea.id}/report`}
+                            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm
+                                       hover:bg-emerald-400 transition-colors"
+                          >
+                            Read Report →
+                          </Link>
+                        ) : (
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            isFailed ? 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
+                            : isGenerating ? 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700'
+                            : STATUS_COLOURS[idea.status] ?? 'bg-slate-500/15 text-slate-300'
+                          }`}>
+                            {isFailed ? 'Failed' : isGenerating ? 'Generating…' : STATUS_LABELS[idea.status] ?? idea.status}
+                          </span>
+                        )}
                         {canDownload && (
                           <a
                             href={`/api/ideas/${idea.id}/report/pdf`}
