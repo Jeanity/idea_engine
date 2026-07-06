@@ -44,10 +44,8 @@ export default async function DashboardPage() {
 
   const { data: ideas } = await supabase
     .from('ideas')
-    .select('id, raw_text, archetype, status, created_at, location_country, location_region')
+    .select('id, raw_text, archetype, status, created_at')
     .order('created_at', { ascending: false })
-
-  const mostRecent = ideas?.[0]
 
   return (
     <main className="relative min-h-screen bg-slate-950 light:bg-gray-50 overflow-hidden">
@@ -66,10 +64,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-slate-400 light:text-gray-500 mb-6">
               Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
             </p>
-            <NewIdeaForm
-              defaultCountry={mostRecent?.location_country ?? ''}
-              defaultRegion={mostRecent?.location_region ?? ''}
-            />
+            <NewIdeaForm />
           </div>
 
           <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-4">Your ideas</h2>

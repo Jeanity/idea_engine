@@ -11,6 +11,7 @@ export const ALL_MAPS_TO_KEYS = [
   'resource.tech_capability','resource.existing_content','resource.audience_size',
   'ip.category','ip.status','ip.target_market',
   'fallback.problem','fallback.customer','fallback.money_model',
+  'founder.success_definition','founder.location_country','founder.location_region',
 ] as const
 
 export type MapsToKey = typeof ALL_MAPS_TO_KEYS[number]

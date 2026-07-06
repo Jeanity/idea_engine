@@ -16,10 +16,11 @@ interface ClassifyResult {
   detected_signals: string[]
 }
 
-async function classify(idea: string, location: string): Promise<ClassifyResult> {
+async function classify(idea: string, location: string | null): Promise<ClassifyResult> {
+  const locationForPrompt = location && location.trim().length > 0 ? location : 'unknown'
   const attempt = async () => {
     const { text } = await callAI({
-      messages: [{ role: 'user', content: buildClassifyUserMessage(idea, location) }],
+      messages: [{ role: 'user', content: buildClassifyUserMessage(idea, locationForPrompt) }],
       system: CLASSIFY_SYSTEM_PROMPT,
       maxTokens: 256,
       tag: 'classifier',
@@ -56,17 +57,15 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
-  const { raw_text, location_country, location_region } = body
+  const { raw_text } = body
 
   if (!raw_text || typeof raw_text !== 'string' || raw_text.trim().length < 3) {
     return NextResponse.json({ error: 'Idea text is required (min 3 characters)' }, { status: 422 })
   }
-  if (!location_country || typeof location_country !== 'string' || location_country.length !== 2) {
-    return NextResponse.json({ error: 'Country code is required (2-letter ISO code)' }, { status: 422 })
-  }
 
-  const locationString = [location_region, location_country].filter(Boolean).join(', ')
-  const result = await classify(raw_text.trim(), locationString)
+  // Location is collected later, at the questions step (country is required
+  // there before the report can run) — classification doesn't need it.
+  const result = await classify(raw_text.trim(), null)
 
   const { data: idea, error } = await supabase
     .from('ideas')
@@ -76,8 +75,11 @@ export async function POST(request: NextRequest) {
       archetype: result.archetype,
       archetype_source: 'classifier',
       archetype_confidence: result.confidence,
-      location_country: location_country.toUpperCase(),
-      location_region: location_region ?? null,
+      // NOT NULL + char_length()=2 CHECK constraint — 'ZZ' (ISO 3166
+      // user-assigned "unknown") means "not set yet", filled in by the
+      // questions-complete step once the founder answers the country question.
+      location_country: 'ZZ',
+      location_region: null,
       restatement: result.one_line_restatement,
       status: 'draft',
     })

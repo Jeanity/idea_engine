@@ -4,13 +4,63 @@ import { DYNAMIC_QUESTIONS_SYSTEM_PROMPT, buildDynamicQuestionsMessage } from '@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ALL_MAPS_TO_KEYS, validateQuestion, type Question } from '@/lib/validate-question'
 
+// Asked for every idea regardless of archetype — the report's "upside" framing
+// is calibrated against the founder's own definition of success, not a generic
+// startup bar (see why_this_can_work in the synthesis prompt).
+const SUCCESS_QUESTION: Question = {
+  key: 'success_definition',
+  text: 'What would success look like for you?',
+  subtext: 'There is no wrong answer — this shapes how we frame the opportunity for you.',
+  input_type: 'select',
+  options: [
+    'A bit of extra income on the side',
+    'A steady part-time income',
+    'Replacing my current job',
+    'Building something big that could scale beyond me',
+  ],
+  required: false,
+  maps_to: 'founder.success_definition',
+}
+
+// Asked for every idea regardless of archetype. Location moved out of the
+// initial idea submission (step 1) because it isn't needed to classify the
+// idea — but it IS required before the report can run (currency, compliance,
+// financing are all country-driven). The complete endpoint copies this answer
+// into ideas.location_country and rejects completion if it's missing/invalid.
+const COUNTRY_QUESTION: Question = {
+  key: 'founder_location_country',
+  text: 'What country are you in?',
+  subtext: '2-letter country code, e.g. AU, US, GB. This drives currency, compliance, and financing research in your report.',
+  input_type: 'text',
+  required: true,
+  maps_to: 'founder.location_country',
+}
+
+// Only asked for archetypes where the answer materially changes the research
+// (compliance jurisdiction, delivery/service radius, local competitor search).
+const LOCATION_SENSITIVE_ARCHETYPES = ['local_service', 'physical_product', 'marketplace', 'ecommerce_brand']
+
+const REGION_QUESTION: Question = {
+  key: 'founder_location_region',
+  text: 'Which city or region?',
+  subtext: 'Optional — helps us find local competitors and pricing. e.g. Brisbane, QLD.',
+  input_type: 'text',
+  required: false,
+  maps_to: 'founder.location_region',
+}
+
 function loadBank(archetype: string) {
+  let bank: Question[]
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(`@/lib/questions/${archetype}.json`) as Question[]
+    bank = require(`@/lib/questions/${archetype}.json`) as Question[]
   } catch {
-    return []
+    bank = []
   }
+  const withLocation = LOCATION_SENSITIVE_ARCHETYPES.includes(archetype)
+    ? [...bank, COUNTRY_QUESTION, REGION_QUESTION]
+    : [...bank, COUNTRY_QUESTION]
+  return [...withLocation, SUCCESS_QUESTION]
 }
 
 async function generateDynamicQuestions(
@@ -31,13 +81,23 @@ async function generateDynamicQuestions(
       return { key: a.question_key, maps_to: q?.maps_to ?? '', answer: a.answer_text }
     })
 
+  // The ideas row holds the 'ZZ' placeholder until the complete step back-fills
+  // it — but by the time dynamic questions generate, the founder has usually
+  // answered the injected country question, so prefer that answer.
+  const answeredCountry = existingAnswers.find(a => a.question_key === COUNTRY_QUESTION.key)?.answer_text?.trim().toUpperCase()
+  const answeredRegion = existingAnswers.find(a => a.question_key === REGION_QUESTION.key)?.answer_text?.trim()
+  const effectiveCountry = idea.location_country !== 'ZZ' && idea.location_country !== ''
+    ? idea.location_country
+    : (answeredCountry && /^[A-Z]{2}$/.test(answeredCountry) ? answeredCountry : 'unknown')
+  const effectiveRegion = idea.location_region ?? (answeredRegion || null)
+
   try {
     const { text } = await callAI({
       messages: [{ role: 'user', content: buildDynamicQuestionsMessage({
         idea_raw_text: idea.raw_text,
         archetype: idea.archetype,
-        location_country: idea.location_country,
-        location_region: idea.location_region,
+        location_country: effectiveCountry,
+        location_region: effectiveRegion,
         restatement: idea.restatement,
         static_answers: staticAnswers,
         used_keys: usedKeys,

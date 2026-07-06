@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 
 interface ReportData {
   id: string
@@ -480,9 +481,11 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
         <ul className="space-y-2 text-sm text-slate-300 light:text-gray-600">
           {[
             '5–8 real competitors with pricing and gap analysis',
+            'Why this is worth pursuing — what the competition proves, your edge, and your realistic upside',
             'Cost breakdown — materials, labour, power, margin',
             'Pricing strategy with comparable market rates',
             'Legal & compliance checklist with official source links',
+            'Marketing playbook — the right channels for your customers, with starter budgets',
             'Things to consider — with how to handle each',
             'Complete prioritised next steps',
           ].map(item => (
@@ -548,6 +551,7 @@ const REPORT_TABS = [
   { key: 'competitors', label: 'Competitors' },
   { key: 'costs', label: 'Costs & Pricing' },
   { key: 'legal', label: 'Legal & Compliance' },
+  { key: 'marketing', label: 'Getting the Word Out' },
   { key: 'risks', label: 'Considerations & Next Steps' },
 ] as const
 
@@ -559,6 +563,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
 
   const summary = s.summary
   const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
+  const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
   const competitors = s.competitors
   const costBreakdown = s.cost_breakdown
   const pricing = s.pricing_recommendation
@@ -566,8 +571,19 @@ export function FullReportViewer({ report }: { report: ReportData }) {
   const risks = s.risks
   const nextSteps = s.next_steps
   const fundingOptions = s.funding_options
+  const oneThingToDo = s.one_thing_to_do as { action: string; why_first: string } | undefined
+  const validationCopy = s.validation_copy as { poll_question: string; ad_line: string; forum_post: string } | undefined
+  const marketing = s.marketing_plan as {
+    strategy_summary: string
+    free_first: string
+    channels: Array<{ name: string; channel_type: string; priority: number; why_this_channel: string; how_to_start: string; est_cost: string; link: string | null }>
+    starter_budget: { weekly_total: string; allocation: Array<{ channel: string; amount: string }>; note: string }
+  } | undefined
 
   const competitorsCount = Array.isArray(competitors) ? competitors.length : null
+  // Reports generated before the marketing step existed have no key at all —
+  // hide the tab entirely rather than showing an empty panel.
+  const visibleTabs = REPORT_TABS.filter(tab => tab.key !== 'marketing' || marketing !== undefined)
 
   function handleTabChange(key: ReportTabKey) {
     setActiveTab(key)
@@ -584,7 +600,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
       {/* Tab bar */}
       <div className="sticky top-0 z-10 bg-slate-950/90 light:bg-gray-50/95 backdrop-blur -mx-6 px-6 mb-6 border-b border-white/10 light:border-gray-200 overflow-x-auto print:hidden">
         <div className="flex gap-1 whitespace-nowrap">
-          {REPORT_TABS.map(tab => {
+          {visibleTabs.map(tab => {
             const isActive = activeTab === tab.key
             return (
               <button
@@ -625,6 +641,31 @@ export function FullReportViewer({ report }: { report: ReportData }) {
           : vs?.scores
             ? <ViabilitySnapshot vs={vs} />
             : <UnavailableSection title="Viability Snapshot" />}
+
+        {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
+        {isUnavailable(whyProceed)
+          ? <UnavailableSection title="Why This Is Worth Pursuing" reason={whyProceed.reason} />
+          : whyProceed?.market_proof
+            ? (
+              <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/5 light:bg-indigo-50/50 light:border-indigo-200 light:shadow-sm px-5 py-5">
+                <h2 className="font-semibold text-white light:text-gray-900 mb-4">Why This Is Worth Pursuing</h2>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">What the market is telling you</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.market_proof}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Your edge</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.your_edge}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">The upside</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.upside}</p>
+                  </div>
+                </div>
+              </div>
+            )
+            : null}
       </div>
 
       {/* Panel 2: Competitors */}
@@ -893,7 +934,90 @@ export function FullReportViewer({ report }: { report: ReportData }) {
             : <UnavailableSection title="Legal & Compliance" />}
       </div>
 
-      {/* Panel 5: Risks & Next Steps */}
+      {/* Panel 5: Getting the Word Out (marketing playbook) */}
+      <div className={`${panelClass('marketing')} space-y-6 break-inside-avoid`}>
+        {isUnavailable(marketing)
+          ? <UnavailableSection title="Getting the Word Out" reason={marketing.reason} />
+          : marketing?.strategy_summary
+            ? (
+              <>
+                <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                  <h2 className="font-semibold text-white light:text-gray-900 mb-3">Getting the Word Out</h2>
+                  <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed mb-4">{marketing.strategy_summary}</p>
+                  {marketing.free_first && (
+                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200 light:text-emerald-800 mb-1">Before you spend a dollar</p>
+                      <p className="text-sm text-emerald-100 light:text-emerald-900 leading-relaxed">{marketing.free_first}</p>
+                    </div>
+                  )}
+                </div>
+
+                {Array.isArray(marketing.channels) && marketing.channels.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+                      <h2 className="font-semibold text-white light:text-gray-900">Channels</h2>
+                      <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">In order of priority — costs are planning estimates, not quotes</p>
+                    </div>
+                    <div className="divide-y divide-white/10 light:divide-gray-100">
+                      {[...marketing.channels].sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99)).map((ch, i) => (
+                        <div key={i} className="px-5 py-4 flex gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500/15 flex items-center justify-center mt-0.5">
+                            <span className="text-xs font-semibold text-indigo-300">{ch.priority ?? i + 1}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3 mb-1">
+                              <p className="text-sm font-medium text-slate-200 light:text-gray-800">
+                                {ch.link
+                                  ? <a href={ch.link} target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:underline break-words">{ch.name}</a>
+                                  : ch.name}
+                              </p>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ch.channel_type === 'free'
+                                ? 'bg-emerald-500/15 text-emerald-200 light:bg-emerald-100 light:text-emerald-700'
+                                : 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-100 light:text-indigo-700'}`}>
+                                {ch.channel_type === 'free' ? 'Free' : ch.est_cost}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-400 light:text-gray-500 mb-1">{ch.why_this_channel}</p>
+                            {ch.how_to_start && (
+                              <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
+                                <span className="font-medium">How to start: </span>{ch.how_to_start}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {marketing.starter_budget?.weekly_total && (
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                    <h2 className="font-semibold text-white light:text-gray-900 mb-3">Starter Budget</h2>
+                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 px-4 py-3 mb-3">
+                      <p className="text-xs text-emerald-200 light:text-emerald-800 mb-0.5">Suggested starting spend</p>
+                      <p className="text-xl font-bold text-emerald-200 light:text-emerald-800">{marketing.starter_budget.weekly_total}</p>
+                    </div>
+                    {Array.isArray(marketing.starter_budget.allocation) && marketing.starter_budget.allocation.length > 0 && (
+                      <div className="space-y-2 mb-3">
+                        {marketing.starter_budget.allocation.map((row, i) => (
+                          <div key={i} className="flex justify-between items-center text-sm">
+                            <span className="text-slate-400 light:text-gray-500">{row.channel}</span>
+                            <span className="font-medium text-slate-200 light:text-gray-800">{row.amount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {marketing.starter_budget.note && (
+                      <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">{marketing.starter_budget.note}</p>
+                    )}
+                  </div>
+                )}
+              </>
+            )
+            : null}
+      </div>
+
+      {/* Panel 6: Risks & Next Steps */}
       <div className={`${panelClass('risks')} space-y-6 break-inside-avoid`}>
         {isUnavailable(risks)
           ? <UnavailableSection title="Things to consider" reason={risks.reason} />
@@ -952,6 +1076,51 @@ export function FullReportViewer({ report }: { report: ReportData }) {
               </div>
             )
             : <UnavailableSection title="Next Steps" />}
+
+        {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
+        {isUnavailable(validationCopy)
+          ? <UnavailableSection title="Test the demand — copy, paste, post" reason={validationCopy.reason} />
+          : validationCopy?.poll_question
+            ? (
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                <h2 className="font-semibold text-white light:text-gray-900 mb-1">Test the demand — copy, paste, post</h2>
+                <p className="text-xs text-slate-500 light:text-gray-400 mb-4">Ready to paste unchanged — no editing needed.</p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Poll question</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
+                      &ldquo;{validationCopy.poll_question}&rdquo;
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Ad line</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
+                      &ldquo;{validationCopy.ad_line}&rdquo;
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Forum post</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
+                      &ldquo;{validationCopy.forum_post}&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+            : null}
+
+        {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
+        {isUnavailable(oneThingToDo)
+          ? <UnavailableSection title="If you do nothing else, do this" reason={oneThingToDo.reason} />
+          : oneThingToDo?.action
+            ? (
+              <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 light:bg-emerald-50/50 light:border-emerald-200 light:shadow-sm px-5 py-5">
+                <h2 className="font-semibold text-white light:text-gray-900 mb-3">If you do nothing else, do this</h2>
+                <p className="text-sm font-medium text-emerald-200 light:text-emerald-800 leading-relaxed mb-2">{oneThingToDo.action}</p>
+                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{oneThingToDo.why_first}</p>
+              </div>
+            )
+            : null}
       </div>
 
     </div>
@@ -1054,6 +1223,12 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
             <p className="text-xs text-slate-500 light:text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
           )}
           <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <Link
+            href={`/app/ideas/${ideaId}/summary`}
+            className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
+          >
+            Review / edit answers
+          </Link>
         </div>
       </div>
     )
@@ -1070,6 +1245,12 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
         />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
           <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <Link
+            href={`/app/ideas/${ideaId}/summary`}
+            className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
+          >
+            Review / edit answers
+          </Link>
         </div>
       </div>
     )

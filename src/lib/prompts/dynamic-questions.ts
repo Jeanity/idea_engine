@@ -22,7 +22,8 @@ Rules:
 - Prefer select over text when the answer space is small and predictable.
 - Max 3 items. Return fewer if they'd be better — a focused 1 beats a padded 3.
 - Return [] if the static answers already paint a rich picture.
-- Each option in a select/multiselect: 1–60 chars, unique, minimum 2 options.`
+- Each option in a select/multiselect: 1–60 chars, unique, minimum 2 options.
+- BUSINESS MODEL CHECK: the static price/monetisation question offers a fixed set of options (e.g. subscription, one-off, commission). If the founder's chosen option doesn't cleanly fit their idea, or the idea's own description implies a different revenue model than what they picked (e.g. they picked "subscription" but described a one-off service, or picked a generic option but the idea is clearly commission/marketplace-shaped), do NOT silently assume subscription or any other default. Add a follow-up question that clarifies the actual business model in their own words — e.g. asking them to describe exactly how money changes hands for one transaction — rather than letting the report synthesis guess.`
 
 export interface DynamicQuestionInput {
   idea_raw_text: string

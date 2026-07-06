@@ -112,8 +112,9 @@ function MultiSelectInput({ value, options, onChange }: { value: string[]; optio
 
 // ── Wizard ─────────────────────────────────────────────────────
 
-export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
+export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; editKey?: string }) {
   const router = useRouter()
+  const isEditing = Boolean(editKey)
   const [questions, setQuestions] = useState<Question[]>([])
   const [answers, setAnswers] = useState<Map<string, string>>(new Map())
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -140,9 +141,13 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
         setQuestions(qs)
         setAnswers(answerMap)
 
-        // Resume from first unanswered question
+        // Jump straight to the question being edited (from the review page),
+        // otherwise resume from the first unanswered question
+        const editIdx = editKey ? qs.findIndex(q => q.key === editKey) : -1
         const firstUnanswered = qs.findIndex(q => !answerMap.has(q.key))
-        const resumeIdx = firstUnanswered === -1 ? Math.max(0, qs.length - 1) : firstUnanswered
+        const resumeIdx = editIdx !== -1
+          ? editIdx
+          : firstUnanswered === -1 ? Math.max(0, qs.length - 1) : firstUnanswered
         setCurrentIndex(resumeIdx)
         setLoading(false)
       })
@@ -150,7 +155,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
         console.error(err)
         setLoading(false)
       })
-  }, [fetchQuestions])
+  }, [fetchQuestions, editKey])
 
   // Sync input value when navigating to a different question
   useEffect(() => {
@@ -208,6 +213,12 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
         setAnswers(newAnswers)
       }
 
+      // Edit mode: this was a one-question visit — back to the review page
+      if (isEditing) {
+        router.push(`/app/ideas/${ideaId}/summary`)
+        return
+      }
+
       // After answering last required static question, fetch to pick up dynamic questions
       if (!hasFetchedDynamic) {
         const allRequiredAnswered = questions
@@ -250,6 +261,10 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
   }
 
   function handleBack() {
+    if (isEditing) {
+      router.push(`/app/ideas/${ideaId}/summary`)
+      return
+    }
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
       setValidationError(null)
@@ -281,21 +296,23 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
 
   return (
     <div className="space-y-8">
-      {/* Progress */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-slate-500 light:text-gray-400 font-medium">
-            Question {currentIndex + 1} of {questions.length}
-          </span>
-          <span className="text-xs text-slate-500 light:text-gray-400">{progressPct}%</span>
+      {/* Progress (hidden when editing a single answer) */}
+      {!isEditing && (
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs text-slate-500 light:text-gray-400 font-medium">
+              Question {currentIndex + 1} of {questions.length}
+            </span>
+            <span className="text-xs text-slate-500 light:text-gray-400">{progressPct}%</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-white/10 light:bg-gray-200">
+            <div
+              className="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-white/10 light:bg-gray-200">
-          <div
-            className="h-1.5 rounded-full bg-indigo-500 transition-all duration-300"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Question card */}
       <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm p-6">
@@ -346,14 +363,14 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
       <div className="flex items-center justify-between">
         <button
           onClick={handleBack}
-          disabled={currentIndex === 0 || saving}
+          disabled={(currentIndex === 0 && !isEditing) || saving}
           className="text-sm text-slate-300 hover:text-white light:text-gray-700 light:hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          ← Back
+          {isEditing ? '← Back to review' : '← Back'}
         </button>
 
         <div className="flex items-center gap-3">
-          {!q.required && (
+          {!q.required && !isEditing && (
             <button
               onClick={handleSkip}
               disabled={saving}
@@ -370,7 +387,7 @@ export default function QuestionsWizard({ ideaId }: { ideaId: string }) {
             {saving && (
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
             )}
-            {isLast ? 'Generate Report →' : 'Continue →'}
+            {isEditing ? 'Save & back to review' : isLast ? 'Generate Report →' : 'Continue →'}
           </button>
         </div>
       </div>

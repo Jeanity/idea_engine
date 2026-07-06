@@ -25,7 +25,9 @@
       "Freemium + paid tier",
       "Free with ads",
       "Per-seat (team plans)",
-      "Usage-based / metered"
+      "Usage-based / metered",
+      "One-off purchase per report / item / project",
+      "Commission / % per transaction"
     ],
     "required": true,
     "maps_to": "price.model"
@@ -40,7 +42,8 @@
   },
   {
     "key": "app_target_price",
-    "text": "Roughly what price do you have in mind (per user, per month, in your local currency)?",
+    "text": "Roughly what price do you have in mind, in your local currency?",
+    "subtext": "Per month if subscription, per item/report if one-off, per seat if team pricing — whichever fits the payment model you picked.",
     "input_type": "number",
     "required": false,
     "maps_to": "price.target_price"

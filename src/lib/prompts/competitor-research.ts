@@ -13,6 +13,7 @@ IMPORTANT RULES:
 - At least 1 competitor must be local or national to the user's location if any exist.
 - Pricing must be specific (e.g. "$9–13 per 150g bag") — not vague ("affordable" or "premium").
 - gap_notes must be honest about where this competitor is genuinely weak or absent, not just flattery for the user's idea.
+- When the founder's stated differentiator genuinely covers a gap this competitor leaves, name that connection explicitly in gap_notes — it is evidence the founder's angle is real, not flattery. If the differentiator does NOT distinguish them from this competitor, do not pretend it does.
 - Return 3–8 competitors. Fewer high-quality real results beat more fabricated ones.
 
 Each competitor object:

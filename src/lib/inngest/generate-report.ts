@@ -17,6 +17,7 @@ import {
   buildCostEstimationMessage,
 } from '@/lib/prompts/cost-estimation'
 import { FINANCING_SYSTEM_PROMPT, buildFinancingMessage } from '@/lib/prompts/financing'
+import { MARKETING_SYSTEM_PROMPT, buildMarketingMessage } from '@/lib/prompts/marketing'
 
 interface Question {
   key: string
@@ -99,6 +100,19 @@ export const generateReport = inngest.createFunction(
     for (const row of answersRows ?? []) {
       const bankQ = bank.find(q => q.key === row.question_key)
       if (bankQ) mapsTo[bankQ.maps_to] = row.answer_text
+    }
+
+    // Questions injected at request time (questions route) are not in the
+    // static JSON banks, so map their answers explicitly or they never reach
+    // the prompts.
+    const INJECTED_QUESTION_MAPS: Record<string, string> = {
+      success_definition: 'founder.success_definition',
+      founder_location_country: 'founder.location_country',
+      founder_location_region: 'founder.location_region',
+    }
+    for (const row of answersRows ?? []) {
+      const injected = INJECTED_QUESTION_MAPS[row.question_key]
+      if (injected) mapsTo[injected] = row.answer_text
     }
 
     const answers = Object.entries(mapsTo).map(([maps_to, answer]) => ({ maps_to, answer }))
@@ -275,6 +289,42 @@ export const generateReport = inngest.createFunction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
 
+    // ── Step 3.5: Marketing playbook ──────────────────────────
+    let marketingPlan: unknown
+    try {
+      const res = await step.run('marketing-plan', (): Promise<StepResult<unknown>> => withRetry('marketing-plan', async () => {
+        const { text, costUsd } = await callAI({
+          messages: [{ role: 'user', content: buildMarketingMessage({
+            idea_raw_text: idea.raw_text,
+            archetype: idea.archetype,
+            location_country: idea.location_country,
+            location_region: idea.location_region,
+            restatement: idea.restatement,
+            target_customer: mapsTo['market.target_customer'] ?? null,
+            geographic_scope: mapsTo['market.geographic_scope'] ?? null,
+            sales_channel: mapsTo['idea.sales_channel'] ?? null,
+            startup_capital: mapsTo['cost.startup_capital'] ?? null,
+            success_definition: mapsTo['founder.success_definition'] ?? null,
+          }) }],
+          system: MARKETING_SYSTEM_PROMPT,
+          maxTokens: 3072,
+          tag: 'report:marketing',
+          tools: webSearchTool(3),
+        })
+        const parsed = extractJson(text)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Marketing response not an object')
+        return { value: parsed, costUsd }
+      }))
+      marketingPlan = res.value
+      totalCostUsd += res.costUsd
+    } catch (err) {
+      console.error('marketing-plan failed:', err)
+      marketingPlan = UNAVAILABLE('Marketing playbook could not be completed.')
+    }
+    sections.marketing_plan = marketingPlan
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+
     // ── Step 4: Synthesis ─────────────────────────────────────
     let synthesis: Partial<SynthesisOutput>
     try {
@@ -292,10 +342,11 @@ export const generateReport = inngest.createFunction(
             funding_options: Array.isArray(sections.funding_options) ? sections.funding_options : undefined,
           }) }],
           system: SYNTHESIS_SYSTEM_PROMPT,
-          // The synthesis JSON (summary + 4 scored dimensions + pricing +
-          // 3-5 risks + 3-5 next steps) regularly exceeds 2048 tokens —
-          // that cap truncated the JSON and killed all five sections at once.
-          maxTokens: 4096,
+          // The synthesis JSON (summary + 4 scored dimensions + why-this-can-work +
+          // pricing + 3-5 risks + 3-5 next steps + one-thing-to-do + validation
+          // copy) regularly exceeds 2048 tokens — a low cap truncates the JSON
+          // and kills all eight sections at once.
+          maxTokens: 6144,
           tag: 'report:synthesis',
         })
         return { value: extractJson(text) as SynthesisOutput, costUsd }
@@ -307,9 +358,12 @@ export const generateReport = inngest.createFunction(
       synthesis = {
         summary: UNAVAILABLE('Summary generation failed.') as unknown as SynthesisOutput['summary'],
         viability_snapshot: UNAVAILABLE('Viability analysis failed.') as unknown as SynthesisOutput['viability_snapshot'],
+        why_this_can_work: UNAVAILABLE('Opportunity framing failed.') as unknown as SynthesisOutput['why_this_can_work'],
         pricing_recommendation: UNAVAILABLE('Pricing analysis failed.') as unknown as SynthesisOutput['pricing_recommendation'],
         risks: [],
         next_steps: [],
+        one_thing_to_do: UNAVAILABLE('Priority action generation failed.') as unknown as SynthesisOutput['one_thing_to_do'],
+        validation_copy: UNAVAILABLE('Validation copy generation failed.') as unknown as SynthesisOutput['validation_copy'],
       }
     }
     Object.assign(sections, synthesis)
@@ -336,9 +390,10 @@ export const generateReport = inngest.createFunction(
         next_steps: allNextSteps.slice(0, 2),
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await supabase.from('reports').update({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sections: sections as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         preview_sections: previewSections as any,
         status: 'complete',
         generation_completed_at: new Date().toISOString(),

@@ -75,21 +75,36 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
         ) : (
           <div className="space-y-3 mb-8">
             {rows.map(row => (
-              <div key={row.question_key} className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4">
-                <p className="text-xs text-slate-400 light:text-gray-500 mb-1">{row.question_text}</p>
-                <p className="text-sm text-white light:text-gray-900 font-medium">{formatAnswer(row.answer_text)}</p>
-              </div>
+              <Link
+                key={row.question_key}
+                href={`/app/ideas/${id}/questions?edit=${encodeURIComponent(row.question_key)}`}
+                className="group flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4 hover:border-indigo-400/40 light:hover:border-indigo-300 transition-colors"
+              >
+                <div>
+                  <p className="text-xs text-slate-400 light:text-gray-500 mb-1">{row.question_text}</p>
+                  <p className="text-sm text-white light:text-gray-900 font-medium">{formatAnswer(row.answer_text)}</p>
+                </div>
+                <span className="shrink-0 mt-0.5 text-xs text-slate-500 group-hover:text-indigo-400 light:text-gray-400 light:group-hover:text-indigo-600 transition-colors">
+                  Edit ✎
+                </span>
+              </Link>
             ))}
           </div>
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <Link
-            href={`/app/ideas/${id}/questions`}
-            className="text-sm text-slate-300 hover:text-white light:text-gray-700 light:hover:text-gray-900"
-          >
-            ← Edit answers
-          </Link>
+          {/* The generic wizard link redirects to the report once one exists —
+              past that point, per-card Edit links above are the edit path */}
+          {(idea.status === 'researching' || idea.status === 'ready') ? (
+            <span className="text-sm text-slate-500 light:text-gray-400">Click any answer to edit it</span>
+          ) : (
+            <Link
+              href={`/app/ideas/${id}/questions`}
+              className="text-sm text-slate-300 hover:text-white light:text-gray-700 light:hover:text-gray-900"
+            >
+              ← Edit answers
+            </Link>
+          )}
           {(idea.status === 'researching' || idea.status === 'ready') ? (
             <Link
               href={`/app/ideas/${id}/report`}

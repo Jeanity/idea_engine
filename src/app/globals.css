@@ -9,6 +9,24 @@
    with the light: variant, e.g. bg-slate-950 light:bg-gray-50. */
 @custom-variant light (&:where(.light, .light *));
 
+/* Native <select> popups follow the browser color-scheme, not our CSS — without
+   this, dark mode renders white option text on the OS's white popup background.
+   The explicit option colors cover browsers that style options directly. */
+select {
+  color-scheme: dark;
+}
+select option {
+  background-color: #0f172a; /* slate-900 */
+  color: #fff;
+}
+.light select {
+  color-scheme: light;
+}
+.light select option {
+  background-color: #fff;
+  color: #111827; /* gray-900 */
+}
+
 /* ---------------------------------------------------------------------- */
 /* Landing page animations                                                 */
 /* ---------------------------------------------------------------------- */
