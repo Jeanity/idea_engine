@@ -350,6 +350,13 @@ export default function LandingPage() {
               See how it works
             </a>
           </div>
+
+          <Link
+            href="/sample-report"
+            className="mt-6 text-sm text-slate-300 hover:text-white transition-colors"
+          >
+            or see a sample report →
+          </Link>
         </div>
       </section>
 
@@ -441,6 +448,16 @@ export default function LandingPage() {
                 </div>
               </ScrollReveal>
             ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              href="/sample-report"
+              className="inline-block rounded-lg border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700
+                         transition-colors hover:border-gray-400 hover:bg-gray-100"
+            >
+              Read a full sample report →
+            </Link>
           </div>
         </div>
       </section>

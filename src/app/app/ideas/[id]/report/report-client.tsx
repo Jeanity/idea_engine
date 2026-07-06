@@ -553,7 +553,7 @@ const REPORT_TABS = [
 
 type ReportTabKey = typeof REPORT_TABS[number]['key']
 
-function FullReportViewer({ report }: { report: ReportData }) {
+export function FullReportViewer({ report }: { report: ReportData }) {
   const s = report.sections
   const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
 
