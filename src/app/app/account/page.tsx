@@ -56,7 +56,8 @@ function reportDisplayState(report: ReportRow | null) {
     isGenerating: report?.status === 'running' || report?.status === 'queued',
     isFailed: report?.status === 'failed',
     canDownload: report?.status === 'complete' && (hasFullSections || hasTeaserOnly),
-    kindLabel: hasFullSections ? 'Full report' : hasTeaserOnly ? 'Teaser' : null,
+    // Product voice: never "teaser" in user-facing copy — "initial report".
+    kindLabel: hasFullSections ? 'Full report' : hasTeaserOnly ? 'Initial report' : null,
     headlineScore: scores && typeof scores === 'object' ? deriveHeadlineScore(scores as Parameters<typeof deriveHeadlineScore>[0]) : null,
   }
 }

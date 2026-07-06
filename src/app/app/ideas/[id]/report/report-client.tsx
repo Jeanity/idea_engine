@@ -1296,7 +1296,7 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
           {isAdmin && generationCost !== undefined && (
             <p className="text-xs text-slate-500 light:text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
           )}
-          <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null) }} />
           <Link
             href={`/app/ideas/${ideaId}/summary`}
             className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
@@ -1318,7 +1318,7 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
           onGenerateFull={() => { setRegenerating(true); setReport(null) }}
         />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
-          <RegenerateButton ideaId={ideaId} label="Regenerate teaser" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null) }} />
           <Link
             href={`/app/ideas/${ideaId}/summary`}
             className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"

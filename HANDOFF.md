@@ -1,3 +1,32 @@
+# Handoff — 2026-07-07 (PDF export, country dropdown, score donuts, account ideas list)
+
+Pushed as commit `81f78ca` — catches up everything since `584535b` (below), which had accumulated uncommitted across several separate work sessions.
+
+## What shipped
+
+1. **PDF report export** — new dependency `@react-pdf/renderer`. `GET /api/ideas/[id]/report/pdf` (must run on Node, not Edge). `src/lib/pdf/` holds the document (`ReportDocument.tsx`), shared primitives (`components.tsx`), and theme (`theme.ts`). Designed as its own professional document — light-only, Helvetica, indigo/emerald/amber accents, no red — not a dark-mode screenshot of the app. Cover page, clickable internal TOC (via react-pdf `Link src="#anchor"` + matching `id` props — no page-number lookup needed), one page per report section, hides any section the report doesn't have (works identically for a full report or a teaser-only one — see item 4).
+   - **Known react-pdf gotchas hit and fixed**: Helvetica's base-14 font has no `→` (U+2192) glyph — renders as tofu; use ASCII `>`. `react-pdf`'s Yoga-based flex layout does **not** shrink an unconstrained long-text sibling the way CSS does — a long AI-generated sentence next to a name column will starve the column to ~1 word/line and overflow; fix is `flex:1` on the long side (done in the shared `KVRow` component and every name/badge row). `stroke` doesn't parse CSS `rgba()` — silently falls back to a visible orange "error" color; use solid hex + a separate `opacity` prop instead. `Link`/`Svg` don't cascade text style into nested custom-styled `Text` children — each needs its own style repeated.
+   - No PDF equivalent of `target="_blank"` exists in the format — confirmed via `@react-pdf/renderer`'s own `LinkProps` type (only `href`/`src`/`wrap`/`debug`/`hitSlop`). Whichever app opens the PDF decides new-tab vs. same-tab, not the file.
+   - Links were color-only (same accent as headings/badges) with no reliable underline across viewers — added an explicit link-icon (Feather's MIT "external-link" glyph, box+arrow, not a chain-link — straight lines stay crisp at ~8px where a curved glyph blurs) beside every link, on **both** web and PDF, via `ExternalLinkIcon` (web) / `LinkIcon` (PDF, built from react-pdf's own `Svg`/`Path`/`Polyline`/`Line` primitives).
+2. **Country is now a dropdown**, not free text — `src/lib/countries.ts` (shared with the account form), with currency symbol threaded through the wizard's money questions, `cost-calculator.ts`, and report currency formatting (`symbolForCountry`/`symbolForCurrency`).
+3. **Score donut** (`src/components/score-ring.tsx` web, `ScoreDonut` in `src/lib/pdf/components.tsx` PDF) — derives a 0–100 headline score from the 4 viability dimensions via `src/lib/viability-score.ts` (simple interim formula, documented as such; a proper calibration pass is still a backlog item once real report volume exists). Shown on: the report web view (next to "Viability Snapshot"), the PDF Executive Summary page, and each row of the account page's ideas list. Extracted from the landing-page marquee's existing `ScoreRing` (was a private function in `src/app/page.tsx`) rather than inventing a new visual language.
+4. **Nav + page restructure**:
+   - `AppHeader` is now an async Server Component that queries the signed-in user's idea count itself (one cheap `count`-only query) — "My ideas" only renders once that's `> 0`. No prop threading needed across its ~7 call sites.
+   - `/app` (dashboard) is now a clean, single-purpose "start a new idea" page — just the intake form + a mock-stats strip (`src/lib/demo-stats.ts`, shared with the landing page's `DEMO_STATS`, both marked `TODO: replace with real numbers`) + a link to `/sample-report`.
+   - The ideas list moved to `/app/account#your-ideas`. Each row shows: score donut (or a neutral dashed placeholder if no score yet), status badge (Classifying/In progress/Researching/Generating…/Failed/Report ready), and a **Download PDF** link — which now works even when only a teaser has been generated (report pipeline stores teaser content in `reports.preview_sections`, not `sections` — see `generate-teaser.ts`; the PDF route was previously gated on full `sections.competitors` existing, now accepts either and hands `ReportDocument` whichever is populated).
+5. **New shared modules** (small extractions, avoid yet another duplicate): `src/lib/archetype-labels.ts` (a 5th copy of this map would've been added otherwise — the 3-4 existing duplicates in confirm/summary/other pages were left alone, not worth the touch-risk right now).
+
+## Verification notes
+- Every PDF change was checked by rendering against **real production report data** (not just the hand-written sample fixture) via a temporary unauthenticated debug route (`src/app/api/debug-pdf-preview`, service-role client) that was deleted before each commit — rasterized with `pymupdf`/`fitz` (`C:\Python310\python.exe`, `pip install pymupdf`) since headless Chrome's built-in PDF viewer doesn't screenshot through the automated preview tools.
+- The account page and dashboard restructure could **not** be visually verified in a real browser — the automated preview session isn't signed in as the real user and there's no way to authenticate it. Verified instead via: `tsc`/`eslint` clean, a pure-logic test of the trickiest new function (`reportDisplayState`'s teaser/full/generating detection, 6 synthetic scenarios all correct), and a direct Supabase query confirming the ideas→reports nested-select shape works as expected. **Recommend a manual click-through of `/app` → `/app/account` after this deploys.**
+- Score-ring math cross-checked against a real sample-report render (63/100 for scores 4/3/3/2 — matches the formula by hand).
+
+## Not yet done from this batch
+- Add `ADMIN_EMAIL` to Vercel's env (still outstanding from the prior handoff below — unrelated to this batch but still blocking prod admin access).
+- The 3-4 pre-existing `ARCHETYPE_LABELS` duplicates elsewhere weren't consolidated onto the new shared module — left alone to limit blast radius.
+
+---
+
 # Handoff — 2026-07-06 (report v2: positivity layer, marketing tab, location move, answer editing)
 
 ## What ships in this commit

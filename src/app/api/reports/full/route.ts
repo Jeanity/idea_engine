@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     .eq('idea_id', idea_id)
     .single()
 
-  if (!report) return NextResponse.json({ error: 'No report exists — generate teaser first' }, { status: 404 })
+  if (!report) return NextResponse.json({ error: 'No report exists — generate the initial report first' }, { status: 404 })
 
   // Reset to queued, clear sections (preserve preview_sections for fallback if pipeline fails)
   await supabase
