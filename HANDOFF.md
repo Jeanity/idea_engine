@@ -1,8 +1,18 @@
-# Handoff — 2026-07-07 (PDF export, country dropdown, score donuts, account ideas list)
+# Handoff — 2026-07-07, end of night
 
-Pushed as commit `81f78ca` — catches up everything since `584535b` (below), which had accumulated uncommitted across several separate work sessions.
+Three pushes today: `584535b` (report v2 — see section below), `81f78ca` (PDF export + UX batch, this section), `df5a544` (terminology). Working tree is clean, everything is pushed. Vercel deploys from main, so all of this is (or is about to be) live in prod.
 
-## What shipped
+## State at end of night
+- **Local env**: `AI_PROVIDER=anthropic` in `.env.local` (real API calls, real cost). `ADMIN_EMAIL=thedannyowen@gmail.com` set locally — **still NOT set in Vercel env** (top next-action).
+- **Dev servers**: `idea-engine` (:3000) + `idea-engine-inngest` (:8288) were running under the Claude session's launcher (`E:\sig\.claude\launch.json`); they die with that session. Next 16 allows ONE dev server per directory — if a stale one holds the port, kill it before starting (`taskkill /PID <pid> /F`; the error message names the PID).
+- **Live testing done today**: full end-to-end GB run (mobile oven cleaning, Nottingham) — injected country question, £ currency, .gov.uk compliance links, marketing tab, PDF download all verified against that real report. Real cost of a full report is now **~US$0.84** (marketing step + verbose search results pushed it past the old $0.60 target — re-measure during 4B pricing work).
+- **One operational incident worth knowing**: a report got stuck at `status='running'` with all sections present but no `_meta` — cause was editing pipeline code while a live Inngest run was mid-flight (Turbopack HMR orphans the final step silently). Fixed by manually completing the row. Rule of thumb: don't kick off real paid runs while pipeline code is being edited.
+
+## Product decisions made today (bind future copy/work)
+- **Never say "teaser" in user-facing copy** — it's an "initial report" (or "basic report"). Fixed everywhere visible in `df5a544`. Internal identifiers (`generateTeaser`, `preview_sections`, `report:teaser` tag) intentionally unchanged.
+- **Domain**: Danny registered **hadidea.com**, may use it for this project. Nothing wired yet. When committing to it: add domain in Vercel, update Supabase auth site-URL + redirect allowlist (OAuth/magic links break otherwise), and decide whether the "Idea Engine" name follows the domain (header wordmark, PDF cover, footers, sample-report copy).
+
+## What shipped in `81f78ca`
 
 1. **PDF report export** — new dependency `@react-pdf/renderer`. `GET /api/ideas/[id]/report/pdf` (must run on Node, not Edge). `src/lib/pdf/` holds the document (`ReportDocument.tsx`), shared primitives (`components.tsx`), and theme (`theme.ts`). Designed as its own professional document — light-only, Helvetica, indigo/emerald/amber accents, no red — not a dark-mode screenshot of the app. Cover page, clickable internal TOC (via react-pdf `Link src="#anchor"` + matching `id` props — no page-number lookup needed), one page per report section, hides any section the report doesn't have (works identically for a full report or a teaser-only one — see item 4).
    - **Known react-pdf gotchas hit and fixed**: Helvetica's base-14 font has no `→` (U+2192) glyph — renders as tofu; use ASCII `>`. `react-pdf`'s Yoga-based flex layout does **not** shrink an unconstrained long-text sibling the way CSS does — a long AI-generated sentence next to a name column will starve the column to ~1 word/line and overflow; fix is `flex:1` on the long side (done in the shared `KVRow` component and every name/badge row). `stroke` doesn't parse CSS `rgba()` — silently falls back to a visible orange "error" color; use solid hex + a separate `opacity` prop instead. `Link`/`Svg` don't cascade text style into nested custom-styled `Text` children — each needs its own style repeated.
@@ -21,9 +31,13 @@ Pushed as commit `81f78ca` — catches up everything since `584535b` (below), wh
 - The account page and dashboard restructure could **not** be visually verified in a real browser — the automated preview session isn't signed in as the real user and there's no way to authenticate it. Verified instead via: `tsc`/`eslint` clean, a pure-logic test of the trickiest new function (`reportDisplayState`'s teaser/full/generating detection, 6 synthetic scenarios all correct), and a direct Supabase query confirming the ideas→reports nested-select shape works as expected. **Recommend a manual click-through of `/app` → `/app/account` after this deploys.**
 - Score-ring math cross-checked against a real sample-report render (63/100 for scores 4/3/3/2 — matches the formula by hand).
 
-## Not yet done from this batch
-- Add `ADMIN_EMAIL` to Vercel's env (still outstanding from the prior handoff below — unrelated to this batch but still blocking prod admin access).
-- The 3-4 pre-existing `ARCHETYPE_LABELS` duplicates elsewhere weren't consolidated onto the new shared module — left alone to limit blast radius.
+## Next actions (priority order)
+1. **Add `ADMIN_EMAIL=thedannyowen@gmail.com` to Vercel project env** — until then prod has no admin and no full-report test button.
+2. **Manual click-through of the new `/app` → `/app/account` flow in prod or local** — the restructure couldn't be visually verified from the automated session (auth). Check: "My ideas" nav appears, account page shows ideas with donuts + Download PDF (including an initial-report-only idea), dashboard is the clean new-idea page with stats strip.
+3. **Security/privacy workstream** (queued as its own session): app-level AES-256-GCM encryption of ideas.raw_text/restatement, answers.answer_text, reports.sections (server-held key); service-role access audit log; "Your idea stays yours" trust page; ToS clause that users retain all idea IP; Inngest Cloud = data processor in prod or self-host the runner. RLS is already owner-only on all tables; true E2E impossible (pipeline needs plaintext for the Claude API).
+4. **Task 4B.3 cost/quality matrix** — 14 ideas (2/archetype) on Anthropic mode → QUALITY_LOG.md → tier-boundary decision. Budget ~$0.84/full report now.
+5. **Stripe account signup** (days-long activation review; only external blocker for Phase 5), then Phase 5 build.
+6. Smaller backlog: real stats replacing `src/lib/demo-stats.ts` mock numbers; country question pre-fill from previous ideas; headline-score formula calibration (`src/lib/viability-score.ts` is an interim average); consolidate the 3-4 older `ARCHETYPE_LABELS` duplicates onto `src/lib/archetype-labels.ts`; re-capture mock fixtures (`npx tsx scripts/capture-fixtures.ts`) — they pre-date all of today's new sections; "One thing to do"-style closer in the initial report too; fix literal `*something*` markdown leftover in src/lib/sample-report.ts:276.
 
 ---
 
