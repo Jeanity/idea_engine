@@ -1,31 +1,27 @@
-# Handoff — 2026-07-05 end of day (cosmetic sprint + light mode)
+# Handoff — 2026-07-06
 
-## Where things stand
-Local dev mode active: `AI_PROVIDER=mock` in .env.local (all AI calls return fixtures, $0; reports finish instantly). Dev servers via .claude/launch.json in E:\sig: `idea-engine` (port 3000) + `idea-engine-inngest` (port 8288 — REQUIRED for report generation locally, see README "Local dev mode"). Switch back to real AI: remove/set `AI_PROVIDER=anthropic`, restart dev server.
+## Current state
+Cosmetic sprint COMPLETE and Danny-approved. Local dev mode active: `AI_PROVIDER=mock` in .env.local (all AI calls return fixtures, $0, instant). Dev servers via .claude/launch.json in E:\sig: `idea-engine` (port 3000) + `idea-engine-inngest` (port 8288 — required for report generation locally). Back to real AI: set `AI_PROVIDER=anthropic` (or remove), restart dev server.
 
-## Today's completed work (all pushed to main, deploys to Vercel)
-- **Landing page**: dark futuristic hero (blobs, dot grid, demo stat badge in DEMO_STATS const), seamless report-card marquee incl. 2 privacy-redacted cards (blur covers NONSENSE text — never real ideas), score donut rings via `src/lib/score-bands.ts` (amber floor, NO red — editable config), consistent location lines.
-- **Voice**: EXPERT_PARTNER_PREAMBLE now bans discouragement + AI-isms; "Key Risks" → "Things to consider" / "How to handle it" everywhere user-facing.
-- **Sign-in**: dark reskin + Google OAuth (working; Supabase redirect allowlist configured for localhost + prod).
-- **Dashboard**: inline idea intake ("What's the idea?" / "Start the engine"), location prefill, /app/new redirects to /app.
-- **Nav**: My ideas / New idea / My account links; account page identity banner.
-- **Engine bay generating screen**: full-bleed dark, spinning gears, fuel-line steps, console ticker, bouncing glow blobs (BouncingBlob in report-client.tsx).
-- **Whole signed-in app converted to dark theme** (commit 642244e): all screens + report viewer. **Print stays black-on-white** via `.print-force-light` + @media print rule in globals.css.
-- **Fixes**: Inngest local setup (INNGEST_DEV=1 + dev server), stale queued/running report auto-recovery (10-min threshold in /api/reports), readable error messages on generation failure.
+## Shipped and verified (all pushed to main → Vercel)
+- **Theming**: dark futuristic default across the ENTIRE site (landing, sign-in, sample report, full signed-in app); light mode toggle on every page (sun/moon in headers; persisted, no-flash init; `light:` variant via @custom-variant in globals.css). Contrast rule: translucent dark pills become solid pastels in light (`bg-{c}-100 text-{c}-700`). Engine-bay generating screen stays dark in BOTH themes by design. Report print stays black-on-white (`.print-force-light`).
+- **Public sample report** (`/sample-report`, linked from landing hero + report-anatomy section): Sydney mobile coffee van, hand-curated in `src/lib/sample-report.ts`, rendered through the real FullReportViewer. Fictional competitors, all links '#' + click-neutralized, banner explains real reports have live links. Thesis showcases the product: "a site-acquisition business that happens to sell coffee."
+- **Landing**: marquee with privacy-redacted cards (blur covers NONSENSE text only), score rings via `src/lib/score-bands.ts` (amber floor, NO red), demo stats in DEMO_STATS (TODO: real numbers at launch).
+- **App UX**: inline idea intake on dashboard ("Start the engine"), engine-bay progress screen (gears, fuel line, console ticker, bouncing blobs), My ideas/New idea/My account nav, account identity banner, Google OAuth + magic link (both landing on /app).
+- **Pipeline**: expert-partner persona + no-discouragement + banned AI-isms; "Things to consider"/"How to handle it" naming; financing-bridge step (runs on budget gap, ≤3 searches, 4096 tokens); search caps (5/3/3); per-report cost in sections._meta.cost_usd (admin-visible); stale queued/running reports auto-recover after 10 min.
 
-## Light mode — ✅ DONE (commit 340af0d, 2026-07-06)
-Dark is the default; sun/moon toggle in the AppHeader (persisted in localStorage('theme'), no-flash init script in layout.tsx, `@custom-variant light` in globals.css). Every signed-in screen has `light:` overrides. Deliberate choices: the generating "engine bay" stays dark in BOTH themes (signature moment); landing + sign-in are dark-only for now (extend later if Danny wants). Danny has NOT yet visually reviewed light mode — first thing to sanity-check next session.
-
-## Standing queue (unchanged)
-1. Regenerate charger report on Anthropic mode (~US$0.30–0.75) — verify funding options card + partner voice + engine bay animation at real speed.
-2. Task 4B.3: 14-idea cost/quality matrix (2/archetype, Danny via wizard) → `npx tsx scripts/dump-quality-log.ts` → grade → 4B.4 tier boundary decision → unblocks Phase 5 payments.
-3. Stripe account signup (activation takes days — start early).
-4. Phase 5 additions specced: PDF download (5.5), paid report updates + "what's new" diff (5.6b, prices are placeholders).
-5. Wizard privacy-consent question (HANDOFF item 7 → now in this queue): public-visibility opt-in + private-but-location-visible checkbox; blurred public content must cover nonsense text.
-6. Backlog: URL liveness checking for report links; headline-score derivation for real reports (4B.5); light mode for landing/sign-in if Danny wants it.
+## Next actions (priority order)
+1. **Danny visual pass** on light mode across the tour (landing → sample → sign-in → app) — automated checks passed; final feel is his call. DONE per Danny "works perfectly" 2026-07-06, but flag anything on re-look.
+2. **Switch to Anthropic mode and regenerate the charger report** (~US$0.30–0.75): verify funding-options card renders live, partner voice in synthesis, engine bay at real speed, cost line under report.
+3. **Task 4B.3 — cost/quality matrix**: 14 ideas (2/archetype) through the wizard on Anthropic mode; `npx tsx scripts/dump-quality-log.ts` → paste into docs/QUALITY_LOG.md → Danny grades → 4B.4 tier-boundary decision (locks $19.95/$49.95 split; all update-pricing figures are placeholders until then).
+4. **Stripe account signup** — start now; activation review takes days and it's the only external blocker for Phase 5.
+5. **Phase 5 build** (after 4B.4): two-tier checkout, webhook unlock, PDF download (task 5.5, @react-pdf/renderer), paid report updates + "what's new" diff (5.6b — Opus/Fable designs the diff), email delivery, my-reports polish.
+6. Backlog: wizard privacy-consent question (public showcase opt-in, location-only visibility); URL liveness checks for report links; headline-score derivation for real reports (4B.5); re-capture fixtures after next real report (`npx tsx scripts/capture-fixtures.ts`).
 
 ## Gotchas
-- Mock mode: every report renders charger-report fixture content regardless of idea — plumbing test only; judge prompt/report quality ONLY on Anthropic mode.
-- Prompt JSON schemas must pin exact key names; callAI throws on max_tokens truncation (keep ≥4096 for JSON-heavy, financing included).
-- Web search caps: competitors 5 / compliance 3 / financing 3. Cost per report in sections._meta.cost_usd (admin-visible under report).
-- Model routing: cheapest capable (Haiku → Sonnet → Fable/Opus only for prompts/architecture/diff-design).
+- Mock mode renders the charger fixture for EVERY idea — plumbing only; judge report quality ONLY on Anthropic mode.
+- Prompts must pin exact JSON key names; callAI throws on max_tokens truncation (keep ≥4096 for JSON-heavy calls).
+- Web search = dominant report cost. Sample-report page must never gain real/fabricated URLs (link-rot + fabrication policy).
+- Public blur = nonsense text underneath, always (devtools removes blur).
+- Model routing: cheapest capable — Haiku (boilerplate) → Sonnet (implementation, all UI agents) → Fable/Opus (prompts, architecture, diff design, sales copy).
+- Preview-browser screenshots time out on animated pages — verify with snapshots/eval/inspect instead.
