@@ -167,6 +167,19 @@ export default async function AccountPage() {
                             Download PDF
                           </a>
                         )}
+                        {canDownload && kindLabel === 'Initial report' && (
+                          // TODO(Phase 5): wire to Stripe checkout once the account is
+                          // activated — inert on purpose until then, matching the report
+                          // page's "Unlock full report — coming soon" button.
+                          <button
+                            type="button"
+                            disabled
+                            title="Coming soon"
+                            className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
+                          >
+                            Purchase full report · coming soon
+                          </button>
+                        )}
                       </div>
                     </div>
                   </li>
