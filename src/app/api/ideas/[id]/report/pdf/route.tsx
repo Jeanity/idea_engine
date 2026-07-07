@@ -1,6 +1,7 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createDbClient } from '@/lib/db'
 import { ReportDocument, type ReportPdfInput } from '@/lib/pdf/ReportDocument'
+import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { formatAnswer } from '@/lib/format-answer'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -44,7 +45,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (report?.status !== 'complete' || (!hasFullSections && !hasTeaserOnly)) {
     return NextResponse.json({ error: 'Nothing has been generated for this idea yet.' }, { status: 409 })
   }
-  const sections = hasFullSections ? fullSections : previewSections
+  const rawSections = hasFullSections ? fullSections : previewSections
+
+  // Affiliate rewrite at DELIVERY time (mirrors the web report page): swap any
+  // report URL on a partner's match_domain for a /go/<slug> tracking link.
+  // Active links come via the "public select active" RLS policy.
+  const { data: affiliateLinks } = await supabase
+    .from('affiliate_links')
+    .select('slug, match_domains')
+    .eq('active', true)
+  const sections =
+    affiliateLinks && affiliateLinks.length > 0
+      ? rewriteAffiliateUrls(rawSections as Record<string, unknown>, affiliateLinks, request.nextUrl.origin, id)
+      : rawSections
 
   const { data: profile } = await supabase
     .from('profiles')

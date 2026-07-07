@@ -6,12 +6,27 @@ import { bandFor } from '@/lib/score-bands'
 
 export function PageFooter({ reportTitle }: { reportTitle: string }) {
   return (
-    <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>{reportTitle}</Text>
-      <Text
-        style={styles.footerText}
-        render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
-      />
+    <View style={{ position: 'absolute', bottom: 20, left: 48, right: 48 }} fixed>
+      {/* FTC/ASA affiliate disclosure — shown unconditionally wherever rewritten
+          links can render (report URLs may be affiliate /go/ links). */}
+      <Text style={[styles.footerText, { marginBottom: 4 }]}>
+        Some links in this report may be affiliate links. They never affect our recommendations.
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          borderTopWidth: 1,
+          borderTopColor: COLORS.border,
+          paddingTop: 8,
+        }}
+      >
+        <Text style={styles.footerText}>{reportTitle}</Text>
+        <Text
+          style={styles.footerText}
+          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+        />
+      </View>
     </View>
   )
 }

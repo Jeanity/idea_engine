@@ -336,6 +336,75 @@ export type Database = {
           }
         ]
       }
+      affiliate_links: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          target_url: string
+          match_domains: string[]
+          match_terms: string[]
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          target_url: string
+          match_domains?: string[]
+          match_terms?: string[]
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          slug?: string
+          name?: string
+          target_url?: string
+          match_domains?: string[]
+          match_terms?: string[]
+          active?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      affiliate_clicks: {
+        Row: {
+          id: number
+          link_id: string
+          occurred_at: string
+          context: string | null
+          user_id: string | null
+          referrer_path: string | null
+        }
+        Insert: {
+          id?: number
+          link_id: string
+          occurred_at?: string
+          context?: string | null
+          user_id?: string | null
+          referrer_path?: string | null
+        }
+        Update: {
+          context?: string | null
+          user_id?: string | null
+          referrer_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'affiliate_clicks_link_id_fkey'
+            columns: ['link_id']
+            isOneToOne: false
+            referencedRelation: 'affiliate_links'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {

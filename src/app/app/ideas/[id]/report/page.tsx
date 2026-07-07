@@ -1,6 +1,8 @@
 import { redirect, notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createDbClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { AppHeader } from '@/components/app-header'
 import ReportClient from './report-client'
 
@@ -42,6 +44,40 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
   const isAdmin = isAdminEmail(user.email)
 
+  // Affiliate rewrite at DELIVERY time (never at generation): swap any report
+  // URL on a partner's match_domain for a /go/<slug> tracking link. Active
+  // links are readable via the "public select active" RLS policy, so the
+  // ordinary (RLS) client above is enough — no service client needed here.
+  let deliveredReport = report
+  if (report) {
+    const { data: affiliateLinks } = await supabase
+      .from('affiliate_links')
+      .select('slug, match_domains')
+      .eq('active', true)
+
+    if (affiliateLinks && affiliateLinks.length > 0) {
+      const h = await headers()
+      const host = h.get('x-forwarded-host') ?? h.get('host') ?? ''
+      const proto = h.get('x-forwarded-proto') ?? 'https'
+      const origin = host ? `${proto}://${host}` : ''
+      deliveredReport = {
+        ...report,
+        sections: rewriteAffiliateUrls(
+          (report.sections ?? {}) as Record<string, unknown>,
+          affiliateLinks,
+          origin,
+          id
+        ),
+        preview_sections: rewriteAffiliateUrls(
+          (report.preview_sections ?? {}) as Record<string, unknown>,
+          affiliateLinks,
+          origin,
+          id
+        ),
+      } as typeof report
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">
       <AppHeader email={user.email!} />
@@ -50,7 +86,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         restatement={idea.restatement}
         archetype={idea.archetype}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        initialReport={report ? (report as any) : null}
+        initialReport={deliveredReport ? (deliveredReport as any) : null}
         initialFeedback={feedback ?? null}
         isAdmin={isAdmin}
       />

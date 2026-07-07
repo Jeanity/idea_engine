@@ -1435,6 +1435,16 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
 
 // ── Main client component ─────────────────────────────────────
 
+// FTC/ASA affiliate disclosure — rendered unconditionally wherever report
+// content (which may contain rewritten /go/ affiliate links) is shown.
+function AffiliateDisclosure() {
+  return (
+    <p className="text-xs text-slate-500 light:text-gray-400 text-center max-w-3xl mx-auto px-6">
+      Some links in this report may be affiliate links. They never affect our recommendations.
+    </p>
+  )
+}
+
 export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport, initialFeedback, isAdmin }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
@@ -1461,6 +1471,7 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
           >
             Review / edit answers
           </Link>
+          <AffiliateDisclosure />
         </div>
       </div>
     )
@@ -1483,6 +1494,7 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
           >
             Review / edit answers
           </Link>
+          <AffiliateDisclosure />
         </div>
       </div>
     )
