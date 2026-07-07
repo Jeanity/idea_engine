@@ -4,8 +4,9 @@
 being built block-by-block via Sonnet/Opus subagents. Progress this session:
 
 ## Branch & commits
-- Branch: **`feat/report-appendix-editlimit-demo-mode`** — 7 commits, **NOT pushed** (Vercel
-  deploys from main, so nothing here is live in prod yet).
+- Branch: **`feat/report-appendix-editlimit-demo-mode`** — 10 commits, **NOT pushed** (Vercel
+  deploys from main, so nothing here is live in prod yet). **Admin backend is COMPLETE
+  (all 9 blocks).**
   1. `6c0fe50` report Q&A appendix + edit nudge/limit + admin demo mode (plans A–D)
   2. `d3f7208` Block 1 — admin shell (`/app/admin`, gate, sub-nav)
   3. `269613c` Block 9 — report feedback/ratings + homepage testimonials
@@ -15,6 +16,8 @@ being built block-by-block via Sonnet/Opus subagents. Progress this session:
   7. `03641f1` Block 5 — user management (list/detail/invite/delete w/ 3 server guards)
   8. `148e4df` Block 6 — discounts & offers (admin CRUD + homepage/account banners)
   9. `a7fa300` Block 7 — sales & cost tracking (reports.cost_usd + Sales P&L tab)
+  10. `3c3cd6e` Block 8 — growth graphs (recharts; traffic/reports/signups/sales +
+      referrer & campaign conversion tables) — **admin backend COMPLETE**
 
 ## Migrations — 003–006 RUN; 007 + 008 PENDING
 003/004/005/006 applied by Danny. **PENDING (run in Supabase SQL editor):**
@@ -38,8 +41,16 @@ invites error with a clean "email delivery isn't configured" message.**
   answers/reports → purchases` all `on delete cascade`, so `auth.admin.deleteUser` is clean.
 - If Block 5's "add account/invite" needs Supabase SMTP, that's a Danny setup step.
 
-## Remaining blocks (recommended order)
-6 (discounts/offers), 7 (sales & costs), 8 (growth graphs). Then commit-per-block continues.
+## Admin backend — ALL 9 BLOCKS DONE. Before it's usable in prod:
+1. **Run pending migrations 007 + 008** in Supabase (see migrations section above).
+2. **Verify live locally**: click through `/app/admin` (dashboard tiles + graphs),
+   Affiliates (done ✅), Users, Offers, Sales, Feedback. Submit a feedback rating on a
+   report; feature it; confirm it shows on `/`.
+3. **Setup deps still needed**: Supabase SMTP (for the Users "invite" action) and Stripe
+   (Phase 5 — offers redemption + real revenue; Sales tab shows $0 until then).
+4. **To deploy**: push the branch + merge to `main` (Vercel deploys from main), and run
+   migrations 003–008 against the PROD Supabase (only local has them so far... confirm
+   which Supabase project the migrations were run on).
 Standing rules in play: cheapest capable model, terse, ask before unrequested work,
 deletion always confirms, every admin API route self-gates isAdminEmail + service-role only
 after the check.
