@@ -16,6 +16,10 @@ interface Question {
 
 const COUNTRY_QUESTION_KEY = 'founder_location_country'
 
+// Thrown by saveAnswer when the server blocks an edit session (HTTP 429,
+// code 'edit_limit') so handleNext can surface it as a distinct banner.
+class EditLimitError extends Error {}
+
 // Number questions whose answer is an amount of money (as opposed to watts,
 // minutes, batch counts…) — these get the currency-symbol prefix.
 const MONEY_MAPS_TO = new Set([
@@ -170,6 +174,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   const [hasFetchedDynamic, setHasFetchedDynamic] = useState(false)
   const [currentValue, setCurrentValue] = useState<string | string[]>('')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [editLimitMessage, setEditLimitMessage] = useState<string | null>(null)
 
   const fetchQuestions = useCallback(async (): Promise<ApiResponse> => {
     const res = await fetch(`/api/ideas/${ideaId}/questions`)
@@ -214,7 +219,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   }, [currentIndex, questions])
 
   async function saveAnswer(q: Question, answerText: string) {
-    await fetch(`/api/ideas/${ideaId}/answers`, {
+    const res = await fetch(`/api/ideas/${ideaId}/answers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -224,6 +229,13 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         position: currentIndex,
       }),
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      if (data?.code === 'edit_limit') {
+        throw new EditLimitError(data.error ?? 'You’ve reached the edit limit for now.')
+      }
+      throw new Error(data?.error ?? 'Failed to save answer')
+    }
   }
 
   async function completeWizard() {
@@ -249,6 +261,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
 
     setSaving(true)
     setValidationError(null)
+    setEditLimitMessage(null)
 
     try {
       let updatedQuestions = questions
@@ -286,8 +299,12 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         await completeWizard()
       }
     } catch (err) {
-      console.error(err)
-      setValidationError('Something went wrong saving your answer. Please try again.')
+      if (err instanceof EditLimitError) {
+        setEditLimitMessage(err.message)
+      } else {
+        console.error(err)
+        setValidationError('Something went wrong saving your answer. Please try again.')
+      }
     } finally {
       setSaving(false)
     }
@@ -419,6 +436,19 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
 
         {validationError && (
           <p className="mt-3 text-xs text-red-300 light:text-red-600">{validationError}</p>
+        )}
+
+        {editLimitMessage && (
+          <div className="mt-3 rounded-lg border border-amber-400/30 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-3 py-2.5">
+            <p className="text-xs text-amber-200 light:text-amber-800">{editLimitMessage}</p>
+            <button
+              type="button"
+              onClick={() => router.push(`/app/ideas/${ideaId}/summary`)}
+              className="mt-2 text-xs font-medium text-indigo-400 hover:text-indigo-300 light:text-indigo-600 light:hover:text-indigo-500"
+            >
+              Generate report now →
+            </button>
+          </div>
         )}
       </div>
 

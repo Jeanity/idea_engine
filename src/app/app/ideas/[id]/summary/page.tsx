@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
-import { COUNTRIES } from '@/lib/countries'
+import { formatAnswer } from '@/lib/format-answer'
 
 export const metadata = { title: 'Review Answers — Idea Engine' }
 
@@ -15,20 +15,6 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   marketplace: 'Marketplace',
   invention: 'Invention',
   other: 'Other',
-}
-
-function formatAnswer(text: string, questionKey?: string): string {
-  if (questionKey === 'founder_location_country') {
-    const country = COUNTRIES.find(c => c.code === text.toUpperCase())
-    if (country) return country.name
-  }
-  try {
-    const parsed = JSON.parse(text)
-    if (Array.isArray(parsed)) return parsed.join(', ')
-  } catch {
-    // not JSON, return as-is
-  }
-  return text
 }
 
 export default async function SummaryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -94,6 +80,21 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
                 </span>
               </Link>
             ))}
+          </div>
+        )}
+
+        {/* Pre-generation only: the free-edit moment. Once a report exists the
+            status is researching/ready and this nudge no longer applies. */}
+        {idea.status !== 'researching' && idea.status !== 'ready' && rows.length > 0 && (
+          <div className="rounded-2xl border border-indigo-400/30 bg-indigo-500/10 light:bg-indigo-50 light:border-indigo-200 light:shadow-sm px-5 py-4 mb-8">
+            <p className="text-sm font-medium text-white light:text-gray-900 mb-1">
+              Thought of something else? Change your answers now — it&apos;s free.
+            </p>
+            <p className="text-sm text-slate-300 light:text-gray-600">
+              Your report is built entirely from these answers. Click any answer above to
+              change it, or add detail you thought of while answering. After your report is
+              generated, editing answers and regenerating counts as a new report.
+            </p>
           </div>
         )}
 

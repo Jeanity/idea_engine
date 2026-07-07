@@ -1,0 +1,83 @@
+{
+  "channels": [
+    {
+      "link": "https://www.facebook.com",
+      "name": "Nottingham neighbourhood Facebook groups",
+      "est_cost": "Free",
+      "priority": 1,
+      "channel_type": "free",
+      "how_to_start": "Search Facebook for '[suburb name] community' or '[suburb name] local' to find the active groups in your target postcode areas, join them, and post a short intro with a photo; re-post to a different group each week to stay within group rules.",
+      "why_this_channel": "Busy families and community members in Nottingham actively use suburb-level groups (Sherwood, Carlton/Gedling, West Bridgford, Arnold, etc.) to ask for tradesperson recommendations — this is where word-of-mouth happens digitally and your target customer is already there."
+    },
+    {
+      "link": "https://business.google.com",
+      "name": "Google Business Profile (organic local search)",
+      "est_cost": "Free",
+      "priority": 2,
+      "channel_type": "free",
+      "how_to_start": "Create or claim your free Google Business Profile, set your service area to Nottingham and surrounding postcodes, add photos, list your services, and ask your first customers to leave a Google review immediately after each job.",
+      "why_this_channel": "Landlords and families searching 'oven cleaning Nottingham' or 'kitchen deep clean near me' will see your profile in Google Maps results — this is high-intent traffic from people who have already decided they want the service."
+    },
+    {
+      "link": "https://business.nextdoor.com/en-gb/small-business/product/nextdoor-advertising-uk",
+      "name": "Nextdoor (free business page + neighbourhood posts)",
+      "est_cost": "Free (paid Local Deal ads start from £1 per campaign if you later want to boost reach)",
+      "priority": 3,
+      "channel_type": "free",
+      "how_to_start": "Claim your free Nextdoor Business Page, then post once a week (the free personal account limit) introducing your service with a specific offer such as a first-clean discount; ask satisfied customers to leave a Nextdoor recommendation, which then surfaces you in neighbour search results.",
+      "why_this_channel": "Nextdoor reaches verified, address-confirmed Nottingham households — exactly the busy families and older residents in this target — who regularly ask neighbours for tradespeople recommendations and trust those answers over ads."
+    },
+    {
+      "link": null,
+      "name": "Residential leaflet drops",
+      "est_cost": "~£25–£40 for 500 A6 cards (printing only, self-delivered); Royal Mail Door to Door delivery runs roughly £100–£180 per 1,000 in Nottingham postcode sectors — treat that as a rough national-average estimate and get a local quote from royalmail.com/business",
+      "priority": 4,
+      "channel_type": "paid",
+      "how_to_start": "Design a simple double-sided A6 card (Canva is free), print 500 at a local printer or VistaPrint, and walk them yourself through 2–3 streets per evening to keep costs at the print-only level; target streets near recently let properties if you can spot letting-agent boards.",
+      "why_this_channel": "Older residents and less digitally active householders — a core part of this target customer — respond well to a physical card through the door; end-of-terrace and semi-detached streets in NG3, NG7, NG11 are dense enough to make a drop cost-effective."
+    },
+    {
+      "link": null,
+      "name": "Direct outreach to Nottingham letting agents",
+      "est_cost": "Free (cost of your time only)",
+      "priority": 5,
+      "channel_type": "free",
+      "how_to_start": "Identify 10–15 independent Nottingham letting agents (search 'letting agents Nottingham' and target the smaller independents who don't already have an in-house cleaner), send a one-page PDF via email or drop it in personally, and offer a discounted or free first job to prove your work.",
+      "why_this_channel": "Letting agents need reliable end-of-tenancy cleaners on short notice and will refer you repeatedly once trust is established — a single agency relationship can generate a steady stream of bookings without any ongoing ad spend."
+    },
+    {
+      "link": "https://ads.google.com/intl/en_uk/local-services-ads/cost/",
+      "name": "Google Local Services Ads (LSA)",
+      "est_cost": "~£15–£50 per qualified lead in the UK cleaning category (rough industry estimate — Nottingham is a mid-sized city so expect the lower half of that range); budget ~£40–£60/week to start",
+      "priority": 6,
+      "channel_type": "paid",
+      "how_to_start": "Apply at ads.google.com/local-services-ads — you will need a verified Google Business Profile, public liability insurance certificate, and Companies House registration or equivalent; budget around £40/week minimum to see a consistent flow of leads, and only pay per genuine contact.",
+      "why_this_channel": "LSAs appear above all other Google results for searches like 'oven cleaner near me' and carry a Google Guaranteed badge, which directly addresses the trust concern that older customers and landlords have about letting a stranger into their home."
+    },
+    {
+      "link": "https://www.facebook.com/business/ads",
+      "name": "Facebook & Instagram paid ads (Meta)",
+      "est_cost": "~£5–£10/day; a two-week test costs £70–£140",
+      "priority": 7,
+      "channel_type": "paid",
+      "how_to_start": "Set up a Facebook Business Page first (free), then create one ad targeting NG postcodes within 5 miles, age 30–65, with a photo of a clean oven and a simple offer (e.g. 'Free quote, same-week booking'); start at £5/day for two weeks to test before scaling.",
+      "why_this_channel": "Meta lets you target by postcode, age, and homeowner/renter status — useful for reaching Nottingham families in a defined radius once you have a before/after photo or short video to stop the scroll."
+    }
+  ],
+  "free_first": "Join the five or six active Nottingham neighbourhood Facebook groups (Sherwood in Nottingham, Carlton/Gedling Local Community, Nottingham UK Community Group, and similar suburb-level groups) and post a clear, honest introduction: who you are, what the service costs, and a before/after photo if you can get one from a friend or family trial clean. At the same time, claim a free Google Business Profile and a free Nextdoor Business Page — both let you appear in local search and neighbour feeds at zero cost. Message five letting agents in Nottingham city centre directly through their websites this week and offer a discounted first end-of-tenancy clean in exchange for a review.",
+  "starter_budget": {
+    "note": "Keep Meta ads and Nextdoor paid posts in reserve. Once LSAs deliver two or more paying jobs in a week and Google reviews start accumulating, add £35–£50/week on Meta ads targeting the landlord and family segments — that combination of a trusted Google badge plus social proof photos will compound quickly for a part-time income goal.",
+    "allocation": [
+      {
+        "amount": "£40/week",
+        "channel": "Google Local Services Ads (LSA)"
+      },
+      {
+        "amount": "£10/week (amortised print cost over 4 weeks)",
+        "channel": "Residential leaflet drops"
+      }
+    ],
+    "weekly_total": "£50/week to start"
+  },
+  "strategy_summary": "This is a trust-led, hyper-local service — the kind where word of mouth and neighbour recommendations do the heavy lifting. The priority is to plant the flag for free in the places Nottingham families and landlords already look for tradespeople (community Facebook groups, Nextdoor, Google), then add a small paid spend only once at least one real booking has confirmed the message is landing. Leaflet drops in high-density residential postcodes serve the older audience who are less likely to find you online."
+}

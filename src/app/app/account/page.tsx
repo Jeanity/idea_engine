@@ -4,8 +4,10 @@ import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import { ScoreRing } from '@/components/score-ring'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+import { isAdminEmail } from '@/lib/admin'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import AccountForm from './account-form'
+import DemoModeToggle from './demo-mode-toggle'
 
 export const metadata = { title: 'Account — Idea Engine' }
 
@@ -69,9 +71,11 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, display_name, default_country, default_region, marketing_opt_in')
+    .select('username, display_name, default_country, default_region, marketing_opt_in, demo_mode')
     .eq('id', user.id)
     .single()
+
+  const isAdmin = isAdminEmail(user.email)
 
   const { data: ideas } = await supabase
     .from('ideas')
@@ -188,6 +192,16 @@ export default async function AccountPage() {
             </ul>
           )}
         </div>
+
+        {isAdmin && (
+          <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-6 mb-6">
+            <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-1">AI usage — admin</h2>
+            <p className="text-sm text-slate-400 light:text-gray-500 mb-4">
+              Demo Mode answers report runs from canned fixtures — no API spend. Applies to your account only.
+            </p>
+            <DemoModeToggle demoMode={profile?.demo_mode ?? false} />
+          </div>
+        )}
 
         <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-6">
           <AccountForm

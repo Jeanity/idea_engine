@@ -1,4 +1,5 @@
 import { createDbClient } from '@/lib/db'
+import { evaluateEditLimit } from '@/lib/edit-limit'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { data: idea } = await supabase
     .from('ideas')
-    .select('id')
+    .select('id, answer_edit_log')
     .eq('id', id)
     .eq('owner_id', user.id)
     .single()
@@ -23,6 +24,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   if (typeof answer_text !== 'string' || !answer_text) {
     return NextResponse.json({ error: 'Invalid answer_text' }, { status: 400 })
+  }
+
+  // Edit rate limit applies only once a completed report exists — before that,
+  // answering and revising must be unrestricted.
+  const { data: report } = await supabase
+    .from('reports')
+    .select('status')
+    .eq('idea_id', id)
+    .single()
+
+  if (report?.status === 'complete') {
+    const limit = evaluateEditLimit(idea.answer_edit_log, Date.now())
+    if (!limit.allowed) {
+      const n = limit.retryAfterMinutes ?? 1
+      return NextResponse.json(
+        {
+          error: `You've edited your answers twice in the past hour. You can edit again in ${n} minutes — or generate your report now with your current answers.`,
+          code: 'edit_limit',
+          retry_after_minutes: n,
+        },
+        { status: 429 }
+      )
+    }
+    if (limit.updatedLog) {
+      await supabase.from('ideas').update({ answer_edit_log: limit.updatedLog }).eq('id', id)
+    }
   }
 
   const { error } = await supabase.from('answers').upsert({

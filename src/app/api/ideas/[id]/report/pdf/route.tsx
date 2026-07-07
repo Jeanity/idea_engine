@@ -1,13 +1,14 @@
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createDbClient } from '@/lib/db'
 import { ReportDocument, type ReportPdfInput } from '@/lib/pdf/ReportDocument'
+import { formatAnswer } from '@/lib/format-answer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // react-pdf renders via a Node canvas/font pipeline that the Edge runtime
 // cannot run — this route must stay on the Node.js runtime.
 export const runtime = 'nodejs'
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -51,6 +52,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .eq('id', user.id)
     .single()
 
+  const { data: answers } = await supabase
+    .from('answers')
+    .select('question_key, question_text, answer_text, position')
+    .eq('idea_id', id)
+    .order('position')
+
   const reportTitle = `Idea Engine — ${idea.restatement ?? 'Business Viability Report'}`
 
   const data: ReportPdfInput = {
@@ -63,6 +70,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     generatedAt: report?.generation_completed_at ?? new Date().toISOString(),
     preparedFor: profile?.display_name || user.email || 'Founder',
     sections,
+    answers: (answers ?? []).map(a => ({ question: a.question_text, answer: formatAnswer(a.answer_text, a.question_key) })),
+    editAnswersUrl: `${request.nextUrl.origin}/app/ideas/${id}/summary`,
   }
 
   const buffer = await renderToBuffer(<ReportDocument data={data} />)

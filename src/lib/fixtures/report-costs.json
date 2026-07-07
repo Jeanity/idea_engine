@@ -1,97 +1,73 @@
 {
-  "notes": "The dominant cost risk is regulatory certification — ACMA/RCM compliance for a combined mains-power + WiFi RF device is non-trivial and a single failed test requiring a PCB redesign can add A$10,000–$30,000 and 3–6 months. The integrated WiFi repeater is the feature that differentiates the product but also the feature that most complicates certification, thermal management, and firmware support; removing it would halve development cost and risk if early traction stalls. With a founder budget of A$2,000–$10,000 the product cannot reach production — realistically A$60,000–$150,000 is required to reach a certifiable, retail-ready unit, meaning external funding or a staged crowdfunding (Kickstarter) approach is necessary. All figures are AI-generated estimates only — validate every line item with real quotes from a contract electronics manufacturer, a patent attorney, and an NATA-accredited test laboratory before committing capital.",
-  "currency": "AUD",
-  "per_unit": {
-    "power": null,
-    "materials": 38,
-    "packaging": 4.5,
-    "total_cogs": 48,
-    "active_labour": 3.5,
-    "passive_labour": 2
-  },
+  "notes": "The biggest cost risk is underpricing relative to local competitors. NG1 City Cleaners publishes from £50 for a single oven; Ovenu and Ovenclean average around £100 per order across multi-appliance jobs. A flat £60 price will attract volume but leaves little margin once fuel, chemicals, and insurance are stripped out — especially on a 2-hour single-oven job. Consider a tiered flat rate (single oven, double oven, oven + hob + extractor) rather than one flat price, which is how most established Nottingham operators actually work even when they call it 'bespoke'. The non-toxic positioning is a genuine differentiator worth charging for — the market evidence suggests customers will pay £80–£110 for a full kitchen clean. All figures here are AI estimates; get real quotes on insurance, chemical suppliers, and equipment before spending anything.",
+  "currency": "GBP",
+  "per_unit": null,
   "ongoing_costs": [
     {
-      "item": "Product liability insurance",
-      "note": "Essential for a mains-powered consumer electronics product. Annual premium ~A$2,500–$4,000 for a small hardware startup; higher once revenue grows.",
-      "estimate_monthly": 250
+      "item": "Cleaning chemicals (consumables per month)",
+      "note": "Rough estimate based on 8–12 jobs/month at part-time pace. Will scale directly with job volume.",
+      "estimate_monthly": 40
     },
     {
-      "item": "E-commerce hosting & platform fees (Shopify + payment processing)",
-      "note": "Shopify Basic ~A$56/month plus ~2–3% transaction fees. Budget A$120/month at low volumes including domain, email, and app subscriptions.",
-      "estimate_monthly": 120
+      "item": "Public liability insurance (monthly equivalent)",
+      "note": "Annual premium of roughly £100–£150 spread monthly. Confirm with a live quote — business activity description matters.",
+      "estimate_monthly": 12
     },
     {
-      "item": "Digital marketing (Google/Meta ads minimum floor)",
-      "note": "A$500/month is a bare minimum to test paid acquisition. Realistic growth budget is A$1,500–$3,000/month. Below A$500 data is too thin to optimise.",
-      "estimate_monthly": 500
+      "item": "Vehicle running costs (fuel, pro-rata servicing for business use)",
+      "note": "City-wide Nottingham radius. Estimate only — depends on vehicle type and job density per evening. Keep a mileage log; HMRC approved mileage rate (45p/mile) can be claimed if self-employed.",
+      "estimate_monthly": 40
     },
     {
-      "item": "Firmware / software maintenance (WiFi repeater embedded firmware updates)",
-      "note": "Retainer for a part-time embedded developer or contractor to push security patches and compatibility updates for the WiFi chipset. Non-negotiable for a networked device.",
-      "estimate_monthly": 400
+      "item": "Website / online presence (hosting, domain renewal)",
+      "note": "Covers a basic hosted site. Can be reduced to near-zero if relying solely on Google Business Profile and Facebook.",
+      "estimate_monthly": 15
     },
     {
-      "item": "Warranty returns & repair buffer",
-      "note": "Assume 2–4% return/defect rate on a complex multi-function device. A$300/month covers postage, replacement units, and admin at modest sales volumes (~50–100 units/month).",
-      "estimate_monthly": 300
-    },
-    {
-      "item": "Storage & fulfilment (3PL or home fulfilment consumables)",
-      "note": "If using a 3PL in Brisbane/Gold Coast, expect A$150–$400/month for storage plus per-unit pick/pack (~A$4–$7/order). Home fulfilment saves cash but not time.",
-      "estimate_monthly": 250
+      "item": "Marketing (paid local ads or leaflet drops)",
+      "note": "Optional but recommended. Even a small Google Local Services or Facebook geo-targeted spend in Nottingham postcodes can fill evenings/weekends faster than organic alone.",
+      "estimate_monthly": 30
     }
   ],
   "startup_costs": [
     {
-      "item": "Engineering design & electronics schematics (contract hardware engineer)",
-      "note": "Custom PCB combining USB-A, USB-C, wireless Qi coil, and WiFi repeater chipset (e.g. MT7628) requires specialist RF and power electronics design. Remote Australian freelancers or offshore firms (Vietnam, Shenzhen) will sit at lower end.",
-      "estimate_low": 8000,
-      "estimate_high": 35000
+      "item": "Professional oven cleaning equipment (dip tank system, steam lance or caustic tank equivalent, scrapers, pads, brushes)",
+      "note": "A portable dip tank kit with liners is the industry standard. Budget end is a basic setup; upper end buys a purpose-built heated tank. Ovenclean/Ovenu franchisees use heated dip tanks — worth pricing from a trade supplier like Oven Cleaning Supplies UK before committing.",
+      "estimate_low": 300,
+      "estimate_high": 800
     },
     {
-      "item": "Prototype iterations (3–5 rounds via PCB manufacturer + 3D-printed housing)",
-      "note": "Each PCB spin from JLCPCB/PCBWay ~A$500–$2,000 plus components. Expect 3–5 iterations to resolve thermal, RF interference, and mechanical retraction issues. Housing tooling at prototype stage via SLA/FDM printing.",
-      "estimate_low": 5000,
-      "estimate_high": 25000
+      "item": "Non-toxic cleaning chemicals (starter stock — caustic-free gels, degreasers, soak solutions)",
+      "note": "Non-toxic/bio formulations cost more per litre than caustic trade products. Initial stock for roughly 20–30 jobs. Ongoing cost is much lower; included here only for first-purchase.",
+      "estimate_low": 80,
+      "estimate_high": 200
     },
     {
-      "item": "Provisional patent application (Australian + PCT)",
-      "note": "Provisional AU filing via a registered patent attorney ~A$3,000–$5,000. Adding PCT (international) application increases this significantly. Without IP protection the product is easily copied offshore.",
-      "estimate_low": 3000,
-      "estimate_high": 8000
+      "item": "Public liability insurance (first year upfront or first few months)",
+      "note": "Domestic cleaning trades typically pay £80–£150/year for £1–2M PLI. Some insurers (Hiscox, Protectivity, Simply Business) offer monthly. Get a quote before launch — working inside customers' homes and near electrical appliances makes this non-optional.",
+      "estimate_low": 80,
+      "estimate_high": 180
     },
     {
-      "item": "Regulatory certification — ACMA/RCM (AU/NZ), WiFi (ISED/FCC if exporting)",
-      "note": "RCM mark mandatory in Australia for mains-connected and wireless devices. WiFi/RF modules require ACMA compliance testing. Lab testing fees plus a regulatory consultant are unavoidable. Costs blow out if redesigns are needed post-testing.",
-      "estimate_low": 4000,
-      "estimate_high": 18000
+      "item": "Vehicle costs (signage, first tax/MOT check, boot organiser/rack for equipment)",
+      "note": "Assumes a vehicle already exists. Magnetic door signs (£30–£60) and a boot storage solution. If a vehicle needs purchasing, this line changes the entire budget; flag that separately.",
+      "estimate_low": 50,
+      "estimate_high": 300
     },
     {
-      "item": "Injection-mould tooling for production housing",
-      "note": "A retractable-connector mechanism adds mould complexity. Single-cavity aluminium prototype tool (China) ~A$8,000–$15,000; steel production tool ~A$20,000–$40,000. This is the single largest capital commitment.",
-      "estimate_low": 8000,
-      "estimate_high": 40000
+      "item": "Basic website / Google Business Profile setup",
+      "note": "Google Business Profile is free and is likely your highest-ROI first move. A simple one-page site on Squarespace or Wix costs £10–£15/month; a paid designer is not needed at this stage. Domain £10–£15/year.",
+      "estimate_low": 0,
+      "estimate_high": 200
     },
     {
-      "item": "First production run (500–1,000 units MOQ, contract manufacturer)",
-      "note": "At ~A$38 BOM + assembly per unit (Shenzhen CM), a 500-unit run is ~A$20,000–$25,000 landed. A 1,000-unit run improves unit economics but ties up more capital. Freight, import duty (5%), and GST add ~15–20% on top of ex-works price.",
-      "estimate_low": 20000,
-      "estimate_high": 55000
-    },
-    {
-      "item": "Packaging design & print (retail-ready box, insert, cable)",
-      "note": "Graphic design for retail box ~A$1,500–$2,500. Print run of 500–1,000 custom boxes ~A$1,500–$3,500. Retail channel (JB Hi-Fi, Officeworks) will require professional retail-ready packaging.",
-      "estimate_low": 2000,
-      "estimate_high": 6000
+      "item": "Printed marketing materials (leaflets for door drops in target postcodes)",
+      "note": "Vistaprint or an equivalent. 500–1,000 A5 leaflets. Door-dropping landlord-dense streets and family areas near Nottingham city is a proven cheap acquisition channel for this type of service.",
+      "estimate_low": 30,
+      "estimate_high": 100
     }
   ],
-  "suggested_price": 149,
-  "estimation_flags": {
-    "materials": "estimated",
-    "packaging": "estimated",
-    "total_cogs": "estimated",
-    "active_labour": "estimated",
-    "passive_labour": "estimated"
-  },
-  "gross_margin_pct": 67.8
+  "suggested_price": null,
+  "estimation_flags": {},
+  "gross_margin_pct": null
 }

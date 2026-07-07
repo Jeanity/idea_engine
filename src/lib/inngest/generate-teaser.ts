@@ -1,6 +1,7 @@
 import { inngest } from '@/lib/inngest'
 import { createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
+import { providerOverrideForUser } from '@/lib/demo-mode'
 import { TEASER_SYSTEM_PROMPT, buildTeaserMessage } from '@/lib/prompts/teaser'
 
 interface Question {
@@ -29,9 +30,10 @@ export const generateTeaser = inngest.createFunction(
     retries: 2,
     triggers: [{ event: 'idea-engine/report.requested' }],
   },
-  async ({ event }: { event: { data: { reportId: string; ideaId: string } } }) => {
-    const { reportId, ideaId } = event.data
+  async ({ event }: { event: { data: { reportId: string; ideaId: string; userId: string } } }) => {
+    const { reportId, ideaId, userId } = event.data
     const supabase = createServiceClient()
+    const provider = await providerOverrideForUser(supabase, userId)
 
     const { data: idea } = await supabase
       .from('ideas')
@@ -70,6 +72,7 @@ export const generateTeaser = inngest.createFunction(
       system: TEASER_SYSTEM_PROMPT,
       maxTokens: 1024,
       tag: 'report:teaser',
+      provider,
     })
 
     const teaser = extractJson(text) as {

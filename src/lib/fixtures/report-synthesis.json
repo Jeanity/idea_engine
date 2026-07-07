@@ -1,89 +1,100 @@
 {
   "summary": {
-    "text": "This Hervey Bay-based invention concept targets the gap between standalone charging hubs (ALOGIC, Anker, Satechi) and dedicated mesh WiFi systems (TP-Link Deco, NETGEAR Orbi) by combining USB-A, USB-C, wireless Qi charging, and a WiFi repeater into a single retractable-connector unit. The core market signal is real: no product on the Australian market currently merges whole-home WiFi coverage with multi-device charging, and consumers routinely purchase both categories separately, spending A$99–A$299 on mesh nodes plus A$79–A$169 on charging hubs. However, this is a pre-idea-stage hardware invention with no IP protection, no prototype, and a founder budget of A$2,000–A$10,000 against a realistic development cost of A$60,000–A$150,000, making the current capital position the single most constraining factor. The product archetype is a true invention — not a resale or service business — meaning execution requires engineering expertise, regulatory certification (ACMA/RCM for a mains-powered WiFi device), and injection-mould tooling before a single unit can be sold."
+    "text": "This is a mobile oven and kitchen appliance deep-cleaning service based in Nottingham, targeting busy families, older residents, and landlords, run on evenings and weekends as a part-time income stream. The Nottingham market already has at least seven active oven-cleaning operators, which confirms real, recurring local demand — people are already paying £50–£110 for exactly this service. The scheduling gap is the clearest opening: every established competitor operates daytime or weekday hours, and the one operator who does offer evenings (All Seasons Clean) is a multi-service generalist based in Derbyshire, not a dedicated oven specialist. Startup costs sit comfortably within the stated £500–£2,000 budget, and the first paying job is realistically achievable within weeks of setup."
   },
   "viability_snapshot": {
     "scores": {
       "time_to_revenue": {
-        "score": 5,
-        "rationale": "From idea stage, reaching a sellable unit requires engineering design, prototype iterations, regulatory testing, tooling, and a production run — a realistic minimum timeline of 18–24 months even with external funding secured immediately."
+        "score": 1,
+        "rationale": "A Google Business Profile, a leaflet drop, and one booked job could realistically happen within the first two weeks — no product to build, no regulatory delay."
       },
       "capital_required": {
-        "score": 5,
-        "rationale": "Realistic path to a certifiable, retail-ready 500-unit production run requires A$60,000–A$150,000; the founder's stated budget of A$2,000–A$10,000 covers less than the cost of a single prototype PCB spin and a provisional patent filing."
+        "score": 2,
+        "rationale": "Startup costs are estimated at £540–£1,580 all-in, well within the stated budget, assuming a vehicle already exists — the biggest single item is the dip tank kit at £300–£800."
       },
       "market_opportunity": {
-        "score": 3,
-        "rationale": "The charging hub market is proven and active in Australia (Anker, ALOGIC, Satechi all sell nationally), but the WiFi-repeater-integrated variant is an unvalidated sub-niche with no direct comparable sales data, capping confidence at mid-range."
+        "score": 4,
+        "rationale": "Seven active competitors in and around Nottingham with none dominant, pricing at £50–£110 per job, confirms a healthy, recurring local market — not a niche experiment."
       },
       "execution_difficulty": {
-        "score": 5,
-        "rationale": "A custom PCB combining USB power delivery, Qi coils, a WiFi RF chipset, and a retractable mechanical connector mechanism requires multi-discipline hardware engineering, 3–5 prototype iterations, and mandatory ACMA/RCM RF certification — one of the most technically complex consumer electronics launches possible for a solo founder."
+        "score": 2,
+        "rationale": "The service requires learnable physical skills, a basic equipment kit, and simple scheduling — no licensing, no complex supply chain, and a proven operational model already exists to study."
       }
     },
-    "overall_verdict": "All four dimensions score at the high end of difficulty, which is typical for a hardware invention with no prototype or IP. The concept has genuine differentiation and a real market gap, but the funding shortfall is not marginal — it is approximately 6–15× the founder's available capital, meaning the idea cannot progress without a significant external funding event, crowdfunding campaign, or a licensing-to-manufacturer strategy. Pursuing this without closing that capital gap first is the primary risk."
+    "overall_verdict": "This scores well across every dimension that matters for a part-time local service goal. The market is proven, the capital requirement fits your budget, execution is learnable, and you could take money in week two if you move quickly. The main constraint is time — evenings and weekends cap your monthly capacity, so the path to steady part-time income is about pricing correctly and building repeat customers, not about market size."
+  },
+  "why_this_can_work": {
+    "upside": "You set your goal as steady part-time income. At a correctly tiered price (suggested range below), six to eight jobs across a working weekend generates £480–£720 before costs. Stripping out roughly £137/month in fixed ongoing costs and variable consumables per job, a realistic net at eight jobs/month is in the region of £350–£500/month part-time — that is a meaningful second income without touching your day job. If demand builds and you add a Saturday helper or expand to full days, the same customer base and reputation supports a much larger operation, but you do not need to go there to clear your stated bar.",
+    "your_edge": "The scheduling gap is genuine and unaddressed by the main local competitors. Just Like Nu, Nottingham Oven Cleaners, NG1 City Cleaners, Ovenclean, and Ovenu North all operate daytime or weekday hours with no evening or weekend availability advertised. The one operator who does offer those hours — All Seasons Clean — is a Derbyshire-based multi-service generalist where oven cleaning is one line item among carpets, upholstery, and mattresses. A Nottingham-based specialist who answers the phone in the evening, books on a Saturday, and shows up on a Sunday morning is offering something none of the dedicated competitors currently offer. That scheduling convenience is the differentiator to lead with in all marketing — more than the non-toxic product angle, which several competitors already claim.",
+    "market_proof": "Seven operators are actively running oven-cleaning businesses in and around Nottingham right now — that is not a warning sign, it is proof that Nottingham households and landlords regularly pay for this service. NG1 City Cleaners publishes a £50 starting price for a single oven; Ovenu and Ovenclean report average order values around £100 across multi-appliance jobs across their networks. Demand is recurring — ovens get dirty again — which means the customer you clean for today is a repeat booking in three to six months. The landlord/end-of-tenancy segment adds a predictable seasonal spike (spring and summer moves) on top of the domestic base."
   },
   "pricing_recommendation": {
-    "rationale": "Competitors occupy two price bands: charging-only hubs cluster at A$79–A$169 (ALOGIC A$120, Satechi A$119–A$149, Anker mid-range A$69–A$149), while entry-level mesh WiFi nodes start at A$99–A$149 (TP-Link Deco M4 2-pack A$99, NETGEAR extender A$149.95). A consumer replacing both a charging hub and a WiFi extender would spend A$169–A$319 for separate products. Pricing this combined unit at A$179–A$249 positions it as cheaper than buying both separately while maintaining a premium above pure charging hubs. At a COGS of approximately A$48 per unit, a retail price of A$199 delivers a gross margin of roughly 76% direct-to-consumer, or approximately 40–50% if sold through a retail channel like JB Hi-Fi (which typically takes 40–50% margin). Do not price below A$149 — BatteryMate's A$38.95 budget hubs anchor the low end and any sub-A$150 price will signal commodity quality inconsistent with the WiFi-repeater premium feature.",
-    "suggested_range_aud": "A$179–A$249"
+    "model": "Tiered flat rate per job (not a single flat price)",
+    "rationale": "Your stated price of £60 is below what the market is already bearing and would leave very little margin once fuel, chemicals, and 2 hours of your time are accounted for on a single-oven job. NG1 City Cleaners starts at £50 for a single oven — but they operate daytime with no out-of-hours premium. Customers who specifically need an evening or weekend slot are paying for convenience, and that convenience is worth a modest premium of £10–£20 over daytime competitors. Ovenu and Ovenclean average around £100 on multi-appliance jobs, which shows the market accepts that figure without friction. A tiered structure (single, double, full kitchen) is how every established operator in this market actually works even when they describe it as 'bespoke' — it sets clearer expectations and naturally upsells the fuller clean.",
+    "comparable_market_rates": "NG1 City Cleaners: from £50 single oven (published). Oven Wizards North Nottingham: ~£55 single oven cited in one review, higher for multi-appliance. Ovenu network average order value: just over £100. Ovenclean/Ovenu network average: ~£100. All Seasons Clean: quote-based, markets on affordability.",
+    "suggested_price_or_range": "Single oven: £65–£75 | Oven + hob: £90–£100 | Oven + hob + extractor: £110–£130 | BBQ: £55–£70 add-on or standalone"
   },
   "risks": [
     {
-      "rank": 1,
-      "risk": "Fatal capital shortfall before prototype exists",
-      "detail": "The A$2,000–A$10,000 founder budget is insufficient to complete even the engineering and first prototype phase, estimated at A$13,000–A$60,000. Without external funding (angel, crowdfunding, or grants such as the ATO R&D Tax Incentive), the idea cannot physically progress. Running out of money mid-prototype — after IP and engineering spend but before certification — results in total loss with no sellable asset."
+      "title": "Underpricing kills the margin on a 2-hour job",
+      "mitigation": "Switch to the tiered pricing structure above before taking the first booking. Frame it as transparent, upfront pricing — which NG1 City Cleaners uses successfully and which customers prefer over call-for-a-quote friction.",
+      "description": "At £60 flat for a single oven taking 2 hours, you net roughly £20–£25 after fuel, chemicals, and insurance per visit. That is £10–£12.50 per hour before your time has any value. The market evidence shows customers pay £65–£75 for a single oven from a specialist — you are leaving money on the table and making the work unsustainable."
     },
     {
-      "rank": 2,
-      "risk": "ACMA/RCM regulatory certification failure requiring PCB redesign",
-      "detail": "A combined mains-power and WiFi RF device must carry the RCM mark for legal sale in Australia. A single failed RF emissions or conducted interference test triggers a PCB redesign cycle adding A$10,000–A$30,000 and 3–6 months. The retractable-connector mechanism introduces additional mechanical safety requirements. This risk is non-waivable — selling an uncertified mains-powered device in Australia is illegal and creates unlimited product liability exposure."
+      "title": "Evening and weekend capacity is a hard ceiling on income",
+      "mitigation": "That ceiling is fine for your stated goal. Build repeat customers and a referral pipeline now so that if your situation changes and you want more hours, you have a waiting list, not a marketing problem.",
+      "description": "If you are limiting yourself to evenings and weekends, you have roughly 8–12 slots per month at 2 hours per job. That caps gross revenue at around £700–£1,300/month even at correct pricing, before costs. That is a fine part-time income, but it is not expandable without changing the time commitment."
     },
     {
-      "rank": 3,
-      "risk": "TP-Link or a Shenzhen OEM launches a comparable product first",
-      "detail": "TP-Link (Deco range) and major Shenzhen electronics manufacturers have the engineering resources, certification infrastructure, and distribution to bring a charging-hub-with-WiFi-repeater product to market in 12–18 months if the concept gains visibility. With no IP filing yet, the idea has zero legal protection. A provisional patent application (A$3,000–A$5,000) is the minimum necessary step before any public disclosure, including Kickstarter."
+      "title": "Non-toxic positioning is not unique in this market",
+      "mitigation": "Lead with out-of-hours availability in all marketing copy — that is the real gap. Mention non-toxic products as a reassurance for families and pet owners, but treat scheduling convenience as your headline.",
+      "description": "At least five of the seven competitors found already use eco-friendly, non-caustic, or biodegradable products — Just Like Nu, Nottingham Oven Cleaners, NG1 City Cleaners, Ovenclean, and Ovenu all make this claim. Leading with it as your main differentiator will not separate you from the crowd."
     },
     {
-      "rank": 4,
-      "risk": "WiFi repeater performance will be technically inferior to dedicated mesh systems",
-      "detail": "A cost-constrained integrated WiFi chipset (e.g. MT7628-class) will deliver noticeably lower throughput and range than TP-Link Deco or NETGEAR Orbi nodes retailing at similar price points. Tech-literate buyers will benchmark it directly against dedicated mesh systems and find it wanting on networking performance, potentially generating negative reviews that undermine the charging-hub value proposition simultaneously."
+      "title": "Public liability insurance is non-optional and must be scoped correctly",
+      "mitigation": "Get a live quote from Protectivity, Simply Business, or Hiscox before taking your first job — describe the activity accurately (oven and appliance cleaning with chemical dip tanks in domestic properties). Do not rely on a generic domestic cleaning policy without confirming it covers appliance disassembly and chemical use.",
+      "description": "You are working inside people's homes, next to electrical appliances, using cleaning chemicals. A burn, a scratch, or water ingress that damages an appliance without PLI in place exposes you personally. The estimate of £100–£150/year is a rough figure — the actual premium depends on how the insurer classifies the activity (domestic cleaning vs. specialist appliance cleaning with chemicals)."
     },
     {
-      "rank": 5,
-      "risk": "Retractable connector mechanism creates ongoing reliability and warranty costs",
-      "detail": "Mechanical retractable connectors (Lightning, USB-C, Micro-USB) are subject to high wear cycles and are a known failure point in consumer electronics. A 2–4% return/defect rate assumed in cost modelling may be optimistic for a first-production retractable mechanism. Connector breakage claims will dominate warranty support and, if the mechanism is mains-connected, trigger product liability concerns."
+      "title": "The landlord/end-of-tenancy segment is already well-served by Oven Wizards",
+      "mitigation": "Prioritise domestic households (busy families, older residents) in your first three months — that is where the out-of-hours gap is most acute and where word-of-mouth spreads fastest. Approach landlords once you have reviews and a track record to show; offer the same photographic evidence Oven Wizards provides, which is easy to replicate and costs nothing extra.",
+      "description": "Oven Wizards North Nottingham specifically targets landlords and estate agents with key collection, photographic evidence of the clean, and a national franchise brand behind them. Competing for that segment head-on is harder than winning domestic customers through convenience and personality."
     }
   ],
   "next_steps": [
     {
-      "order": 1,
-      "action": "File a provisional patent application before any public disclosure",
-      "detail": "Contact a registered Australian patent attorney (search IP Australia's register at ipaustralia.gov.au) for a provisional application covering the combined charging-hub-plus-WiFi-repeater architecture and retractable connector system. Budget A$3,000–A$5,000. This gives 12 months of 'patent pending' status to develop and pitch without permanently losing IP rights. Do not post on LinkedIn, Reddit, or Kickstarter before this is filed.",
+      "action": "Set up a Google Business Profile for your service today — name, Nottingham service area, phone number, and a short description leading with 'evening and weekend oven cleaning'.",
+      "rationale": "Google Business Profile is free, ranks in local map searches for 'oven cleaner Nottingham', and is the single highest-ROI action available before you spend a penny on anything else. Customers searching on a Sunday afternoon will find you.",
+      "timeframe": "Day 1–2"
+    },
+    {
+      "action": "Get a live insurance quote from Protectivity or Simply Business — describe the job as specialist oven and appliance cleaning with chemical dip tank use in domestic properties.",
+      "rationale": "You cannot take a paying job without this in place, and the quote will confirm your actual monthly cost so you can finalise your pricing with real numbers, not estimates.",
+      "timeframe": "Day 1–3"
+    },
+    {
+      "action": "Price a starter equipment kit — contact a trade supplier such as Oven Cleaning Supplies UK for a portable dip tank setup and an initial stock of non-caustic chemicals, and get a real quote.",
+      "rationale": "The startup cost range for the dip tank (£300–£800) is wide enough that a real quote changes your budget picture significantly. You need this number before committing to any spend.",
+      "timeframe": "Week 1"
+    },
+    {
+      "action": "Switch your pricing to a tiered flat rate — single oven £65–£75, oven + hob £90–£100, full kitchen (oven, hob, extractor) £110–£130 — and build a simple one-page website or Facebook Business page with those prices visible.",
+      "rationale": "Transparent published pricing is a genuine competitive advantage in a market where most operators say 'call for a quote'. It removes friction for busy customers and signals confidence in your value.",
       "timeframe": "Week 1–2"
     },
     {
-      "order": 2,
-      "action": "Validate consumer willingness to pay with a no-hardware test",
-      "detail": "Create a simple landing page (Carrd or Shopify, under A$50/month) showing a rendered concept image, the A$199 price point, and a 'register interest / pre-order deposit' button. Run A$300–A$500 in Meta or Google ads targeting Australian homeowners aged 30–55 interested in home networking and tech gadgets. A conversion rate above 1.5% on the deposit page is a meaningful signal of real demand before spending on engineering.",
-      "timeframe": "Week 2–4"
-    },
-    {
-      "order": 3,
-      "action": "Get real quotes from a contract hardware engineer and a regulatory testing lab",
-      "detail": "Post a brief on Upwork or Freelancer for an Australian or Shenzhen-based PCB/firmware engineer experienced with WiFi chipsets (MT7628 or similar) and USB PD design. Simultaneously, contact an NATA-accredited EMC/RF test laboratory (e.g. NTS Australia, Bureau Veritas) for a written quote on RCM certification for a combined mains + WiFi device. These two quotes will give you a defensible revised budget to present to any investor or grant body.",
-      "timeframe": "Week 3–6"
-    },
-    {
-      "order": 4,
-      "action": "Apply for the ATO R&D Tax Incentive and identify grant pathways",
-      "detail": "This project likely qualifies for the Australian Government's R&D Tax Incentive (43.5% refundable offset for companies with turnover under A$20M), which can return a significant portion of eligible engineering and prototype costs. Register at business.gov.au. Also assess the Entrepreneurs' Programme and any Queensland state innovation grants (DSITI). This does not replace external funding but reduces cash burn on qualifying R&D spend.",
-      "timeframe": "Month 1–2"
-    },
-    {
-      "order": 5,
-      "action": "Plan a Kickstarter campaign as the primary funding and validation vehicle",
-      "detail": "A Kickstarter campaign at A$179–A$199 per unit with a A$80,000–A$120,000 funding goal is the most realistic path to closing the capital gap without giving up equity. Successful hardware Kickstarters require professional product renders, a 2–3 minute video, and a clear delivery timeline. Budget A$3,000–A$5,000 for render/video production. Research comparable campaigns (charging hubs, smart home devices) on Kickstarter for backer expectation benchmarks before launching.",
-      "timeframe": "Month 3–6 (launch after provisional patent filed and prototype renders complete)"
+      "action": "Print 500 A5 leaflets and door-drop two or three family-dense streets in Nottingham postcodes (NG3, NG5, NG8 are residential and landlord-heavy) — lead with 'evening and weekend oven cleaning, no caustic chemicals, fixed prices'.",
+      "rationale": "Physical leaflets in the right streets are still one of the fastest acquisition channels for domestic cleaning services. A single job from a leaflet pays for the entire print run.",
+      "timeframe": "Week 2–3"
     }
-  ]
+  ],
+  "one_thing_to_do": {
+    "action": "Open Google right now, search 'Google Business Profile', and create your free listing for your Nottingham oven cleaning service — set the service area to Nottingham, write two sentences that include the words 'evenings', 'weekends', and 'fixed price', and publish it today.",
+    "why_first": "Every competitor you are up against is invisible on Sunday evenings when a family opens Google and types 'oven cleaner near me' — your listing, live today, captures that search for free before you have spent a single pound on equipment or marketing. Everything else (insurance, equipment, leaflets) can follow, but a customer finding you while you are still setting up means your first booking could arrive before your kit does."
+  },
+  "validation_copy": {
+    "ad_line": "Nottingham: professional oven clean at your home — evenings & weekends, fixed price, no nasty chemicals.",
+    "forum_post": "I'm thinking of starting a mobile oven cleaning service in Nottingham, specifically doing evenings and weekends because I've noticed most of the existing companies only work weekdays. I'd use non-caustic products and charge a fixed price upfront rather than 'call for a quote'. Before I spend anything on equipment, I want to know if I'm reading this right — would the evenings/weekends thing actually matter to you, or do most people just rearrange their day for a cleaner anyway? And would £65–£75 for a single oven feel fair, or is that too high? Honest answers appreciated — I'd rather know now if this is a bad idea.",
+    "poll_question": "Would you use an oven cleaning service that comes to your home on evenings or weekends (not just weekdays) with fixed upfront prices and no caustic chemicals? Yes / No / I'd consider it"
+  }
 }

@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { isAdminEmail } from '@/lib/admin'
 import { AppHeader } from '@/components/app-header'
 import ReportClient from './report-client'
 
@@ -29,7 +30,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     .eq('idea_id', id)
     .single()
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL
+  const isAdmin = isAdminEmail(user.email)
 
   return (
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">

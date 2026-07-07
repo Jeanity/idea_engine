@@ -1,6 +1,7 @@
 import { inngest } from '@/lib/inngest'
 import { createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
+import { providerOverrideForUser } from '@/lib/demo-mode'
 import { calculateCosts, parseNumber } from '@/lib/cost-calculator'
 import {
   COMPETITOR_RESEARCH_SYSTEM_PROMPT,
@@ -77,8 +78,9 @@ export const generateReport = inngest.createFunction(
     triggers: [{ event: 'idea-engine/full-report.requested' }],
   },
   async ({ event, step }: { event: { data: { reportId: string; ideaId: string; userId: string } }; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> } }) => {
-    const { reportId, ideaId } = event.data
+    const { reportId, ideaId, userId } = event.data
     const supabase = createServiceClient()
+    const provider = await providerOverrideForUser(supabase, userId)
 
     // ── Fetch idea + answers ───────────────────────────────────
     const { data: idea } = await supabase
@@ -145,6 +147,7 @@ export const generateReport = inngest.createFunction(
           maxTokens: 4096,
           tag: 'report:competitors',
           tools: webSearchTool(5),
+          provider,
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Competitor response not an array')
@@ -192,6 +195,7 @@ export const generateReport = inngest.createFunction(
           system: COST_ESTIMATION_SYSTEM_PROMPT,
           maxTokens: 2048,
           tag: 'report:costs',
+          provider,
         })
         const parsed = extractJson(text)
         if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
@@ -242,6 +246,7 @@ export const generateReport = inngest.createFunction(
             maxTokens: 4096,
             tag: 'report:financing',
             tools: webSearchTool(3),
+            provider,
           })
           const parsed = extractJson(text)
           if (!Array.isArray(parsed)) throw new Error('Financing response not an array')
@@ -274,6 +279,7 @@ export const generateReport = inngest.createFunction(
           maxTokens: 3072,
           tag: 'report:compliance',
           tools: webSearchTool(3),
+          provider,
         })
         const parsed = extractJson(text)
         if (!Array.isArray(parsed)) throw new Error('Compliance response not an array')
@@ -310,6 +316,7 @@ export const generateReport = inngest.createFunction(
           maxTokens: 3072,
           tag: 'report:marketing',
           tools: webSearchTool(3),
+          provider,
         })
         const parsed = extractJson(text)
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Marketing response not an object')
@@ -348,6 +355,7 @@ export const generateReport = inngest.createFunction(
           // and kills all eight sections at once.
           maxTokens: 6144,
           tag: 'report:synthesis',
+          provider,
         })
         return { value: extractJson(text) as SynthesisOutput, costUsd }
       }))

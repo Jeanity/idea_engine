@@ -79,15 +79,23 @@ const HANDWRITTEN_FINANCING = [
   },
 ]
 
+// Some 'complete' rows have an empty `sections` object (e.g. reports marked
+// complete without the pipeline actually populating them) — skip those and
+// use the most recent complete report that has real section content.
 async function fetchLatestCompleteReport() {
   const { data, error } = await supabase
     .from('reports')
     .select('id, idea_id, status, sections, created_at')
     .eq('status', 'complete')
     .order('created_at', { ascending: false })
-    .limit(1)
+    .limit(20)
   if (error) throw error
-  return data?.[0] ?? null
+  const withSections = (data ?? []).find(r => r.sections && Object.keys(r.sections).length > 0)
+  if (!withSections) return null
+  if (data![0].id !== withSections.id) {
+    console.log(`skipping ${data![0].id} (created ${data![0].created_at}) — status=complete but sections empty`)
+  }
+  return withSections
 }
 
 function buildReportFixtures(sections: Record<string, unknown>) {
@@ -118,8 +126,19 @@ function buildReportFixtures(sections: Record<string, unknown>) {
     console.log('skip report-costs.json: no cost_breakdown section on latest report')
   }
 
-  // synthesis — combined object of the five synthesis output keys
-  const synthesisKeys = ['summary', 'viability_snapshot', 'pricing_recommendation', 'risks', 'next_steps'] as const
+  // marketing — sections.marketing_plan (set in generate-report.ts's
+  // 'marketing-plan' step, tag: 'report:marketing')
+  if (isUnavailable(sections.marketing_plan)) {
+    console.log('skip report-marketing.json: latest report has marketing_plan marked unavailable')
+  } else if (sections.marketing_plan !== undefined) {
+    writeFixture('report-marketing.json', sections.marketing_plan)
+  } else {
+    console.log('skip report-marketing.json: no marketing_plan section on latest report')
+  }
+
+  // synthesis — combined object of all eight synthesis output keys (see
+  // SynthesisOutput in src/lib/prompts/synthesis.ts)
+  const synthesisKeys = ['summary', 'viability_snapshot', 'why_this_can_work', 'pricing_recommendation', 'risks', 'next_steps', 'one_thing_to_do', 'validation_copy'] as const
   const unavailableSynthesisKeys = synthesisKeys.filter(k => isUnavailable(sections[k]))
   const missingSynthesisKeys = synthesisKeys.filter(k => sections[k] === undefined)
   if (unavailableSynthesisKeys.length > 0) {

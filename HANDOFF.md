@@ -1,3 +1,58 @@
+# Handoff — 2026-07-07 (PDF Q&A appendix, edit nudge, edit rate-limit, admin Demo/Live mode)
+
+**NEW MAJOR PLAN**: `docs/plan/2026-07-07-admin-backend-master-plan.md` — 9-block roadmap
+for the comprehensive admin backend (affiliate links + click tracking, analytics/users-online,
+user management, discounts/offers, sales & costs, growth graphs, referrer tracking) plus the
+end-of-report feedback/ratings → homepage testimonials feature. Written to be executed
+block-by-block by Sonnet/Opus without Fable. Start with Block 1 (admin shell); recommended
+order + model routing table at the bottom of that file.
+
+All four plan blocks (docs/plan/2026-07-07-A…D.md) implemented via Opus subagent and verified:
+`npx tsc --noEmit` clean, `npm run test` 29 passed (7 new edit-limit cases), `npm run build`
+succeeds. Lint's 6 errors are all pre-existing in untouched files. **Nothing committed yet.**
+
+## Needs Danny before this works end-to-end
+
+1. ~~Run migration 003 in the Supabase SQL editor~~ — **DONE 2026-07-07** (Danny ran it).
+2. ~~ADMIN_EMAIL missing from Vercel~~ — **DONE**: confirmed present in Vercel
+   (Production + Preview, updated 2026-07-05).
+3. **Stripe still isn't wired** (Phase 5). The new copy (PDF appendix, summary nudge,
+   edit-limit message) says regeneration is a new charge — forward-looking copy only.
+4. ~~Demo Mode full-report path FAILS on missing fixtures~~ — **FIXED 2026-07-07**.
+   `scripts/capture-fixtures.ts` extended (marketing harvest from `sections.marketing_plan`;
+   synthesis widened to all 8 keys) and re-run ($0, DB-read). All 7 pipeline tags now have
+   fixtures incl. new `report-marketing.json`. Also fixed a latent bug: the script trusted
+   the newest `status='complete'` row, which was empty — now skips empties and picks the
+   latest report with non-empty `sections` (used the 07-06 GB oven-cleaning report). Uncommitted.
+
+## What shipped (uncommitted working tree)
+
+- **PDF Q&A appendix** — every PDF (initial + full) ends with "Appendix — Your Questions &
+  Answers" (answers formatted via new shared `src/lib/format-answer.ts`) plus a "Want a
+  different result?" callout linking to `/app/ideas/{id}/summary` (clickable + printed URL).
+- **Pre-generation nudge** — summary page, only before the first report exists:
+  "Thought of something else? Change your answers now — it's free." with the new-charge warning.
+- **Edit rate-limit** — once a report is `complete`: max 2 edit sessions per rolling hour
+  (saves within 15 min = one session; timestamps in `ideas.answer_edit_log`). 3rd attempt →
+  429 from `/api/ideas/[id]/answers` (`code: 'edit_limit'`, `retry_after_minutes`); wizard
+  shows an amber banner with the wait time + "Generate report now →" (routes to summary).
+  Pure logic in `src/lib/edit-limit.ts`, unit-tested. No limit before the first report.
+- **Admin Demo/Live mode** — `profiles.demo_mode`, toggled via new POST
+  `/api/profile/demo-mode` (ADMIN_EMAIL-gated) from the "AI usage — admin" card on the
+  account page. Both Inngest functions resolve `providerOverrideForUser()` and pass
+  `provider: 'mock'` into all 7 `callAI` calls when on — $0, fixtures, admin's account only.
+  Nav header shows amber "Demo Mode" / green "Live Mode" pill, admin only.
+
+## Suggested smoke test (after migration + before commit)
+
+1. Download a PDF for an idea with answers → appendix + edit link render.
+2. On an idea with a finished report, trigger a 3rd edit session inside an hour (or seed
+   two old timestamps into `answer_edit_log`) → banner with wait time + run-now button.
+3. Toggle Demo Mode → header pill flips; generate a report → logs show `provider: 'mock'`,
+   cost $0; toggle back to Live.
+
+---
+
 # Handoff — 2026-07-07, end of night
 
 Three pushes today: `584535b` (report v2 — see section below), `81f78ca` (PDF export + UX batch, this section), `df5a544` (terminology). Working tree is clean, everything is pushed. Vercel deploys from main, so all of this is (or is about to be) live in prod.

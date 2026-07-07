@@ -1,4 +1,5 @@
 import { createDbClient } from '@/lib/db'
+import { isAdminEmail } from '@/lib/admin'
 import { inngest } from '@/lib/inngest'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -6,7 +7,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
-  if (user.email !== process.env.ADMIN_EMAIL) {
+  if (!isAdminEmail(user.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

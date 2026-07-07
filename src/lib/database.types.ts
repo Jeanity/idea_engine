@@ -28,6 +28,7 @@ export type Database = {
           default_country: string | null
           default_region: string | null
           marketing_opt_in: boolean
+          demo_mode: boolean
           created_at: string
           updated_at: string
         }
@@ -38,6 +39,7 @@ export type Database = {
           default_country?: string | null
           default_region?: string | null
           marketing_opt_in?: boolean
+          demo_mode?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -47,6 +49,7 @@ export type Database = {
           default_country?: string | null
           default_region?: string | null
           marketing_opt_in?: boolean
+          demo_mode?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -63,6 +66,7 @@ export type Database = {
           location_region: string | null
           restatement: string | null
           status: IdeaStatus
+          answer_edit_log: Json
           created_at: string
           updated_at: string
         }
@@ -77,6 +81,7 @@ export type Database = {
           location_region?: string | null
           restatement?: string | null
           status?: IdeaStatus
+          answer_edit_log?: Json
           created_at?: string
           updated_at?: string
         }
@@ -88,6 +93,7 @@ export type Database = {
           location_region?: string | null
           restatement?: string | null
           status?: IdeaStatus
+          answer_edit_log?: Json
           updated_at?: string
         }
         Relationships: [

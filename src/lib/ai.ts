@@ -25,6 +25,8 @@ interface CallOptions {
   tools?: Anthropic.Messages.MessageCreateParamsNonStreaming['tools']
   /** Override model. Defaults to claude-sonnet-4-6. */
   model?: string
+  /** Per-call provider override (e.g. admin demo mode forces 'mock'). Defaults to AI_PROVIDER env. */
+  provider?: 'anthropic' | 'mock' | 'ollama'
 }
 
 interface AIResult {
@@ -113,7 +115,7 @@ async function callOllama({ messages, system, maxTokens, tag = 'unknown', tools 
 }
 
 export async function callAI(options: CallOptions): Promise<AIResult> {
-  const provider = process.env.AI_PROVIDER ?? 'anthropic'
+  const provider = options.provider ?? process.env.AI_PROVIDER ?? 'anthropic'
   const { tag = 'unknown' } = options
 
   if (provider === 'mock') {

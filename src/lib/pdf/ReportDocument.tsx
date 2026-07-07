@@ -51,6 +51,8 @@ export interface ReportPdfInput {
   generatedAt: string // ISO date
   preparedFor: string // email or display name
   sections: Record<string, unknown>
+  answers: { question: string; answer: string }[]
+  editAnswersUrl: string
 }
 
 export function ReportDocument({ data }: { data: ReportPdfInput }) {
@@ -523,6 +525,40 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               <Text style={{ fontSize: 9.5, color: COLORS.ink, lineHeight: 1.5 }}>{oneThingToDo.why_first}</Text>
             </Callout>
           )}
+          <PageFooter reportTitle={data.reportTitle} />
+        </Page>
+      )}
+
+      {/* ── Appendix — Questions & Answers ──────────────────────── */}
+      {data.answers.length > 0 && (
+        <Page size="A4" style={styles.page} wrap>
+          <SectionHeading eyebrow="APPENDIX" title="Appendix — Your Questions & Answers" />
+          <Text style={[styles.body, { marginBottom: 18 }]}>
+            This report was generated from the answers below. Review them to decide
+            whether the result reflects your idea the way you intended.
+          </Text>
+
+          {data.answers.map((qa, i) => (
+            <View key={i} style={{ marginBottom: 12 }} wrap={false}>
+              <Text style={[styles.caption, { marginBottom: 3 }]}>{qa.question}</Text>
+              <Text style={styles.body}>{qa.answer}</Text>
+            </View>
+          ))}
+
+          <View style={{ marginTop: 8 }}>
+            <Callout tone="accent" label="Want a different result?">
+              <Text style={[styles.body, { marginBottom: 8 }]}>
+                Your report is only as good as the answers behind it. If something is
+                missing, has changed, or you want to explore a different angle for your
+                idea, you can edit your answers and generate a fresh report. Editing
+                answers is free — generating a new report is a new report purchase,
+                charged at the normal price.
+              </Text>
+              <Link src={data.editAnswersUrl} style={styles.link}>Edit your answers</Link>
+              <Text style={[styles.caption, { marginTop: 2 }]}>{data.editAnswersUrl}</Text>
+            </Callout>
+          </View>
+
           <PageFooter reportTitle={data.reportTitle} />
         </Page>
       )}
