@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
-import { AppHeader } from '@/components/app-header'
 import { isAdminEmail } from '@/lib/admin'
-import { AdminNav } from './admin-nav'
+import { AdminShell } from './admin-shell'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createDbClient()
@@ -12,11 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/app')
   }
 
-  return (
-    <main className="min-h-screen bg-slate-950 light:bg-gray-50">
-      <AppHeader email={user.email!} />
-      <AdminNav />
-      <div className="max-w-5xl mx-auto px-6 py-12">{children}</div>
-    </main>
-  )
+  // Server component keeps the auth gate; the sidebar/topbar chrome is a client
+  // shell rendered inside it. Existing admin pages render as `children`.
+  return <AdminShell email={user.email!}>{children}</AdminShell>
 }
