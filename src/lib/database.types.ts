@@ -29,6 +29,8 @@ export type Database = {
           default_region: string | null
           marketing_opt_in: boolean
           demo_mode: boolean
+          last_seen_at: string | null
+          acquisition: Json | null
           created_at: string
           updated_at: string
         }
@@ -40,6 +42,8 @@ export type Database = {
           default_region?: string | null
           marketing_opt_in?: boolean
           demo_mode?: boolean
+          last_seen_at?: string | null
+          acquisition?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -50,7 +54,43 @@ export type Database = {
           default_region?: string | null
           marketing_opt_in?: boolean
           demo_mode?: boolean
+          last_seen_at?: string | null
+          acquisition?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      page_events: {
+        Row: {
+          id: number
+          occurred_at: string
+          session_id: string
+          visitor_id: string | null
+          user_id: string | null
+          path: string
+          referrer: string | null
+          utm: Json | null
+          is_new_session: boolean
+        }
+        Insert: {
+          id?: number
+          occurred_at?: string
+          session_id: string
+          visitor_id?: string | null
+          user_id?: string | null
+          path: string
+          referrer?: string | null
+          utm?: Json | null
+          is_new_session?: boolean
+        }
+        Update: {
+          session_id?: string
+          visitor_id?: string | null
+          user_id?: string | null
+          path?: string
+          referrer?: string | null
+          utm?: Json | null
+          is_new_session?: boolean
         }
         Relationships: []
       }
@@ -298,7 +338,32 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      analytics_sessions_per_day: {
+        Args: { from_ts: string; to_ts: string }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_pageviews_per_day: {
+        Args: { from_ts: string; to_ts: string }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_unique_visitors_per_day: {
+        Args: { from_ts: string; to_ts: string }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_returning_visitors_per_day: {
+        Args: { from_ts: string; to_ts: string }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_top_referrers: {
+        Args: { from_ts: string; to_ts: string; max_rows?: number }
+        Returns: { referrer_host: string; count: number }[]
+      }
+      analytics_top_utm_campaigns: {
+        Args: { from_ts: string; to_ts: string; max_rows?: number }
+        Returns: { source: string; campaign: string; count: number }[]
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

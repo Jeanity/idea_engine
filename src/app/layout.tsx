@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
+import { AnalyticsBeacon } from '@/components/analytics-beacon'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* suppressHydrationWarning: browser extensions inject attributes into
           <body> before React hydrates (e.g. data-cjcrx), which is noise —
           this only silences attribute mismatches on this one element. */}
-      <body suppressHydrationWarning className="min-h-full flex flex-col bg-white text-gray-900">{children}</body>
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-white text-gray-900">
+        <AnalyticsBeacon />
+        {children}
+      </body>
     </html>
   )
 }

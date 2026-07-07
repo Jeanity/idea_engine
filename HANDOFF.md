@@ -1,3 +1,43 @@
+# Handoff — 2026-07-07 (Block 2 — analytics foundation)
+
+Block 2 of the admin-backend master plan built (event pipeline, sessions,
+referrer/UTM attribution, aggregation RPCs). **Nothing committed.**
+
+## Needs Danny
+- **Run migration `supabase/migrations/005_analytics_events.sql` manually** in the
+  Supabase SQL editor (creates `page_events`, adds `profiles.last_seen_at` +
+  `profiles.acquisition`, and the six `analytics_*` RPCs). Until it runs, `/api/track`
+  inserts fail silently (by design) and the RPCs don't exist.
+
+## Open decisions — RECOMMENDED defaults implemented (change only if Danny objects)
+- **(a) GA4 alongside self-owned analytics? → NO.** Self-owned events are the sole
+  source; no third-party analytics, no gtag. Can be added later purely by pasting the
+  snippet if ever wanted — do not build dashboards against GA4.
+- **(b) Zero-cookie vs returning-visitor precision? → keep the functional cookies
+  (returning-visitor precision).** Two functional-only cookies: `ie_sid` (session,
+  30-min rolling) and `ie_vid` (visitor, 1yr persistent). Because of this, `page_events`
+  carries a `visitor_id` column (the plan left this to the implementer) so the
+  returning-visitor RPC is computable. No IP and no user-agent are ever stored.
+
+## What shipped (uncommitted)
+- `page_events` append-only table (RLS on, no policies → service-role only) + first-touch
+  columns on `profiles`. Six SECURITY DEFINER RPCs (sessions/pageviews/unique-visitors/
+  returning-visitors per day, top referrers, top UTM campaigns) — all revoked from
+  anon/authenticated, granted only to `service_role` (Block 3's admin API calls them).
+- Client beacon `src/components/analytics-beacon.tsx` mounted in the root layout (covers
+  public site + /app): `navigator.sendBeacon('/api/track', …)` on every route change;
+  first hit of a session also sends `document.referrer` + parsed UTM.
+- `src/app/api/track/route.ts` (nodejs, public, no auth): strict allowlist, rejects
+  bodies >1KB and paths not starting with `/`, service-role insert into `page_events`
+  only, throttled (>60s) `last_seen_at` heartbeat for the optional signed-in user.
+  Always returns 204 — tracking failures never surface.
+- First-touch attribution in `src/app/auth/callback/route.ts`: on signup, copies the
+  visitor's earliest event (referrer/utm/landing_path) into `profiles.acquisition` once.
+- Pure date-bucketing/UTM helpers in `src/lib/analytics.ts` with vitest coverage
+  (`src/__tests__/analytics.test.ts`).
+
+---
+
 # Handoff — 2026-07-07 (PDF Q&A appendix, edit nudge, edit rate-limit, admin Demo/Live mode)
 
 **NEW MAJOR PLAN**: `docs/plan/2026-07-07-admin-backend-master-plan.md` — 9-block roadmap
