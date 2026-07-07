@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import { ScoreRing } from '@/components/score-ring'
+import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { isAdminEmail } from '@/lib/admin'
 import { deriveHeadlineScore } from '@/lib/viability-score'
+import { isNewUser } from '@/lib/offers'
 import AccountForm from './account-form'
 import DemoModeToggle from './demo-mode-toggle'
 
@@ -64,6 +66,33 @@ function reportDisplayState(report: ReportRow | null) {
   }
 }
 
+/**
+ * Fetches account-page-visible offers for a signed-in viewer.
+ *
+ * `supabase` here is the per-request client (respects RLS as the signed-in
+ * user) — RLS ("offers: authenticated select account") already narrows this
+ * to live rows with `show_in_account = true`, but does NOT filter by
+ * audience (it can't see profile.created_at). The audience rule itself is
+ * applied here: 'everyone' and 'account_holders' always show to a signed-in
+ * viewer; 'new_users' only shows if the profile is within the new-user
+ * window (see NEW_USER_WINDOW_DAYS in src/lib/offers.ts).
+ */
+async function getAccountOffers(
+  supabase: Awaited<ReturnType<typeof createDbClient>>,
+  profileCreatedAt: string
+): Promise<BannerOffer[]> {
+  const { data } = await supabase
+    .from('offers')
+    .select('id, code, description, percent_off, amount_off_cents, audience')
+    .order('created_at', { ascending: false })
+
+  const viewerIsNew = isNewUser(profileCreatedAt)
+
+  return (data ?? []).filter(
+    o => o.audience === 'everyone' || o.audience === 'account_holders' || (o.audience === 'new_users' && viewerIsNew)
+  )
+}
+
 export default async function AccountPage() {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -71,9 +100,11 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, display_name, default_country, default_region, marketing_opt_in, demo_mode')
+    .select('username, display_name, default_country, default_region, marketing_opt_in, demo_mode, created_at')
     .eq('id', user.id)
     .single()
+
+  const offers = await getAccountOffers(supabase, profile?.created_at ?? user.created_at)
 
   const isAdmin = isAdminEmail(user.email)
 
@@ -95,6 +126,12 @@ export default async function AccountPage() {
         </Link>
         <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Account</h1>
         <p className="text-sm text-slate-400 light:text-gray-500 mb-8">Manage your profile and preferences.</p>
+
+        {offers.length > 0 && (
+          <div className="mb-8">
+            <OfferBanners offers={offers} />
+          </div>
+        )}
 
         <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 mb-10 flex items-center gap-4">
           <div className="flex-shrink-0 h-14 w-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl font-semibold text-white">

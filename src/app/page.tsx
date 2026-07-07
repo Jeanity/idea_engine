@@ -3,6 +3,7 @@ import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ScrollReveal } from '@/components/scroll-reveal'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ScoreRing } from '@/components/score-ring'
+import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { DEMO_STATS } from '@/lib/demo-stats'
 import { createPublicClient, createServiceClient } from '@/lib/db'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
@@ -255,6 +256,23 @@ async function getTestimonials(): Promise<Testimonial[]> {
   })
 }
 
+/**
+ * Fetches homepage-visible offers. The `createPublicClient()` (anon) query is
+ * the actual security boundary — RLS ("offers: public select homepage") only
+ * returns rows that are live, `show_on_homepage = true`, AND audience is
+ * 'new_users' or 'everyone', which is exactly what a signed-out visitor
+ * should see. No further filtering is needed here.
+ */
+async function getHomepageOffers(): Promise<BannerOffer[]> {
+  const publicClient = createPublicClient()
+  const { data } = await publicClient
+    .from('offers')
+    .select('id, code, description, percent_off, amount_off_cents')
+    .order('created_at', { ascending: false })
+
+  return data ?? []
+}
+
 function TestimonialStars({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5" aria-label={`${rating} out of 5 stars`}>
@@ -339,7 +357,7 @@ function ReportCard({ card }: { card: ReportCardData }) {
 
 export default async function LandingPage() {
   const year = new Date().getFullYear()
-  const testimonials = await getTestimonials()
+  const [testimonials, offers] = await Promise.all([getTestimonials(), getHomepageOffers()])
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-900">
@@ -364,6 +382,12 @@ export default async function LandingPage() {
         </header>
 
         <div className="relative z-10 flex flex-col items-center px-6 pt-16 pb-28 text-center sm:pt-20 sm:pb-36">
+          {offers.length > 0 && (
+            <div className="mb-8 w-full max-w-xl">
+              <OfferBanners offers={offers} />
+            </div>
+          )}
+
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200 backdrop-blur light:border-gray-200 light:bg-white light:text-gray-700 light:shadow-sm">
             <span className="animate-pulse-dot h-1.5 w-1.5 rounded-full bg-indigo-400" aria-hidden="true" />
             {DEMO_STATS.ideasLast30Days} ideas became reality in the last 30 days

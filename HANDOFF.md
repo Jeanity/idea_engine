@@ -1,13 +1,57 @@
+# Handoff — 2026-07-07 (Admin backend — session status / pick-up point)
+
+**START HERE.** Admin-backend master plan (`docs/plan/2026-07-07-admin-backend-master-plan.md`)
+being built block-by-block via Sonnet/Opus subagents. Progress this session:
+
+## Branch & commits
+- Branch: **`feat/report-appendix-editlimit-demo-mode`** — 7 commits, **NOT pushed** (Vercel
+  deploys from main, so nothing here is live in prod yet).
+  1. `6c0fe50` report Q&A appendix + edit nudge/limit + admin demo mode (plans A–D)
+  2. `d3f7208` Block 1 — admin shell (`/app/admin`, gate, sub-nav)
+  3. `269613c` Block 9 — report feedback/ratings + homepage testimonials
+  4. `91b6c27` Block 2 — analytics foundation (page_events, /api/track, RPCs)
+  5. `5af8d00` Block 3 — usage dashboard (period picker, /api/admin/stats)
+  6. `3d51509` Block 4 — affiliate links + click tracking + rewrite engine
+  7. `03641f1` Block 5 — user management (list/detail/invite/delete w/ 3 server guards)
+
+## Migrations — ALL RUN through 006
+003 (edit-log/demo-mode), 004 (report_feedback), 005 (analytics_events), 006
+(affiliate_links) all applied by Danny in Supabase. DB is current through Block 4.
+**Any NEW migration from Block 5+ must be run before that block works.**
+
+## Verified live (local) this session
+- Block 4 affiliate links: Danny created a link, clicked it — redirect + click tracking
+  work. ✅
+- Blocks 1/2/3/9 built + tsc/test/build-clean but NOT yet click-tested live by Danny.
+
+## Block 5 — DONE (committed `03641f1`, verified next session)
+Agent had actually finished writing all files before it died last night; re-verified this
+session: tsc clean, build succeeds, lint = same 9 pre-existing problems (zero new). Delete
+route confirmed to carry all three server guards (admin re-check, server-fetched email must
+equal typed email, admin accounts 403) + audit logging. **Setup dependency: "add account"
+uses `auth.admin.inviteUserByEmail`, which needs Supabase SMTP configured — until then
+invites error with a clean "email delivery isn't configured" message.**
+- Deletion cascade for Block 5 was pre-verified: `auth.users → profiles → ideas →
+  answers/reports → purchases` all `on delete cascade`, so `auth.admin.deleteUser` is clean.
+- If Block 5's "add account/invite" needs Supabase SMTP, that's a Danny setup step.
+
+## Remaining blocks (recommended order)
+6 (discounts/offers), 7 (sales & costs), 8 (growth graphs). Then commit-per-block continues.
+Standing rules in play: cheapest capable model, terse, ask before unrequested work,
+deletion always confirms, every admin API route self-gates isAdminEmail + service-role only
+after the check.
+
+---
+
 # Handoff — 2026-07-07 (Block 2 — analytics foundation)
 
 Block 2 of the admin-backend master plan built (event pipeline, sessions,
 referrer/UTM attribution, aggregation RPCs). **Nothing committed.**
 
 ## Needs Danny
-- **Run migration `supabase/migrations/005_analytics_events.sql` manually** in the
-  Supabase SQL editor (creates `page_events`, adds `profiles.last_seen_at` +
-  `profiles.acquisition`, and the six `analytics_*` RPCs). Until it runs, `/api/track`
-  inserts fail silently (by design) and the RPCs don't exist.
+- ~~Run migrations 004/005/006~~ — **DONE 2026-07-07** (Danny ran 004 report_feedback,
+  005 analytics_events, 006 affiliate_links in the Supabase SQL editor). DB is current
+  through Block 4.
 
 ## Open decisions — RECOMMENDED defaults implemented (change only if Danny objects)
 - **(a) GA4 alongside self-owned analytics? → NO.** Self-owned events are the sole

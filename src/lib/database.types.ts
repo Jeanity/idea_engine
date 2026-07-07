@@ -16,6 +16,7 @@ export type IdeaArchetype =
 export type IdeaStatus = 'draft' | 'questioning' | 'researching' | 'ready'
 export type ReportStatus = 'queued' | 'running' | 'complete' | 'failed'
 export type PurchaseStatus = 'pending' | 'complete' | 'refunded' | 'failed'
+export type OfferAudience = 'new_users' | 'account_holders' | 'everyone'
 
 export type Database = {
   public: {
@@ -404,6 +405,58 @@ export type Database = {
             referencedColumns: ['id']
           }
         ]
+      }
+      offers: {
+        Row: {
+          id: string
+          code: string
+          description: string
+          percent_off: number | null
+          amount_off_cents: number | null
+          audience: OfferAudience
+          show_on_homepage: boolean
+          show_in_account: boolean
+          starts_at: string
+          ends_at: string | null
+          max_redemptions: number | null
+          redemption_count: number
+          active: boolean
+          stripe_promotion_code_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          description: string
+          percent_off?: number | null
+          amount_off_cents?: number | null
+          audience?: OfferAudience
+          show_on_homepage?: boolean
+          show_in_account?: boolean
+          starts_at?: string
+          ends_at?: string | null
+          max_redemptions?: number | null
+          redemption_count?: number
+          active?: boolean
+          stripe_promotion_code_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          code?: string
+          description?: string
+          percent_off?: number | null
+          amount_off_cents?: number | null
+          audience?: OfferAudience
+          show_on_homepage?: boolean
+          show_in_account?: boolean
+          starts_at?: string
+          ends_at?: string | null
+          max_redemptions?: number | null
+          redemption_count?: number
+          active?: boolean
+          stripe_promotion_code_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: Record<string, never>
