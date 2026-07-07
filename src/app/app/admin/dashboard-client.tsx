@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { PeriodPicker, rangeForPreset, type PeriodRange } from './period-picker'
+import { GrowthGraphs } from './growth-graphs'
 
 interface StatsPayload {
   usersOnline: number
@@ -98,6 +99,8 @@ export function DashboardClient() {
           <StatTile label="Signups" value={stats ? stats.signups : '—'} />
         </div>
       </div>
+
+      <GrowthGraphs period={period} />
     </div>
   )
 }

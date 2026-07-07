@@ -9,6 +9,24 @@
    with the light: variant, e.g. bg-slate-950 light:bg-gray-50. */
 @custom-variant light (&:where(.light, .light *));
 
+/* Recharts (admin growth graphs, Block 8) renders raw SVG, so it can't use
+   the `light:` Tailwind variant directly — these CSS vars give it the same
+   theme-awareness via plain inline styles. */
+:root {
+  --chart-grid: rgba(148, 163, 184, 0.15);
+  --chart-axis: rgba(148, 163, 184, 0.65);
+  --chart-tooltip-bg: #0f172a;
+  --chart-tooltip-border: rgba(255, 255, 255, 0.12);
+  --chart-tooltip-text: #e2e8f0;
+}
+.light {
+  --chart-grid: rgba(100, 116, 139, 0.18);
+  --chart-axis: rgba(71, 85, 105, 0.75);
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: rgba(0, 0, 0, 0.08);
+  --chart-tooltip-text: #1e293b;
+}
+
 /* Native <select> popups follow the browser color-scheme, not our CSS — without
    this, dark mode renders white option text on the OS's white popup background.
    Chromium also derives the popup PANEL colour from the select's own

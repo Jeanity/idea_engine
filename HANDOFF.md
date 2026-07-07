@@ -13,11 +13,14 @@ being built block-by-block via Sonnet/Opus subagents. Progress this session:
   5. `5af8d00` Block 3 — usage dashboard (period picker, /api/admin/stats)
   6. `3d51509` Block 4 — affiliate links + click tracking + rewrite engine
   7. `03641f1` Block 5 — user management (list/detail/invite/delete w/ 3 server guards)
+  8. `148e4df` Block 6 — discounts & offers (admin CRUD + homepage/account banners)
+  9. `a7fa300` Block 7 — sales & cost tracking (reports.cost_usd + Sales P&L tab)
 
-## Migrations — ALL RUN through 006
-003 (edit-log/demo-mode), 004 (report_feedback), 005 (analytics_events), 006
-(affiliate_links) all applied by Danny in Supabase. DB is current through Block 4.
-**Any NEW migration from Block 5+ must be run before that block works.**
+## Migrations — 003–006 RUN; 007 + 008 PENDING
+003/004/005/006 applied by Danny. **PENDING (run in Supabase SQL editor):**
+- `007_offers.sql` — offers admin page/banners show empty + CRUD errors until run.
+- `008_report_cost.sql` — adds `reports.cost_usd`; Sales tab AI-cost + new report
+  runs' cost persistence need it. Block 5 needed no migration.
 
 ## Verified live (local) this session
 - Block 4 affiliate links: Danny created a link, clicked it — redirect + click tracking
