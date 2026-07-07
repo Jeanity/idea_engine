@@ -34,6 +34,10 @@ per Danny's standing workflow (plan → subagent → HANDOFF.md for open items).
   that Phase 5 plugs into; they must not block on Stripe.
 - Charts: use **recharts** (React-19-compatible; add as dependency in the first block
   that needs it). Keep charts to line/bar; no red for negative trends (amber).
+- **Deletion always confirms.** ANY destructive action (delete account, remove
+  affiliate link/offer, clear data) MUST require explicit confirmation in the UI
+  before it fires — no one-click deletes. For high-stakes deletes (user accounts)
+  require typing the target's identifier to confirm. Applies to every block.
 
 ## Dependency order
 

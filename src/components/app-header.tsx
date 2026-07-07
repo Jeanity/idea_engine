@@ -46,6 +46,11 @@ export async function AppHeader({ email }: { email: string }) {
             New idea
           </Link>
           {isAdmin && (
+            <Link href="/app/admin" className="text-sm text-slate-300 light:text-gray-600 hover:text-white light:hover:text-gray-900 font-medium transition-colors">
+              Admin
+            </Link>
+          )}
+          {isAdmin && (
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                 demoMode
