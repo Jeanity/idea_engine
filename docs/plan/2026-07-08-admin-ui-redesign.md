@@ -44,10 +44,17 @@ verifies the look locally.
     - *Latest affiliate links* — recent N w/ click counts (link to Affiliates).
     - *Latest feedback* — recent N ratings + snippet (link to Feedback).
   - Donut (report types or traffic sources) + a small goals/progress widget if useful.
-- **Drag-to-reorder**: add `@dnd-kit/core` + `@dnd-kit/sortable` (`npm install`).
-  Widgets are sortable cards; order persists to localStorage keyed per admin id;
-  a "Reset layout" control restores defaults. Keyboard-accessible (dnd-kit supports it).
-  Server data is unaffected — this is pure client layout state.
+- **Drag-to-reorder + resize (span-based grid)**: add `@dnd-kit/core` +
+  `@dnd-kit/sortable` (`npm install`). Dashboard is a **4-column grid**; each widget
+  has BOTH:
+  - a draggable handle to reposition (grid reflows/packs around it), and
+  - a **width control** snapping to ¼ / ½ / ¾ / full (column span 1–4), so the admin
+    can lay widgets out e.g. two-across-two-down. On mobile everything stacks to full
+    width regardless of saved span.
+  Per-widget **order AND span** persist to localStorage keyed per admin id; a "Reset
+  layout" control restores defaults. Keyboard-accessible (dnd-kit supports it). This is
+  pure client layout state — server data untouched. (NOT free-form pixel resize — snap
+  to the 4-col grid for robustness on React 19.)
 
 ## Block R3 — Pagination on all admin lists (Sonnet)
 - Add pagination (page size ~25, prev/next + page count) to: Users, Affiliates,
