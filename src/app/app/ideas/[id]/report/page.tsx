@@ -30,6 +30,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     .eq('idea_id', id)
     .single()
 
+  // RLS ("report_feedback: select own") already scopes this to the caller's
+  // own row — .maybeSingle() because a report may not have feedback yet.
+  const { data: feedback } = report
+    ? await supabase
+        .from('report_feedback')
+        .select('rating, comment, allow_public')
+        .eq('report_id', report.id)
+        .maybeSingle()
+    : { data: null }
+
   const isAdmin = isAdminEmail(user.email)
 
   return (
@@ -41,6 +51,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         archetype={idea.archetype}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         initialReport={report ? (report as any) : null}
+        initialFeedback={feedback ?? null}
         isAdmin={isAdmin}
       />
     </main>

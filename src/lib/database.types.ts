@@ -252,6 +252,50 @@ export type Database = {
           }
         ]
       }
+      report_feedback: {
+        Row: {
+          id: string
+          report_id: string
+          user_id: string
+          rating: number
+          comment: string | null
+          allow_public: boolean
+          featured: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          report_id: string
+          user_id: string
+          rating: number
+          comment?: string | null
+          allow_public?: boolean
+          featured?: boolean
+          created_at?: string
+        }
+        Update: {
+          rating?: number
+          comment?: string | null
+          allow_public?: boolean
+          featured?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'report_feedback_report_id_fkey'
+            columns: ['report_id']
+            isOneToOne: true
+            referencedRelation: 'reports'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'report_feedback_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

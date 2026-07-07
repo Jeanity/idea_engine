@@ -4,6 +4,13 @@ import { ScrollReveal } from '@/components/scroll-reveal'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ScoreRing } from '@/components/score-ring'
 import { DEMO_STATS } from '@/lib/demo-stats'
+import { createPublicClient, createServiceClient } from '@/lib/db'
+import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+
+// Revalidate periodically (ISR) rather than once at build time — otherwise an
+// admin featuring/unfeaturing testimonials wouldn't show up until the next
+// deploy.
+export const revalidate = 60
 
 interface ReportCardData {
   /** For redacted cards this is NONSENSE filler with title-like rhythm —
@@ -184,6 +191,105 @@ const REPORT_FEATURES = [
 ]
 
 
+interface Testimonial {
+  id: string
+  rating: number
+  comment: string | null
+  displayName: string
+  archetypeLabel: string | null
+}
+
+/**
+ * Fetches homepage testimonials.
+ *
+ * The `createPublicClient()` (anon) query below is the actual security
+ * boundary: RLS ("report_feedback: public select featured") only lets it see
+ * rows that are BOTH admin-featured AND user-consented — exactly the rows
+ * that are safe to show anyone. `profiles`/`ideas` have no public RLS policy
+ * (owner-only, by design), so display_name/archetype for these
+ * already-approved rows are looked up afterwards with the service client.
+ * That lookup never expands which feedback is visible — it only decorates
+ * rows the anon query already proved are public.
+ */
+async function getTestimonials(): Promise<Testimonial[]> {
+  const publicClient = createPublicClient()
+  const { data: rows } = await publicClient
+    .from('report_feedback')
+    .select('id, report_id, user_id, rating, comment')
+    .eq('featured', true)
+    .eq('allow_public', true)
+    .order('created_at', { ascending: false })
+    .limit(9)
+
+  if (!rows || rows.length === 0) return []
+
+  const service = createServiceClient()
+  const reportIds = [...new Set(rows.map(r => r.report_id))]
+  const userIds = [...new Set(rows.map(r => r.user_id))]
+
+  const [{ data: reports }, { data: profiles }] = await Promise.all([
+    service.from('reports').select('id, idea_id').in('id', reportIds),
+    service.from('profiles').select('id, display_name').in('id', userIds),
+  ])
+
+  const ideaIds = [...new Set((reports ?? []).map(r => r.idea_id))]
+  const { data: ideas } = ideaIds.length
+    ? await service.from('ideas').select('id, archetype').in('id', ideaIds)
+    : { data: [] as { id: string; archetype: string }[] }
+
+  const reportToIdea = new Map((reports ?? []).map(r => [r.id, r.idea_id]))
+  const ideaToArchetype = new Map((ideas ?? []).map(i => [i.id, i.archetype]))
+  const profileById = new Map((profiles ?? []).map(p => [p.id, p]))
+
+  return rows.map(r => {
+    const ideaId = reportToIdea.get(r.report_id)
+    const archetype = ideaId ? ideaToArchetype.get(ideaId) : undefined
+    const profile = profileById.get(r.user_id)
+    return {
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      displayName: profile?.display_name || 'Verified founder',
+      archetypeLabel: archetype ? (ARCHETYPE_LABELS[archetype] ?? archetype) : null,
+    }
+  })
+}
+
+function TestimonialStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <svg
+          key={i}
+          viewBox="0 0 20 20"
+          className={`h-4 w-4 ${i <= rating ? 'fill-amber-400' : 'fill-white/10 light:fill-gray-200'}`}
+        >
+          <path d="M10 1.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L1.6 7.6l5.8-.8z" />
+        </svg>
+      ))}
+    </div>
+  )
+}
+
+function TestimonialCard({ t }: { t: Testimonial }) {
+  return (
+    <div className="h-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-black/30 backdrop-blur light:border-gray-200 light:bg-white light:shadow-md light:shadow-black/5">
+      <TestimonialStars rating={t.rating} />
+      {t.comment && (
+        <p className="mt-4 text-sm leading-relaxed text-slate-300 light:text-gray-700">&ldquo;{t.comment}&rdquo;</p>
+      )}
+      <div className="mt-5 flex items-center gap-2">
+        <span className="text-sm font-medium text-white light:text-gray-900">{t.displayName}</span>
+        {t.archetypeLabel && (
+          <span className="inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-[11px] font-medium text-indigo-300 light:bg-indigo-100 light:border light:border-indigo-200 light:text-indigo-700">
+            {t.archetypeLabel}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ReportCard({ card }: { card: ReportCardData }) {
   return (
     <div
@@ -231,8 +337,9 @@ function ReportCard({ card }: { card: ReportCardData }) {
   )
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
   const year = new Date().getFullYear()
+  const testimonials = await getTestimonials()
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-900">
@@ -401,6 +508,34 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Testimonials — never fabricated; hidden entirely when none featured */}
+      {/* ------------------------------------------------------------------ */}
+      {testimonials.length > 0 && (
+        <section className="relative overflow-hidden bg-slate-950 px-6 py-24 light:bg-gray-100">
+          <div className="absolute inset-0 dot-grid opacity-40 light:opacity-40" aria-hidden="true" />
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="animate-blob-1 absolute -top-24 -right-16 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl light:opacity-50" />
+            <div className="animate-blob-3 absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl light:opacity-50" />
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-6xl">
+            <ScrollReveal className="mb-14 text-center">
+              <h2 className="text-3xl font-bold text-white sm:text-4xl light:text-gray-900">What founders are saying</h2>
+              <p className="mt-3 text-slate-400 light:text-gray-500">Real ratings from real reports.</p>
+            </ScrollReveal>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {testimonials.map((t, i) => (
+                <ScrollReveal key={t.id} delayMs={i * 80}>
+                  <TestimonialCard t={t} />
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* Bottom CTA band                                                    */}

@@ -14,11 +14,18 @@ interface ReportData {
   error: string | null
 }
 
+interface FeedbackData {
+  rating: number
+  comment: string | null
+  allow_public: boolean
+}
+
 interface Props {
   ideaId: string
   restatement: string | null
   archetype: string
   initialReport: ReportData | null
+  initialFeedback: FeedbackData | null
   isAdmin: boolean
 }
 
@@ -1155,6 +1162,154 @@ export function FullReportViewer({ report }: { report: ReportData }) {
   )
 }
 
+// ── Feedback card ─────────────────────────────────────────────
+
+function StaticStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-1" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <svg
+          key={i}
+          viewBox="0 0 20 20"
+          className={`h-5 w-5 ${i <= rating ? 'fill-amber-400' : 'fill-white/10 light:fill-gray-200'}`}
+        >
+          <path d="M10 1.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L1.6 7.6l5.8-.8z" />
+        </svg>
+      ))}
+    </div>
+  )
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [hover, setHover] = useState(0)
+  return (
+    <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
+      {[1, 2, 3, 4, 5].map(i => {
+        const filled = (hover || value) >= i
+        return (
+          <button
+            key={i}
+            type="button"
+            onMouseEnter={() => setHover(i)}
+            onClick={() => onChange(i)}
+            aria-label={`Rate ${i} star${i === 1 ? '' : 's'}`}
+            className="p-0.5"
+          >
+            <svg viewBox="0 0 20 20" className={`h-7 w-7 transition-colors ${filled ? 'fill-amber-400' : 'fill-white/10 light:fill-gray-200'}`}>
+              <path d="M10 1.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L1.6 7.6l5.8-.8z" />
+            </svg>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ReportFeedbackCard({ ideaId, initialFeedback }: { ideaId: string; initialFeedback: FeedbackData | null }) {
+  const [rating, setRating] = useState(initialFeedback?.rating ?? 0)
+  const [comment, setComment] = useState(initialFeedback?.comment ?? '')
+  const [allowPublic, setAllowPublic] = useState(initialFeedback?.allow_public ?? false)
+  const [saved, setSaved] = useState(!!initialFeedback)
+  const [editing, setEditing] = useState(!initialFeedback)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit() {
+    if (rating < 1) {
+      setError('Pick a star rating first.')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/ideas/${ideaId}/report/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, comment: comment.trim() || null, allow_public: allowPublic }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'Could not save your feedback. Please try again.')
+        return
+      }
+      setSaved(true)
+      setEditing(false)
+    } catch {
+      setError('Could not save your feedback. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (saved && !editing) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 print:hidden">
+        <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 light:bg-emerald-50/50 light:border-emerald-200 light:shadow-sm px-5 py-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-emerald-200 light:text-emerald-800">Thanks for the feedback!</p>
+            <div className="mt-1.5"><StaticStars rating={rating} /></div>
+          </div>
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2 flex-shrink-0"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 print:hidden">
+      <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+        <h2 className="font-semibold text-white light:text-gray-900 mb-1">How did we do?</h2>
+        <p className="text-xs text-slate-500 light:text-gray-400 mb-4">Your rating helps us keep improving these reports.</p>
+
+        <StarPicker value={rating} onChange={setRating} />
+
+        <textarea
+          value={comment ?? ''}
+          onChange={e => setComment(e.target.value)}
+          placeholder="Anything that stood out? (optional)"
+          rows={3}
+          className="mt-4 w-full rounded-lg border border-white/10 bg-white/5 light:bg-gray-50 light:border-gray-200 px-3 py-2 text-sm text-slate-200 light:text-gray-800 placeholder:text-slate-500 light:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+
+        <label className="mt-3 flex items-start gap-2 text-xs text-slate-400 light:text-gray-500">
+          <input
+            type="checkbox"
+            checked={allowPublic}
+            onChange={e => setAllowPublic(e.target.checked)}
+            className="mt-0.5"
+          />
+          You may quote my feedback publicly (first name / display name only)
+        </label>
+
+        {error && <p className="mt-2 text-xs text-red-300 light:text-red-600">{error}</p>}
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="rounded-lg bg-indigo-500 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Saving…' : saved ? 'Save changes' : 'Submit feedback'}
+          </button>
+          {saved && (
+            <button
+              onClick={() => setEditing(false)}
+              className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Action buttons ────────────────────────────────────────────
 
 function DownloadPdfButton({ ideaId }: { ideaId: string }) {
@@ -1280,7 +1435,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
 
 // ── Main client component ─────────────────────────────────────
 
-export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport, isAdmin }: Props) {
+export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport, initialFeedback, isAdmin }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -1291,6 +1446,9 @@ export default function ReportClient({ ideaId, restatement, archetype: _archetyp
     return (
       <div>
         <FullReportViewer report={report!} />
+        <div className="mb-8">
+          <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} />
+        </div>
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-3 print:hidden">
           <DownloadPdfButton ideaId={ideaId} />
           {isAdmin && generationCost !== undefined && (

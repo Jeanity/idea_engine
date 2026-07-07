@@ -34,3 +34,16 @@ export function createServiceClient() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 }
+
+/**
+ * Stateless anon client — respects RLS as the anon role, no user session.
+ * Use for server-rendered public pages that read data with no signed-in user
+ * (e.g. homepage testimonials via the "public select featured" policy on
+ * report_feedback). Never use this for owner-scoped or admin data — it can
+ * only ever see what RLS explicitly grants to anon.
+ */
+export function createPublicClient() {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}

@@ -559,6 +559,10 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
             </Callout>
           </View>
 
+          <Text style={[styles.caption, { marginTop: 10 }]}>
+            Tell us how we did — leave a rating on your report page.
+          </Text>
+
           <PageFooter reportTitle={data.reportTitle} />
         </Page>
       )}
