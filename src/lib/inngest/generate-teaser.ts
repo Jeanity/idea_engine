@@ -54,12 +54,20 @@ export const generateTeaser = inngest.createFunction(
       return bankQ ? [{ maps_to: bankQ.maps_to, answer: row.answer_text }] : []
     })
 
+    // Read existing cost before this run so the new total is additive, not a
+    // clobbering overwrite (rerun/upgrade scenarios accumulate spend).
+    const { data: existingReport } = await supabase
+      .from('reports')
+      .select('cost_usd')
+      .eq('id', reportId)
+      .single()
+
     await supabase
       .from('reports')
       .update({ status: 'running', generation_started_at: new Date().toISOString() })
       .eq('id', reportId)
 
-    const { text } = await callAI({
+    const { text, costUsd } = await callAI({
       model: 'claude-haiku-4-5-20251001',
       messages: [{ role: 'user', content: buildTeaserMessage({
         idea_raw_text: idea.raw_text,
@@ -88,6 +96,7 @@ export const generateTeaser = inngest.createFunction(
       status: 'complete',
       generation_completed_at: new Date().toISOString(),
       model_version: 'claude-sonnet-4-6',
+      cost_usd: Math.round(((existingReport?.cost_usd ?? 0) + costUsd) * 10000) / 10000,
     }).eq('id', reportId)
   }
 )

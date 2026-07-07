@@ -119,6 +119,15 @@ export const generateReport = inngest.createFunction(
 
     const answers = Object.entries(mapsTo).map(([maps_to, answer]) => ({ maps_to, answer }))
 
+    // Read existing cost before this run so the new total is additive, not a
+    // clobbering overwrite (a rerun of the full pipeline accumulates on top
+    // of whatever teaser/prior-run cost was already recorded).
+    const { data: existingReport } = await supabase
+      .from('reports')
+      .select('cost_usd')
+      .eq('id', reportId)
+      .single()
+
     // Mark running
     await supabase
       .from('reports')
@@ -406,6 +415,7 @@ export const generateReport = inngest.createFunction(
         status: 'complete',
         generation_completed_at: new Date().toISOString(),
         model_version: 'claude-sonnet-4-6',
+        cost_usd: Math.round(((existingReport?.cost_usd ?? 0) + totalCostUsd) * 10000) / 10000,
       }).eq('id', reportId)
     })
   }

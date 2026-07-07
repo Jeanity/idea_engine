@@ -196,6 +196,7 @@ export type Database = {
           generation_started_at: string | null
           generation_completed_at: string | null
           model_version: string | null
+          cost_usd: number | null
           created_at: string
           updated_at: string
         }
@@ -210,6 +211,7 @@ export type Database = {
           generation_started_at?: string | null
           generation_completed_at?: string | null
           model_version?: string | null
+          cost_usd?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -221,6 +223,7 @@ export type Database = {
           generation_started_at?: string | null
           generation_completed_at?: string | null
           model_version?: string | null
+          cost_usd?: number | null
           updated_at?: string
         }
         Relationships: [
