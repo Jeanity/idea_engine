@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
@@ -175,21 +175,37 @@ function GearCluster() {
   )
 }
 
+function subscribeReducedMotion(callback: () => void) {
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+  mq.addEventListener('change', callback)
+  return () => mq.removeEventListener('change', callback)
+}
+function getReducedMotionSnapshot() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+function getReducedMotionServerSnapshot() {
+  return false
+}
+
 function ConsoleTicker({ stepKey }: { stepKey: string }) {
   const lines = TICKER_LINES[stepKey] ?? []
   const [index, setIndex] = useState(0)
-  const [reducedMotion, setReducedMotion] = useState(false)
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  )
 
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReducedMotion(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-
-  useEffect(() => {
+  // Reset the ticker index whenever the active step changes. Adjusting state
+  // during render (rather than in an effect) avoids an extra commit — see
+  // https://react.dev/learn/you-might-not-need-an-effect.
+  const [syncedStepKey, setSyncedStepKey] = useState(stepKey)
+  if (syncedStepKey !== stepKey) {
+    setSyncedStepKey(stepKey)
     setIndex(0)
+  }
+
+  useEffect(() => {
     if (reducedMotion || lines.length <= 1) return
     const interval = setInterval(() => {
       setIndex(i => (i + 1) % lines.length)
@@ -237,6 +253,12 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
   }, [ideaId])
 
   useEffect(() => {
+    // Kicks off the report-generation POST on mount. `generating` flips
+    // synchronously so the "Starting up…" placeholder disappears immediately
+    // instead of flashing while the request is in flight — this is the
+    // standard fetch-on-mount pattern, there's no render-time equivalent for
+    // starting a network request as a side effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     triggerGeneration()
   }, [triggerGeneration])
 
@@ -420,31 +442,6 @@ function ViabilitySnapshot({ vs }: {
 }
 
 // ── Teaser viewer ─────────────────────────────────────────────
-
-function LockedSection({ title }: { title: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/10 light:border-gray-200 flex items-center justify-between">
-        <h2 className="font-semibold text-white light:text-gray-900">{title}</h2>
-        <span className="text-xs text-slate-500 light:text-gray-400 flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-          </svg>
-          Unlock to view
-        </span>
-      </div>
-      <div className="px-5 py-4 blur-sm select-none pointer-events-none" aria-hidden>
-        <div className="space-y-2">
-          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-full" />
-          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-5/6" />
-          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-4/6" />
-          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-5/6 mt-2" />
-          <div className="h-3 bg-white/10 light:bg-gray-200 rounded w-3/6" />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
   report: ReportData
@@ -1445,7 +1442,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, archetype: _archetype, initialReport, initialFeedback, isAdmin }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
 

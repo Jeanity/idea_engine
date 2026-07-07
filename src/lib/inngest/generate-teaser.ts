@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
 import { providerOverrideForUser } from '@/lib/demo-mode'
 import { TEASER_SYSTEM_PROMPT, buildTeaserMessage } from '@/lib/prompts/teaser'
+import type { Json } from '@/lib/database.types'
 
 interface Question {
   key: string
@@ -89,9 +90,12 @@ export const generateTeaser = inngest.createFunction(
       next_steps_preview: unknown
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // `teaser` is parsed from the model's JSON response, so its fields are
+    // typed `unknown` above for callers; here we're just storing the whole
+    // parsed object into the untyped `Json` column, which any JSON.parse
+    // result satisfies at runtime.
     await supabase.from('reports').update({
-      preview_sections: teaser as any,
+      preview_sections: teaser as unknown as Json,
       sections: {},
       status: 'complete',
       generation_completed_at: new Date().toISOString(),

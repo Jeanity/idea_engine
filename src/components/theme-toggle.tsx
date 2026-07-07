@@ -11,6 +11,11 @@ export function ThemeToggle() {
   const [light, setLight] = useState(false)
 
   useEffect(() => {
+    // Reads the class the no-flash init script (layout.tsx) applied to <html>
+    // before hydration. Must run post-mount, not during render, so SSR output
+    // (always dark) matches the client's first paint and avoids a hydration
+    // mismatch; there is no render-time equivalent for this DOM read.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLight(document.documentElement.classList.contains('light'))
   }, [])
 

@@ -175,6 +175,10 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   const [currentValue, setCurrentValue] = useState<string | string[]>('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [editLimitMessage, setEditLimitMessage] = useState<string | null>(null)
+  // Tracks which currentIndex the input state was last synced for, so we can
+  // re-derive currentValue/validationError during render (see below) instead
+  // of in an effect.
+  const [syncedIndex, setSyncedIndex] = useState<number | null>(null)
 
   const fetchQuestions = useCallback(async (): Promise<ApiResponse> => {
     const res = await fetch(`/api/ideas/${ideaId}/questions`)
@@ -208,15 +212,6 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         setLoading(false)
       })
   }, [fetchQuestions, editKey])
-
-  // Sync input value when navigating to a different question
-  useEffect(() => {
-    const q = questions[currentIndex]
-    if (!q) return
-    setCurrentValue(parseValue(q, answers.get(q.key) ?? ''))
-    setValidationError(null)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, questions])
 
   async function saveAnswer(q: Question, answerText: string) {
     const res = await fetch(`/api/ideas/${ideaId}/answers`, {
@@ -354,6 +349,17 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   }
 
   const q = questions[currentIndex]
+
+  // Sync input value when navigating to a different question. Adjusting
+  // state directly during render (rather than in an effect) avoids an extra
+  // commit/paint — see https://react.dev/learn/you-might-not-need-an-effect
+  // ("Adjusting some state when a prop changes").
+  if (syncedIndex !== currentIndex) {
+    setSyncedIndex(currentIndex)
+    setCurrentValue(parseValue(q, answers.get(q.key) ?? ''))
+    setValidationError(null)
+  }
+
   const isLast = currentIndex === questions.length - 1
   const answeredCount = questions.filter(qq => answers.has(qq.key)).length
   const progressPct = Math.round((answeredCount / questions.length) * 100)
