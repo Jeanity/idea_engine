@@ -49,16 +49,19 @@ const tooltipStyle = {
   },
   labelStyle: { color: 'var(--chart-tooltip-text)' },
   itemStyle: { color: 'var(--chart-tooltip-text)' },
+  // No hover cursor — the default vertical line/wash reads as a glitch.
+  cursor: false as const,
 }
 
 function shortDay(day: string): string {
   return day.slice(5)
 }
 
-export function OverviewChart({ data }: { data: OverviewPoint[] | null }) {
+export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoint[] | null; granularity?: 'hour' | 'day' }) {
   const [metric, setMetric] = useState<Metric>('reports')
   const active = METRICS.find(m => m.key === metric)!
   const hasData = !!data && data.some(d => d[metric] > 0)
+  const hourly = granularity === 'hour'
 
   const tabs = (
     <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Overview metric">
@@ -85,7 +88,7 @@ export function OverviewChart({ data }: { data: OverviewPoint[] | null }) {
   )
 
   return (
-    <WidgetCard title="Overview" subtitle="Daily activity for the selected period" action={tabs}>
+    <WidgetCard title="Overview" subtitle={hourly ? 'Hourly activity (UTC) for the selected day' : 'Daily activity for the selected period'} action={tabs}>
       <div className="relative" style={{ width: '100%', height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data ?? []} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -96,7 +99,7 @@ export function OverviewChart({ data }: { data: OverviewPoint[] | null }) {
               </linearGradient>
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={hourly ? undefined : shortDay} {...axisProps} />
             <YAxis allowDecimals={false} {...axisProps} />
             <Tooltip {...tooltipStyle} />
             <Area

@@ -1,6 +1,14 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
-import { enumerateUtcDays, fillDailySeries, utcDay, type DailyCount } from '@/lib/analytics'
+import {
+  enumerateUtcDays,
+  fillDailySeries,
+  fillHourlySeries,
+  utcDay,
+  utcHourLabel,
+  UTC_HOUR_LABELS,
+  type DailyCount,
+} from '@/lib/analytics'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Powers the Dashboard tab's growth graphs (Block 8). Same pattern as every
@@ -90,8 +98,20 @@ export async function GET(request: NextRequest) {
   const rangeStart = fromDate.toISOString()
   const rangeEndExclusive = new Date(toDate.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
+  // Single-day ranges bucket by UTC HOUR (24 buckets, 'HH:00') instead of one
+  // lonely day point. The `day` field name is kept in the payload for both
+  // granularities so chart components need no data-shape changes.
+  const hourly = from === to
+  const bucketOf = (at: Date) => (hourly ? utcHourLabel(at) : utcDay(at))
+  const bucketKeys = hourly ? UTC_HOUR_LABELS : enumerateUtcDays(fromDate, toDate)
+
   // Only used AFTER the isAdminEmail check above, per project ground rules.
   const service = createServiceClient()
+
+  // The per-day RPCs can't bucket by hour, so hourly mode skips them and
+  // aggregates page_events directly (below) — volumes for one day are small.
+  const emptyDaily = () =>
+    Promise.resolve({ data: [] as { day: string; count: number }[] | null, error: null })
 
   const [
     sessionsRes,
@@ -103,9 +123,9 @@ export async function GET(request: NextRequest) {
     signupsRes,
     purchasesRes,
   ] = await Promise.all([
-    service.rpc('analytics_sessions_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
-    service.rpc('analytics_unique_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
-    service.rpc('analytics_returning_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
+    hourly ? emptyDaily() : service.rpc('analytics_sessions_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
+    hourly ? emptyDaily() : service.rpc('analytics_unique_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
+    hourly ? emptyDaily() : service.rpc('analytics_returning_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
     service.rpc('analytics_top_referrers', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
     service.rpc('analytics_top_utm_campaigns', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
     service
@@ -139,23 +159,79 @@ export async function GET(request: NextRequest) {
     if (res.error) console.error(`Admin graphs: ${label} query failed:`, res.error)
   }
 
-  // --- Daily series (all gap-filled to zero across the range) ---
+  // --- Traffic series (gap-filled to zero across the range) ---
 
-  const sessionsSeries = fillDailySeries(
-    (sessionsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-    fromDate,
-    toDate
-  )
-  const uniqueVisitorsSeries = fillDailySeries(
-    (uniqueVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-    fromDate,
-    toDate
-  )
-  const returningVisitorsSeries = fillDailySeries(
-    (returningVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-    fromDate,
-    toDate
-  )
+  let sessionsSeries: DailyCount[]
+  let uniqueVisitorsSeries: DailyCount[]
+  let returningVisitorsSeries: DailyCount[]
+
+  if (hourly) {
+    // Aggregate the day's raw events per UTC hour. Sessions/visitors are
+    // distinct-counted per hour (same semantics as the per-day RPCs, narrower
+    // bucket). "Returning" = the visitor has any event before this day.
+    const { data: events, error: eventsErr } = await service
+      .from('page_events')
+      .select('occurred_at, session_id, visitor_id')
+      .gte('occurred_at', rangeStart)
+      .lt('occurred_at', rangeEndExclusive)
+      .limit(50000)
+    if (eventsErr) console.error('Admin graphs: hourly page_events query failed:', eventsErr)
+
+    const sessionsByHour = new Map<string, Set<string>>()
+    const visitorsByHour = new Map<string, Set<string>>()
+    const dayVisitors = new Set<string>()
+    for (const ev of events ?? []) {
+      const hour = utcHourLabel(new Date(ev.occurred_at))
+      if (!sessionsByHour.has(hour)) sessionsByHour.set(hour, new Set())
+      sessionsByHour.get(hour)!.add(ev.session_id)
+      if (ev.visitor_id) {
+        if (!visitorsByHour.has(hour)) visitorsByHour.set(hour, new Set())
+        visitorsByHour.get(hour)!.add(ev.visitor_id)
+        dayVisitors.add(ev.visitor_id)
+      }
+    }
+
+    const returningSet = new Set<string>()
+    // .in() guard: cap the lookup list; ample at current volumes, and an
+    // undercount here only under-reports "returning" for a single day.
+    const visitorList = [...dayVisitors].slice(0, 1000)
+    if (visitorList.length > 0) {
+      const { data: prior, error: priorErr } = await service
+        .from('page_events')
+        .select('visitor_id')
+        .in('visitor_id', visitorList)
+        .lt('occurred_at', rangeStart)
+        .limit(50000)
+      if (priorErr) console.error('Admin graphs: hourly returning-visitor query failed:', priorErr)
+      for (const row of prior ?? []) if (row.visitor_id) returningSet.add(row.visitor_id)
+    }
+
+    const distinctCounts = (m: Map<string, Set<string>>) =>
+      new Map([...m].map(([hour, set]) => [hour, set.size]))
+    sessionsSeries = fillHourlySeries(distinctCounts(sessionsByHour))
+    uniqueVisitorsSeries = fillHourlySeries(distinctCounts(visitorsByHour))
+    const returningByHour = new Map<string, number>()
+    for (const [hour, set] of visitorsByHour) {
+      returningByHour.set(hour, [...set].filter(v => returningSet.has(v)).length)
+    }
+    returningVisitorsSeries = fillHourlySeries(returningByHour)
+  } else {
+    sessionsSeries = fillDailySeries(
+      (sessionsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
+      fromDate,
+      toDate
+    )
+    uniqueVisitorsSeries = fillDailySeries(
+      (uniqueVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
+      fromDate,
+      toDate
+    )
+    returningVisitorsSeries = fillDailySeries(
+      (returningVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
+      fromDate,
+      toDate
+    )
+  }
 
   const traffic = sessionsSeries.map((row, i) => ({
     day: row.day,
@@ -168,31 +244,26 @@ export async function GET(request: NextRequest) {
   const fullByDay = new Map<string, number>()
   for (const row of reportRows) {
     if (!row.generation_completed_at) continue
-    const day = utcDay(new Date(row.generation_completed_at))
+    const day = bucketOf(new Date(row.generation_completed_at))
     if (isFullReport(row.sections)) {
       fullByDay.set(day, (fullByDay.get(day) ?? 0) + 1)
     } else {
       initialByDay.set(day, (initialByDay.get(day) ?? 0) + 1)
     }
   }
-  const reportDays = enumerateUtcDays(fromDate, toDate)
-  const reports = reportDays.map(day => ({
+  const reports = bucketKeys.map(day => ({
     day,
     initial: initialByDay.get(day) ?? 0,
     full: fullByDay.get(day) ?? 0,
   }))
 
   const signupRows = signupsRes.data ?? []
-  const signupsByDay: DailyCount[] = []
-  {
-    const counts = new Map<string, number>()
-    for (const row of signupRows) {
-      const day = utcDay(new Date(row.created_at))
-      counts.set(day, (counts.get(day) ?? 0) + 1)
-    }
-    for (const [day, count] of counts) signupsByDay.push({ day, count })
+  const signupCounts = new Map<string, number>()
+  for (const row of signupRows) {
+    const day = bucketOf(new Date(row.created_at))
+    signupCounts.set(day, (signupCounts.get(day) ?? 0) + 1)
   }
-  const signups = fillDailySeries(signupsByDay, fromDate, toDate)
+  const signups: DailyCount[] = bucketKeys.map(day => ({ day, count: signupCounts.get(day) ?? 0 }))
 
   // Sales & margin per day — USD-first (per Block 7 precedent): only 'usd'
   // purchases feed the daily revenue series; other currencies are excluded
@@ -207,17 +278,16 @@ export async function GET(request: NextRequest) {
       hasNonUsd = true
       continue
     }
-    const day = utcDay(new Date(row.completed_at))
+    const day = bucketOf(new Date(row.completed_at))
     revenueByDay.set(day, (revenueByDay.get(day) ?? 0) + row.amount_cents)
   }
   const costByDay = new Map<string, number>()
   for (const row of reportRows) {
     if (!row.generation_completed_at || !row.cost_usd) continue
-    const day = utcDay(new Date(row.generation_completed_at))
+    const day = bucketOf(new Date(row.generation_completed_at))
     costByDay.set(day, (costByDay.get(day) ?? 0) + row.cost_usd)
   }
-  const salesDays = enumerateUtcDays(fromDate, toDate)
-  const sales = salesDays.map(day => {
+  const sales = bucketKeys.map(day => {
     const revenueUsd = Math.round((revenueByDay.get(day) ?? 0)) / 100
     const costUsd = Math.round((costByDay.get(day) ?? 0) * 10000) / 10000
     return { day, revenueUsd, costUsd, marginUsd: Math.round((revenueUsd - costUsd) * 100) / 100 }
@@ -308,6 +378,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     range: { from, to },
+    granularity: hourly ? 'hour' : 'day',
     traffic,
     returningVisitors: returningVisitorsSeries,
     reports,

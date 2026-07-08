@@ -23,6 +23,7 @@ interface StatsPayload {
 }
 
 interface GraphsPayload {
+  granularity?: 'hour' | 'day'
   traffic: { day: string; sessions: number }[]
   reports: { day: string; initial: number; full: number }[]
   signups: { day: string; count: number }[]
@@ -315,7 +316,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
           />
         ),
       },
-      { id: 'overview', defaultSpan: 3, node: <OverviewChart data={overviewData} /> },
+      { id: 'overview', defaultSpan: 3, node: <OverviewChart data={overviewData} granularity={graphs?.granularity ?? 'day'} /> },
       {
         id: 'report-types',
         defaultSpan: 1,
@@ -331,7 +332,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       { id: 'latest-affiliates', defaultSpan: 1, node: <LatestAffiliates rows={dash?.affiliates ?? null} /> },
       { id: 'latest-feedback', defaultSpan: 1, node: <LatestFeedback rows={dash?.feedback ?? null} /> },
     ],
-    [stats, sales, dash, reportsSeries, signupsSeries, revenueSeries, overviewData, reportsTotal, revenueUsd]
+    [stats, sales, dash, reportsSeries, signupsSeries, revenueSeries, overviewData, reportsTotal, revenueUsd, graphs?.granularity]
   )
 
   const periodLabel = period.from === period.to ? period.from : `${period.from} → ${period.to}`

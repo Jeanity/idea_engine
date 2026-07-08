@@ -71,3 +71,23 @@ export function fillDailySeries(rows: DailyCount[], from: Date, to: Date): Daily
   }
   return enumerateUtcDays(from, to).map(day => ({ day, count: byDay.get(day) ?? 0 }))
 }
+
+// ── Hourly buckets (single-day admin charts) ─────────────────────
+// When the dashboard period is a single day, charts bucket by UTC hour instead
+// of showing one lonely point. Labels are 'HH:00' (UTC, matching the day
+// boundaries everywhere else in the analytics stack).
+
+/** All 24 hour labels, '00:00' … '23:00'. */
+export const UTC_HOUR_LABELS: string[] = Array.from({ length: 24 }, (_, h) =>
+  `${String(h).padStart(2, '0')}:00`
+)
+
+/** The 'HH:00' UTC hour label of a timestamp. */
+export function utcHourLabel(at: Date): string {
+  return `${String(at.getUTCHours()).padStart(2, '0')}:00`
+}
+
+/** Continuous 24-bucket hourly series from a label→count map. */
+export function fillHourlySeries(counts: Map<string, number>): DailyCount[] {
+  return UTC_HOUR_LABELS.map(day => ({ day, count: counts.get(day) ?? 0 }))
+}

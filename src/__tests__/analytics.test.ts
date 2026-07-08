@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseUtmParams, enumerateUtcDays, fillDailySeries, utcDay } from '@/lib/analytics'
+import { parseUtmParams, enumerateUtcDays, fillDailySeries, fillHourlySeries, utcDay, utcHourLabel, UTC_HOUR_LABELS } from '@/lib/analytics'
 
 describe('parseUtmParams', () => {
   it('returns null when no utm params are present', () => {
@@ -86,5 +86,27 @@ describe('fillDailySeries', () => {
       { day: '2026-07-06', count: 5 },
       { day: '2026-07-07', count: 0 },
     ])
+  })
+})
+
+describe('hourly buckets', () => {
+  it('labels UTC hours as HH:00', () => {
+    expect(utcHourLabel(new Date('2026-07-08T00:15:00.000Z'))).toBe('00:00')
+    expect(utcHourLabel(new Date('2026-07-08T09:59:59.999Z'))).toBe('09:00')
+    expect(utcHourLabel(new Date('2026-07-08T23:00:00.000Z'))).toBe('23:00')
+  })
+
+  it('enumerates all 24 hour labels in order', () => {
+    expect(UTC_HOUR_LABELS).toHaveLength(24)
+    expect(UTC_HOUR_LABELS[0]).toBe('00:00')
+    expect(UTC_HOUR_LABELS[23]).toBe('23:00')
+  })
+
+  it('fills missing hours with zero', () => {
+    const series = fillHourlySeries(new Map([['05:00', 3], ['23:00', 1]]))
+    expect(series).toHaveLength(24)
+    expect(series[5]).toEqual({ day: '05:00', count: 3 })
+    expect(series[6]).toEqual({ day: '06:00', count: 0 })
+    expect(series[23]).toEqual({ day: '23:00', count: 1 })
   })
 })

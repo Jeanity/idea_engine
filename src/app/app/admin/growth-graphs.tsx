@@ -30,6 +30,8 @@ interface CampaignRow extends FunnelRow { source: string | null; campaign: strin
 
 interface GraphsPayload {
   range: { from: string; to: string }
+  /** 'hour' when the range is a single day (24 'HH:00' buckets), else 'day'. */
+  granularity: 'hour' | 'day'
   traffic: TrafficPoint[]
   returningVisitors: DailyPoint[]
   reports: ReportsPoint[]
@@ -65,6 +67,9 @@ const tooltipStyle = {
   },
   labelStyle: { color: 'var(--chart-tooltip-text)' },
   itemStyle: { color: 'var(--chart-tooltip-text)' },
+  // No hover cursor — the default washes the plot background (grey rect on
+  // bar charts, vertical line on line charts), which reads as a glitch.
+  cursor: false as const,
 }
 
 const legendStyle = { fontSize: 12, color: 'var(--chart-axis)' }
@@ -135,6 +140,12 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
     fetchGraphs(period.from, period.to)
   }, [fetchGraphs, period])
 
+  // Single-day ranges come back as 24 'HH:00' hour buckets — label as-is;
+  // multi-day ranges are 'YYYY-MM-DD' and get shortened.
+  const hourly = data?.granularity === 'hour'
+  const fmtBucket = hourly ? (d: string) => d : shortDay
+  const per = hourly ? 'per hour' : 'per day'
+
   const hasAnyTraffic = !!data && data.traffic.some(d => d.sessions > 0 || d.uniqueVisitors > 0)
   const hasReturning = !!data && data.returningVisitors.some(d => d.count > 0)
   const hasReports = !!data && data.reports.some(d => d.initial > 0 || d.full > 0)
@@ -145,16 +156,16 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
     <div className="mt-10">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
         <p className="text-xs uppercase tracking-wide text-slate-500 light:text-gray-400">Growth</p>
-        <p className="text-xs text-slate-500 light:text-gray-400">Day buckets are UTC calendar days.</p>
+        <p className="text-xs text-slate-500 light:text-gray-400">{hourly ? 'Hour buckets are UTC.' : 'Day buckets are UTC calendar days.'}</p>
       </div>
 
       {error && <p className="text-sm text-red-300 light:text-red-600 mb-4">{error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartCard title="Traffic" sublabel="Sessions and unique visitors per day" empty={!!data && !hasAnyTraffic}>
+        <ChartCard title="Traffic" sublabel={`Sessions and unique visitors ${per}`} empty={!!data && !hasAnyTraffic}>
           <LineChart data={data?.traffic ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
             <YAxis allowDecimals={false} {...axisProps} />
             <Tooltip {...tooltipStyle} />
             <Legend wrapperStyle={legendStyle} />
@@ -170,20 +181,20 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
           </LineChart>
         </ChartCard>
 
-        <ChartCard title="Returning visitors" sublabel="Visitors seen on a prior day, per day" empty={!!data && !hasReturning}>
+        <ChartCard title="Returning visitors" sublabel={`Visitors seen on a prior day, ${per}`} empty={!!data && !hasReturning}>
           <BarChart data={data?.returningVisitors ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
             <YAxis allowDecimals={false} {...axisProps} />
             <Tooltip {...tooltipStyle} />
             <Bar dataKey="count" name="Returning visitors" fill={COLOR_VIOLET} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ChartCard>
 
-        <ChartCard title="Reports generated" sublabel="Initial vs. full, per day" empty={!!data && !hasReports}>
+        <ChartCard title="Reports generated" sublabel={`Initial vs. full, ${per}`} empty={!!data && !hasReports}>
           <BarChart data={data?.reports ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
             <YAxis allowDecimals={false} {...axisProps} />
             <Tooltip {...tooltipStyle} />
             <Legend wrapperStyle={legendStyle} />
@@ -192,10 +203,10 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
           </BarChart>
         </ChartCard>
 
-        <ChartCard title="Signups" sublabel="New accounts per day" empty={!!data && !hasSignups}>
+        <ChartCard title="Signups" sublabel={`New accounts ${per}`} empty={!!data && !hasSignups}>
           <BarChart data={data?.signups ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
             <YAxis allowDecimals={false} {...axisProps} />
             <Tooltip {...tooltipStyle} />
             <Bar dataKey="count" name="Signups" fill={COLOR_CYAN} radius={[3, 3, 0, 0]} />
@@ -205,12 +216,12 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
         <div className="lg:col-span-2">
           <ChartCard
             title="Sales & margin"
-            sublabel="Revenue and AI cost per day, USD only — see the Sales tab for full per-currency totals"
+            sublabel={`Revenue and AI cost ${per}, USD only — see the Sales tab for full per-currency totals`}
             empty={!!data && !hasSales}
           >
             <LineChart data={data?.sales ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-              <XAxis dataKey="day" tickFormatter={shortDay} {...axisProps} />
+              <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
               <YAxis {...axisProps} />
               <Tooltip {...tooltipStyle} formatter={v => formatUsd(Number(v))} />
               <Legend wrapperStyle={legendStyle} />
