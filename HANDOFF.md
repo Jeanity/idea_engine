@@ -1,3 +1,109 @@
+# NEXT UP — Public site: footer, socials, blog/FAQ, contact form, account nav
+(NOT STARTED — spec only, 2026-07-08)
+
+Danny's request, dictated as a batch — **order not decided yet, pick per session**. Six related
+but separable pieces. Current state: `src/app/page.tsx` (marketing homepage) has a bare one-line
+footer (`© {year} Idea Engine. All rights reserved.`, line ~592) and a minimal header (`Idea
+Engine` wordmark + `HeaderAuthLink`, line ~377). No `/terms`, `/privacy`, `/about`, `/contact`,
+`/blog`, `/faq` routes exist yet. `src/components/app-header.tsx` is the **signed-in app shell**
+header (separate from the public homepage header) — currently has "My ideas" / "New idea" text
+links top-left and a "My account" text link top-right (see piece 4 below).
+
+## 1. Footer section (ToS, Privacy, Copyright, About, Contact Us)
+- New static pages: `/terms`, `/privacy`, `/about` (content TBD — ask Danny for copy, or draft
+  placeholder legal text and flag it needs a lawyer pass, same caution as the compliance-baseline
+  fallback's "not legal advice" framing elsewhere in this app).
+- Footer redesign in `page.tsx` (and eventually mirrored in the signed-in app shell / `AppHeader`
+  area or a shared `<Footer>` component so `/app/*` pages get it too — decide scope: marketing-only
+  first, or everywhere).
+- Copyright line stays, links added: Terms · Privacy · About · Contact · (Blog · FAQ — pieces 3/6).
+
+## 2. Contact Us — segmented form
+- One `/contact` page, form with a **required "reason" selector** (segments):
+  User feedback / Complaint / General question / Partnership or advertising inquiry (exact
+  labels TBD with Danny). Each segment can route to a different admin queue or just tag the row —
+  simplest: one `contact_submissions` table with a `category` enum column, one admin page with a
+  category filter (mirrors the filter-chip pattern already used in `/app/admin/errors` and
+  `/app/admin/feedback`).
+- Migration (011 or next free number — check what bug-report widget spec above claims first):
+  `contact_submissions` (id, created_at, category enum, name, email, message, user_id nullable —
+  signed-in submitters get it auto-filled, anon visitors can still submit, status open/replied/
+  closed). RLS: insert-only for anon+authenticated, no select — service-role/admin only, same
+  posture as `bug_reports`/`error_log`.
+- **Same "straight to admin" email requirement as the bug-report widget** — blocked on Supabase
+  SMTP (recurring dependency across three specs now: feedback-replies, bug-report, contact form —
+  worth doing the SMTP setup once and unblocking all three at the same time).
+- Partnership/advertiser inquiries in particular are commercially time-sensitive — flag these
+  visually in the admin list (e.g. a highlighted category chip) so they don't sit unseen.
+
+## 3. Blog / Articles
+- Public list + detail pages (`/blog`, `/blog/[slug]`) and an **admin authoring UI** (new nav item
+  under a `Content` group in `admin-shell.tsx`, e.g. `/app/admin/blog`).
+- New table `blog_posts`: id, slug (unique), title, excerpt, body (markdown or a rich-text JSON —
+  decide format; markdown is simplest and this codebase already renders markdown-ish structured
+  content in reports, though not via a dedicated renderer yet, so a markdown lib dependency would
+  be new), cover_image_url, author, status (draft/published), published_at, created_at, updated_at.
+  RLS: public select where `status = 'published'` (same pattern as `offers`' public-select
+  policies), admin-only writes via a self-gated `/api/admin/blog` route.
+- Needs an image-hosting decision for cover images — same Supabase Storage bucket question as the
+  bug-report screenshot spec above; could share one bucket (`public-assets`) or use a separate
+  `blog-images` bucket (this one likely wants public read, unlike the private bug-screenshot
+  bucket).
+- SEO basics worth building in from the start: per-post `<title>`/meta description, since this is
+  the only public content growth this app will have (Next.js `generateMetadata` per post).
+
+## 4. Account nav — icon + popdown menu (replaces top-left text links)
+Concrete change to `src/components/app-header.tsx`:
+- Replace the **"My account" text link** (line ~68-73) with a small SVG account/user icon
+  (lucide-react `User` or `CircleUserRound` — already a project dependency, no new package needed).
+- Clicking/hovering opens a **dropdown menu** with: My account (→ `/app/account`), My ideas
+  (→ `/app/account#your-ideas`, only if `hasIdeas` — reuse the existing count-only query already in
+  this file), New idea (→ `/app`). Sign out can stay as its own button beside the icon, or move
+  into the dropdown too — Danny's call.
+- Once the dropdown covers ideas/new-idea, **remove the top-left "My ideas" / "New idea" text
+  links** (lines 40-47) per Danny's explicit ask ("so we don't need the links for those up the
+  top left") — the wordmark + Admin badge + Demo/Live pill stay top-left; nav moves entirely into
+  the icon dropdown top-right.
+- Standard pattern: client component (needs `'use client'` + `useState` for open/closed, or a
+  headless approach with a details/summary element or click-outside handling) — `AppHeader` itself
+  is currently an async Server Component (queries `hasIdeas`/admin status), so the dropdown likely
+  needs to be split into a small client subcomponent that receives `hasIdeas`/`isAdmin` as props,
+  same pattern as `DemoModeToggle`/`SignOutButton` already used elsewhere in this header.
+
+## 5. Header links to Contact / Articles / Blog (public marketing header)
+- Danny: "We may add the links to the Contact us, articles and blog at the top" — i.e. the public
+  homepage header (`page.tsx` line ~377), not the signed-in app header. Straightforward `<Link>`
+  additions once `/contact` and `/blog` exist (piece 2/3).
+
+## 6. FAQ page
+- New `/faq` page (static content, accordion-style Q&A — no DB table needed unless Danny wants
+  FAQ content editable from admin without a code deploy, in which case it's the same shape as
+  `blog_posts` but simpler: a `faq_items` table with `question`, `answer`, `sort_order`, `published`).
+- Footer link (piece 1). Danny: "will probably also be linked from the top menu eventually" — not
+  required now, just noted so the header nav additions in piece 5 leave room for it.
+
+## 7. Social buttons
+- Danny will create Facebook / TikTok / Instagram / Twitter(X) accounts — **URLs not decided yet,
+  do not fabricate placeholder links**; wait for the real handles.
+- Icon row in the footer (piece 1). lucide-react ships `Facebook`, `Instagram`, `Twitter` icons but
+  **no TikTok icon** — will need a custom inline SVG for that one (small, common gap in most icon
+  sets). `target="_blank" rel="noopener noreferrer"` on all four.
+
+## Cross-cutting notes
+- **Migration numbering**: the bug-report widget spec (this file, next section down) claims
+  migration 011 for `bug_reports`. Whichever of the two features (bug reports vs. contact form)
+  gets built first should take 011; the other takes the next free number. Check `supabase/
+  migrations/` for the actual current max before assigning — don't assume from this doc alone.
+- **SMTP dependency now shared by three features** (feedback-replies, bug-report, contact form) —
+  strong case for setting up Supabase SMTP as its own small task before/alongside any of these,
+  rather than deferring it three separate times.
+- **Storage buckets**: bug-report screenshots (private) and blog cover images (public) are two
+  separate Supabase Storage bucket needs — both dashboard-created, not migrations.
+- None of this is built. No code changes made this session for this spec — planning only, per
+  Danny (low on usage, deciding order next time).
+
+---
+
 # NEXT UP — Bug report widget (NOT STARTED — spec only, 2026-07-08)
 
 Danny's request. Not built — he was low on usage this session, picking up next time. Lets a user
