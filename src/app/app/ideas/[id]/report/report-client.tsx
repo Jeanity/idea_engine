@@ -1363,7 +1363,7 @@ function ReportFeedbackCard({ ideaId, initialFeedback }: { ideaId: string; initi
             onChange={e => setAllowPublic(e.target.checked)}
             className="mt-0.5"
           />
-          You may quote my feedback publicly (first name / display name only)
+          You may quote my feedback publicly (first name and last initial only)
         </label>
 
         {error && <p className="mt-2 text-xs text-red-300 light:text-red-600">{error}</p>}

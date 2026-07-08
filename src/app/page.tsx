@@ -7,6 +7,7 @@ import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { DEMO_STATS } from '@/lib/demo-stats'
 import { createPublicClient, createServiceClient } from '@/lib/db'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+import { toPublicDisplayName } from '@/lib/public-name'
 
 // Revalidate periodically (ISR) rather than once at build time — otherwise an
 // admin featuring/unfeaturing testimonials wouldn't show up until the next
@@ -250,7 +251,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
       id: r.id,
       rating: r.rating,
       comment: r.comment,
-      displayName: profile?.display_name || 'Verified founder',
+      displayName: toPublicDisplayName(profile?.display_name),
       archetypeLabel: archetype ? (ARCHETYPE_LABELS[archetype] ?? archetype) : null,
     }
   })
