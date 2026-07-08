@@ -1,3 +1,40 @@
+# Handoff — 2026-07-08 (Admin UI redesign — session status / pick-up point)
+
+**START HERE.** After the 9-block admin backend (done, below), building an admin UI
+redesign per `docs/plan/2026-07-08-admin-ui-redesign.md` (sidebar shell, snapshot
+dashboard, pagination, error log). Migrations 007 + 008 were RUN by Danny and the site
+tested working. Branch still `feat/report-appendix-editlimit-demo-mode`, **NOT pushed**.
+
+## Redesign progress
+- ✅ `2ece586` lint cleanup — **0 lint problems** now (all pre-existing issues fixed).
+- ✅ `1a0537c` **R1** — sidebar shell (collapsible, grouped nav, mobile drawer, full
+  width) + design-system primitives in `src/components/admin/` (AdminCard/StatCard/
+  WidgetCard/SectionLabel). Added **lucide-react**. Danny eyeballed it — good.
+- ✅ `4f693f0` **R2** — snapshot dashboard: 10 widgets (KPI cards w/ sparklines,
+  overview chart w/ tabs, report-types donut, report costs, today's sales, latest
+  affiliates, latest feedback) in a 4-col grid with **Edit-layout** drag-reorder +
+  width-snap (¼/½/¾/full), persisted per-admin to `localStorage['admin.dashboard.
+  layout.v1:<adminId>']`, Reset button. Added **@dnd-kit/core,/sortable,/utilities**.
+  New `/api/admin/dashboard` aggregate route; reuses stats/graphs/sales routes.
+- ✅ `ddc2700` reduced card roundness `rounded-2xl`→`rounded-lg` (Danny's request).
+- ⏳ **R3 pagination — IN FLIGHT** (Sonnet subagent running at session end).
+  UNCOMMITTED/UNVERIFIED. NEXT SESSION: check the subagent output, run tsc/lint(must be
+  0)/build, then commit. Adds a shared `Pagination` (in `src/components/admin/`) + 25/page
+  server-side pagination to Users/Affiliates/Offers/Feedback lists (URL `?page=`).
+- ⬜ **R4 error log — NOT STARTED** (last redesign block). Plan: migration 009
+  `error_log` table + `src/lib/log-error.ts` (best-effort service-role insert) wired into
+  admin-route/inngest catch blocks + an admin **Errors** page (`/app/admin/errors`,
+  paginated, copy button) so Danny can paste logs here. Sidebar already links to it (404s
+  until built).
+
+## Redesign — next session
+1. Verify + commit R3 (if the subagent finished; files under `src/app/app/admin/*` +
+   `src/components/admin/`).
+2. Build R4 (error log) — Sonnet; needs migration 009 run by Danny after.
+3. Danny still to test R2 live: Edit-layout drag/resize + persistence + reset.
+
+---
+
 # Handoff — 2026-07-07 (Admin backend — session status / pick-up point)
 
 **START HERE.** Admin-backend master plan (`docs/plan/2026-07-07-admin-backend-master-plan.md`)
@@ -19,11 +56,9 @@ being built block-by-block via Sonnet/Opus subagents. Progress this session:
   10. `3c3cd6e` Block 8 — growth graphs (recharts; traffic/reports/signups/sales +
       referrer & campaign conversion tables) — **admin backend COMPLETE**
 
-## Migrations — 003–006 RUN; 007 + 008 PENDING
-003/004/005/006 applied by Danny. **PENDING (run in Supabase SQL editor):**
-- `007_offers.sql` — offers admin page/banners show empty + CRUD errors until run.
-- `008_report_cost.sql` — adds `reports.cost_usd`; Sales tab AI-cost + new report
-  runs' cost persistence need it. Block 5 needed no migration.
+## Migrations — 003–008 ALL RUN ✅
+003–008 all applied by Danny and tested working on site. Next pending is **009
+(error_log)** once R4 is built.
 
 ## Verified live (local) this session
 - Block 4 affiliate links: Danny created a link, clicked it — redirect + click tracking
