@@ -33,6 +33,9 @@ dot; also the recharts hover cursor washed the whole plot grey.
 - New helpers in `src/lib/analytics.ts` (`utcHourLabel`, `UTC_HOUR_LABELS`, `fillHourlySeries`)
   with unit tests (59 total pass). tsc/lint/build clean. Not click-tested (auth) — Danny: pick
   "Today" on the dashboard, expect hourly bars/lines and no grey wash on hover.
+- **Follow-up (same day, committed):** AI costs added as a 4th Overview-chart tab (amber, USD
+  tooltip/axis) + a new `kpi-ai-cost` StatCard (period total, sparkline, delta) fed from the
+  existing `sales.costUsd` series. Saved dashboard layouts auto-append the new widget.
 
 ---
 

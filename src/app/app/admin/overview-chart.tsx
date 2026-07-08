@@ -23,15 +23,22 @@ export interface OverviewPoint {
   reports: number
   signups: number
   sessions: number
+  /** AI generation spend (USD) per bucket — rendered with currency formatting. */
+  costs: number
 }
 
-type Metric = 'reports' | 'signups' | 'sessions'
+type Metric = 'reports' | 'signups' | 'sessions' | 'costs'
 
-const METRICS: { key: Metric; label: string; color: string }[] = [
+const METRICS: { key: Metric; label: string; color: string; usd?: boolean }[] = [
   { key: 'reports', label: 'Reports', color: '#818cf8' },
   { key: 'signups', label: 'Signups', color: '#22d3ee' },
   { key: 'sessions', label: 'Sessions', color: '#a78bfa' },
+  { key: 'costs', label: 'AI costs', color: '#fbbf24', usd: true },
 ]
+
+function fmtUsd(n: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+}
 
 const axisProps = {
   stroke: 'var(--chart-axis)',
@@ -100,8 +107,8 @@ export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoi
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis dataKey="day" tickFormatter={hourly ? undefined : shortDay} {...axisProps} />
-            <YAxis allowDecimals={false} {...axisProps} />
-            <Tooltip {...tooltipStyle} />
+            <YAxis allowDecimals={!!active.usd} {...axisProps} />
+            <Tooltip {...tooltipStyle} formatter={active.usd ? v => fmtUsd(Number(v ?? 0)) : undefined} />
             <Area
               type="monotone"
               dataKey={metric}
@@ -116,7 +123,7 @@ export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoi
         </ResponsiveContainer>
         {!!data && !hasData && (
           <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-500 light:text-gray-400">
-            No {active.label.toLowerCase()} in this range yet.
+            {active.key === 'costs' ? 'No AI spend in this range yet.' : `No ${active.label.toLowerCase()} in this range yet.`}
           </p>
         )}
       </div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { Users, FileText, UserPlus, DollarSign, ArrowUpRight, Handshake } from 'lucide-react'
+import { Users, FileText, UserPlus, DollarSign, Cpu, ArrowUpRight, Handshake } from 'lucide-react'
 import { StatCard, WidgetCard } from '@/components/admin'
 import { PeriodPicker, rangeForPreset, type PeriodRange } from './period-picker'
 import { GrowthGraphs } from './growth-graphs'
@@ -27,7 +27,7 @@ interface GraphsPayload {
   traffic: { day: string; sessions: number }[]
   reports: { day: string; initial: number; full: number }[]
   signups: { day: string; count: number }[]
-  sales: { day: string; revenueUsd: number }[]
+  sales: { day: string; revenueUsd: number; costUsd: number }[]
 }
 
 interface SalesPayload {
@@ -241,6 +241,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
   const reportsSeries = useMemo(() => (graphs?.reports ?? []).map(r => r.initial + r.full), [graphs])
   const signupsSeries = useMemo(() => (graphs?.signups ?? []).map(s => s.count), [graphs])
   const revenueSeries = useMemo(() => (graphs?.sales ?? []).map(s => s.revenueUsd), [graphs])
+  const costSeries = useMemo(() => (graphs?.sales ?? []).map(s => s.costUsd), [graphs])
 
   const overviewData: OverviewPoint[] | null = useMemo(() => {
     if (!graphs) return null
@@ -249,10 +250,12 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       reports: r.initial + r.full,
       signups: graphs.signups[i]?.count ?? 0,
       sessions: graphs.traffic[i]?.sessions ?? 0,
+      costs: graphs.sales[i]?.costUsd ?? 0,
     }))
   }, [graphs])
 
   const reportsTotal = stats ? stats.reportsCompleted.initial + stats.reportsCompleted.full : null
+  const costTotalUsd = useMemo(() => costSeries.reduce((a, b) => a + b, 0), [costSeries])
   const primaryCurrency = sales?.primaryCurrency ?? 'usd'
   const revenueUsd = primaryCurrency === 'usd' ? (sales?.revenueByCurrency?.usd ?? 0) / 100 : (revenueSeries.reduce((a, b) => a + b, 0))
 
@@ -316,6 +319,21 @@ export function DashboardClient({ adminId }: { adminId: string }) {
           />
         ),
       },
+      {
+        id: 'kpi-ai-cost',
+        defaultSpan: 1,
+        node: (
+          <StatCard
+            label="AI cost"
+            value={graphs ? fmtUsd(costTotalUsd) : '—'}
+            icon={<Cpu className="h-4 w-4" />}
+            deltaPct={seriesDelta(costSeries)}
+            deltaLabel="this period"
+            sparkline={costSeries}
+            accent="#fbbf24"
+          />
+        ),
+      },
       { id: 'overview', defaultSpan: 3, node: <OverviewChart data={overviewData} granularity={graphs?.granularity ?? 'day'} /> },
       {
         id: 'report-types',
@@ -332,7 +350,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       { id: 'latest-affiliates', defaultSpan: 1, node: <LatestAffiliates rows={dash?.affiliates ?? null} /> },
       { id: 'latest-feedback', defaultSpan: 1, node: <LatestFeedback rows={dash?.feedback ?? null} /> },
     ],
-    [stats, sales, dash, reportsSeries, signupsSeries, revenueSeries, overviewData, reportsTotal, revenueUsd, graphs?.granularity]
+    [stats, sales, dash, graphs, reportsSeries, signupsSeries, revenueSeries, costSeries, overviewData, reportsTotal, revenueUsd, costTotalUsd]
   )
 
   const periodLabel = period.from === period.to ? period.from : `${period.from} → ${period.to}`
