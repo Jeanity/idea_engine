@@ -1,9 +1,255 @@
+# Handoff — 2026-07-08 (Hourly dashboard buckets + no chart hover-wash)
+
+**Uncommitted, same branch. No migration.** Danny: single-day dashboard ranges showed one lonely
+dot; also the recharts hover cursor washed the whole plot grey.
+- `/api/admin/graphs` now returns **24 UTC 'HH:00' hour buckets whenever from === to** (Today or
+  any single custom day), plus `granularity: 'hour' | 'day'`. Field stays named `day`, so chart
+  data shapes are unchanged. Reports/signups/sales re-bucket in JS; **traffic + returning visitors
+  bypass the per-day RPCs in hourly mode** and aggregate `page_events` directly (service client;
+  distinct sessions/visitors per hour; returning = visitor has any event before the day; `.in()`
+  lookup capped at 1000 visitors — fine at current volume, revisit at scale or add hourly RPCs).
+- Clients (growth-graphs, overview-chart via dashboard-client) label hours as-is vs `MM-DD`,
+  sublabels flip "per day"→"per hour", header note flips to "Hour buckets are UTC."
+- **Hover cursor disabled** (`cursor: false` in the shared tooltipStyle of both chart files) —
+  tooltip still appears, background no longer changes.
+- New helpers in `src/lib/analytics.ts` (`utcHourLabel`, `UTC_HOUR_LABELS`, `fillHourlySeries`)
+  with unit tests (59 total pass). tsc/lint/build clean. Not click-tested (auth) — Danny: pick
+  "Today" on the dashboard, expect hourly bars/lines and no grey wash on hover.
+
+---
+
+# Handoff — 2026-07-08 (Citation highlighting)
+
+**Uncommitted, same branch. No migration.** Danny spotted raw `<cite index="5-30,5-31">…</cite>`
+tags in Legal results — these are the model's web-search citation markers leaking into our JSON
+output (index = pointer into that call's transient search results, meaningless once stored; the
+SPAN is a verbatim quote from a live source). Decision (Danny's): **highlight, don't strip**.
+- `src/lib/cite.ts` — `splitCiteSegments` / `hasCiteMarkers` / `stripCiteMarkers` / `deepStripCites`.
+- Pipeline stores tags as-is (deliberate; comment on `extractJson` in generate-report.ts).
+- Web UI: `CitedText` in report-client renders cited spans with a subtle indigo highlight + dotted
+  underline + tooltip "Quoted from a source found during live research". Applied across all prose
+  fields (competitors, compliance, funding, marketing, summary, why-this-can-work, pricing, risks,
+  next steps, one-thing, validation copy, cost notes, snapshot rationales/verdict) — synthesis and
+  cost steps receive competitor data as input so they can ECHO cite tags; that's why non-search
+  sections are covered too. Works retroactively on the stored wardrobe report.
+- PDF: `deepStripCites(sections)` in the pdf route — quotes kept, tags dropped (no highlight
+  treatment in print yet; could add a background style later if wanted).
+- Verified: tsc/lint clean, next build clean. Visual check = open any report with live
+  compliance/competitor results (the wardrobe report already has tags stored).
+- **Variant fix (same day):** Danny's first Haiku report leaked raw `<ancite index="3-24">` /
+  `</anite>` tags on the Marketing tab — Haiku garbles the internal `antml:cite` form (Sonnet emits
+  clean `<cite>`). cite.ts now normalises every variant (`cite`/`ancite`/`anite`/`antml:cite`, incl.
+  unbalanced strays) before splitting/stripping; 6 regression tests in `src/__tests__/cite.test.ts`
+  (65 total pass). Fix is render-side, so the stored Haiku report cleans up on refresh.
+- **First Haiku full report (2026-07-08): US$0.33 vs Sonnet ~$1.26 (~4×cheaper), quality ~90% —
+  strong candidate for the initial/free tier engine; keep Sonnet for paid. 4B.3 quality matrix is
+  now 4× cheaper to run with the model switcher.**
+
+---
+
+# Handoff — 2026-07-08 (Admin report-model switcher)
+
+**Uncommitted, same branch. Migration `010_report_model.sql` — RUN ✅ by Danny 2026-07-08.**
+First Haiku full-report experiment kicked off same day (~06:03Z).
+
+Danny wants to compare report quality vs cost across models (e.g. "what does a Haiku report look
+like?"). Built, mirroring the demo-mode pattern:
+- **Admin → System → Settings** (`/app/admin/settings`, new sidebar item): radio picker over every
+  active Anthropic API model (Fable 5, Opus 4.8/4.7/4.6/4.5, Sonnet 5/4.6/4.5, Haiku 4.5) with
+  per-Mtok pricing + caveat notes (Fable: premium, always-on thinking, possible refusals, needs
+  30-day retention). "App default" = NULL = Sonnet 5.
+- Stored in `profiles.report_model`; settable only via ADMIN_EMAIL-gated
+  `/api/profile/report-model` (allowlist-validated); **only affects reports on the admin's own
+  ideas**. Teasers + failure-fallbacks stay Haiku regardless.
+- `generate-report.ts` resolves `reportModelForUser()` once and passes it to all 6 primary steps;
+  `MODEL_PRICING` in ai.ts now covers all models so cost tracking stays accurate; `model_version`
+  now records the **actual** model (was hardcoded 'claude-sonnet-5'), and `_meta.model` + the
+  report page's admin cost line show "US$X · model" so comparisons are self-labelling.
+- Verified: tsc/lint clean, 56 tests, next build (both new routes compiled). Not click-tested (auth).
+
+---
+
+# NEXT UP — Feedback replies + moderation (NOT STARTED — spec only)
+
+Danny's request (2026-07-08). Build after the current uncommitted work is verified. Lets the admin
+reply to a user's report feedback, choose whether each reply/feedback is public, email the user when
+replied to, keep complaints private, and hide abusive feedback. Touches the `/app/admin/feedback`
+page + `report_feedback`.
+
+## Requirements (Danny's words, mapped)
+1. **Reply to feedback** — admin can post a reply to any feedback entry.
+2. **Public-or-not per reply** — when replying, admin chooses whether the reply is shown publicly.
+3. **Email the user on reply (later phase)** — when admin replies, email the feedback's author so
+   they see that a reply exists and what it says. Blocked on email infra (see deps).
+4. **Handle complaints privately** — admin-controlled "don't show publicly" so a complaint can be
+   answered privately; admin decides later whether to surface it. This is an **admin** control,
+   separate from the user's own `allow_public` consent.
+5. **Hide option** — admin can hide spammy/rude feedback so it never appears publicly and can be
+   filtered out of the admin list.
+
+## Recommended design
+- **Migration 010** — new `feedback_replies` table (preferred over a single column so multiple
+  replies + per-reply email tracking work): `id, feedback_id (fk report_feedback on delete cascade),
+  body text, is_public boolean default false, created_at, created_by text (admin email),
+  emailed_at timestamptz null`. RLS on; **service-role only for writes** (admin route), plus a narrow
+  authenticated SELECT so a user can read replies to *their own* feedback (join via
+  report_feedback.user_id = auth.uid()), and an anon SELECT limited to `is_public = true` replies
+  whose parent feedback is itself public (for homepage).
+- **Also add to `report_feedback` (same migration):**
+  - `hidden boolean not null default false` — moderation hide.
+  - `admin_public boolean not null default false` — admin's own publish decision, independent of the
+    user's `allow_public`. **Public display rule becomes:** show on homepage/publicly only when
+    `admin_public && allow_public && !hidden && featured` (user consent AND admin approval AND not
+    hidden). Reconfirm how this interacts with the existing Block 9 homepage testimonials query.
+- **Admin UI (`/app/admin/feedback`)** — per row: a reply composer (textarea + "public reply"
+  checkbox + Send), existing reply(ies) listed with their public/private badge, a **Hide** toggle
+  (reversible, so a plain toggle is fine — no typed confirm needed), and the `admin_public` toggle.
+  Reuse the existing `FeatureToggle` pattern / client-component conventions.
+- **User-facing surface** — on the report page feedback card (`report-client.tsx`,
+  `ReportFeedbackCard`), show any admin reply **to that feedback's owner always** (private replies
+  still visible to the recipient, just not on the homepage); publicly only when `is_public`.
+- **Email (phase 2)** — on reply Send (or a separate "notify" action), email the author:
+  "Danny replied to your feedback: <body>" + link back to their report. Store `emailed_at`.
+
+## Dependencies / notes
+- **Email infra is the blocker for #3** — Supabase SMTP still isn't configured (same gap that makes
+  the Users "invite" action error). Decide sender (Supabase SMTP vs Resend/Postmark). Build the
+  reply + moderation UI first (works without email); wire the email once SMTP/provider is set.
+- Deletion ground rule: **hide is reversible → toggle is OK**; a hard *delete* of feedback (if added)
+  needs the typed-confirm pattern. New admin route (`/api/admin/feedback/...`) must self-gate
+  `isAdminEmail` like every other admin route.
+- Homepage testimonials (Block 9) query must be updated for the new `hidden` / `admin_public` rule so
+  nothing hidden or un-approved leaks publicly.
+
+---
+
+# Handoff — 2026-07-08 (R4 — admin error log)
+
+**Branch still `feat/report-appendix-editlimit-demo-mode`, NOT committed/pushed.** R4 (the last
+admin-redesign block) is built. **Migration `009_error_log.sql` — RUN ✅ by Danny 2026-07-08**, so
+`/app/admin/errors` is live and `error_log` writes will persist.
+
+## What shipped (uncommitted)
+- **Migration 009** `supabase/migrations/009_error_log.sql`: append-only `error_log` table
+  (occurred_at, source, message, detail jsonb, path, user_id — no FK on user_id). RLS on, **no
+  policies → service-role only** (same model as offers/affiliate_links). Types added to
+  `database.types.ts`.
+- **`src/lib/log-error.ts`** — `logError({source, message, detail, path, userId})`, best-effort
+  service-role insert that **never throws** (logging can't break the caller), plus `errorMessage()`.
+  Detail is JSON-normalised (Errors keep their stack).
+- **Wired into catch blocks**: `generate-report` (idea-not-found; and at assemble it logs any real
+  AI-step failures **even when a fallback recovered the section** + partial reports — exactly the
+  "a section came back failed" cases Danny hit), `generate-teaser` (top-level try/catch, rethrows so
+  Inngest retries are unchanged), and the admin mutation routes (affiliates ×3, offers ×3, feedback,
+  users invite + delete).
+- **Errors page** `/app/admin/errors` (sidebar already linked it): newest-first, **source filter**
+  chips, **server-side pagination** (reuses R3 `Pagination`, 25/page), each row **expandable** to
+  full detail (path/user/JSON), per-row **Copy** + **Copy page** (formats rows as pasteable text),
+  and **Clear all** behind a typed `DELETE ALL` confirm (deletion ground rule). API route
+  `/api/admin/errors` (self-gates isAdminEmail) handles delete-one + clear-all.
+
+## Verification
+- `tsc --noEmit` clean, `next build` clean (both `/app/admin/errors` + `/api/admin/errors` compiled),
+  eslint clean on all touched files, `vitest` 56 pass.
+- **NOT click-tested** — the admin section needs auth, which the automated preview session can't do.
+  After running migration 009, Danny should: open `/app/admin/errors` (expect empty), force a failure
+  (e.g. a report with a failing section) and confirm it appears with Copy + expand working, then try
+  Clear all (typed confirm).
+
+## Admin redesign — now COMPLETE (R1–R4). Remaining before merge/deploy
+- Migrations 003–009 all run ✅.
+- Danny's live pass on R4 + the earlier report-robustness work (separate handoff below).
+- Then push branch + merge to main (Vercel deploys from main).
+
+---
+
+# Handoff — 2026-07-08 (Full-report robustness + accurate cost tracking)
+
+**Branch still `feat/report-appendix-editlimit-demo-mode`, NOT committed/pushed.** R2 confirmed
+working by Danny. This session fixed report robustness + the cost-tracking undercount, BEFORE
+starting R4. No DB migration needed (used a `_meta.partial` flag, not a new status enum).
+
+## What changed (uncommitted)
+- **Cost tracking root cause fixed.** App showed US$0.22 while Anthropic billed US$1.13 for the
+  same Sonnet-5 run because cost was only banked from the *successful* attempt: failed retries and
+  fully-failed steps (competitors + compliance both died in that run, the two most search-heavy
+  calls) were billed by Anthropic but recorded as $0.
+  - `src/lib/ai.ts`: `AIResult` now carries `model` + `webSearchRequests`; new `AICallError` carries
+    the billed cost on the truncation / no-text-block throw paths; exported `HAIKU_MODEL`, `AIResult`.
+  - `src/lib/inngest/generate-report.ts`: rewritten around a cost-accurate `aiStep()` helper that
+    banks cost from **every** attempt (parse failures + `AICallError`) and never throws for API/parse
+    failures (returns `status:'failed'`). Per-call diagnostics now stored in `_meta.steps[id]`
+    ({status, model, tokens, web_search_requests, cost}); total `_meta.cost_usd` includes failed/
+    fallback attempts. Expect the app total within a few % of the Anthropic dashboard now.
+- **Competitor fallback** — if live search fails/returns empty, a cheap **no-search Haiku** pass
+  (`src/lib/prompts/competitor-fallback.ts`) produces model-inferred direct/adjacent/substitute/
+  marketplace players (no fabricated URLs). Section marked `fallback_inferred`.
+- **Compliance fallback** — same pattern (`compliance-fallback.ts`), and if the Haiku pass also
+  fails, a **deterministic static baseline** (`src/lib/compliance-baseline.ts`, AU + software/app
+  aware) guarantees the Legal tab is never blank.
+- **Required-section policy** — `REQUIRED_SECTION_KEYS`; if any required section is still empty after
+  fallbacks, report completes with `_meta.partial=true` (soft amber banner) rather than silently OK.
+- **Synthesis consistency** — synthesis now receives `section_status` (`live_ok`/`fallback_inferred`/
+  `failed`) for competitors + compliance, with prompt rules so the summary never claims research
+  "found" competitors that only came from the inferred fallback (the exact Overview-vs-Competitors
+  mismatch Danny saw).
+- **UI polish** — report tab bar: native scrollbar hidden + subtle edge fade (`.tab-scroll` in
+  globals.css), tapped tab scrolls into view, tighter desktop spacing. Fallback/partial banners
+  (`InferredNote`, `PartialReportBanner`). Competitor rows now render URL-less inferred entries as
+  plain text + a `kind` chip. Admin cost-estimate copy bumped to ~US$0.50–1.20.
+
+## Live incident #2 + fix (2026-07-08, wardrobe-idea test run) — TRUNCATION
+Danny's 2nd test (TikTok-Shop wardrobe idea, run 04:56–05:04Z — same run as incident #1 below)
+had costs/marketing/synthesis all FAIL with "Response truncated at N output tokens" on **both**
+attempts — the old retry reused the SAME maxTokens, so a truncated call was guaranteed to truncate
+again (synthesis burned 2×6144 = 12,288 output tokens for nothing; marketing 2×3072 with 119k input
+tokens of search results). Competitors succeeded live (7 found); synthesis failing killed all 8 of
+its sections incl. Considerations & Next Steps. **Fix (verified tsc/lint/56 tests/build):**
+- `AICallError` now carries `kind: 'truncated' | 'no_text'`; `aiStep()` takes `baseMaxTokens` and
+  passes the cap into each attempt — on a truncated attempt the next attempt runs at **double** the
+  cap (only generated tokens are billed, so high caps are cost-safe).
+- Base caps raised for Sonnet 5 verbosity: competitors 4096→8192, costs 2048→4096, financing
+  4096→8192, compliance 3072→6144, marketing 3072→8192, **synthesis 6144→16384**, fallbacks
+  3072→4096. (Model output ceilings: Sonnet 5 = 128K, Haiku 4.5 = 64K — plenty of headroom.)
+- The wardrobe report row still holds the failed sections; regenerate it to fill them under the
+  new caps. Cost note: dashboard vs app was $1.53 vs $1.70 (~10% over) — Danny will collect margins
+  over future runs before tweaking pricing constants; per-run comparator is `_meta.cost_usd`.
+
+## Live incident #1 + fix (2026-07-08, Danny's first test run)
+Danny's test report generated fully but the page sat on the progress screen forever: the row was
+stuck `status='running'` with all sections present and **no `_meta`** — same signature as the old
+"HMR orphaned the run" incident, but the real cause is general: **Inngest re-executes the whole
+function body at every step boundary** (memoizing completed steps), and the "mark running" +
+progressive `persistSections()` writes lived OUTSIDE `step.run`. The final replay (after `assemble`
+set status complete) re-ran them, flipping status back to 'running' and overwriting sections without
+`_meta`. **Fix:** `mark-running` and every persist are now their own memoized steps
+(`persist-competitors`/`-costs`/`-funding`/`-compliance`/`-marketing`/`-synthesis`). Rule going
+forward: **no non-idempotent side effects outside `step.run` in Inngest functions.**
+Danny's stuck row (`a33e9e55…`) was manually repaired to `complete` (approved); its `_meta` was
+lost to the stomp, so that one report shows no cost line — row-level cost_usd (1.6952 cumulative)
+survived. Next run will have full `_meta`.
+Also observed: **duplicate `generate-teaser` runs** at identical timestamps — dev StrictMode
+double-mounts ProgressScreen, both mount-POSTs race past the existing-report check and each fires
+the event. Costs ~2× a Haiku teaser call in dev; benign but worth a dedupe guard someday.
+
+## Verification
+- `tsc --noEmit` clean, `next build` clean (incl. static prerender of `/sample-report`, which uses
+  the edited `FullReportViewer` — confirms the render path doesn't crash), `vitest` 56 pass, eslint
+  clean on all touched files. Replay-safety fix re-verified same (tsc/lint/56 tests).
+- **NOT live-tested end-to-end.** The fallback/partial banners + real cost accounting need a
+  signed-in **paid** full-report run (the automated preview session can't auth, and a real run costs
+  money). Recommend Danny run one full report and confirm: (a) app cost ≈ Anthropic dashboard, (b) a
+  forced competitor/compliance failure still fills the tab. Deferred the user's "regenerate this
+  section" idea to a later task.
+
+---
+
 # Handoff — 2026-07-08 (Admin UI redesign — session status / pick-up point)
 
 **START HERE.** After the 9-block admin backend (done, below), building an admin UI
 redesign per `docs/plan/2026-07-08-admin-ui-redesign.md` (sidebar shell, snapshot
-dashboard, pagination, error log). Migrations 007 + 008 were RUN by Danny and the site
-tested working. Branch still `feat/report-appendix-editlimit-demo-mode`, **NOT pushed**.
+dashboard, pagination, error log). Migrations 003-008 were RUN by Danny and the database
+is updated/tested through 008. Branch still `feat/report-appendix-editlimit-demo-mode`, **NOT pushed**.
 
 ## Redesign progress
 - ✅ `2ece586` lint cleanup — **0 lint problems** now (all pre-existing issues fixed).
@@ -17,10 +263,9 @@ tested working. Branch still `feat/report-appendix-editlimit-demo-mode`, **NOT p
   layout.v1:<adminId>']`, Reset button. Added **@dnd-kit/core,/sortable,/utilities**.
   New `/api/admin/dashboard` aggregate route; reuses stats/graphs/sales routes.
 - ✅ `ddc2700` reduced card roundness `rounded-2xl`→`rounded-lg` (Danny's request).
-- ⏳ **R3 pagination — IN FLIGHT** (Sonnet subagent running at session end).
-  UNCOMMITTED/UNVERIFIED. NEXT SESSION: check the subagent output, run tsc/lint(must be
-  0)/build, then commit. Adds a shared `Pagination` (in `src/components/admin/`) + 25/page
-  server-side pagination to Users/Affiliates/Offers/Feedback lists (URL `?page=`).
+- ✅ `3ed7089` **R3** — pagination on all admin lists. Adds shared `Pagination`
+  (in `src/components/admin/`) + 25/page server-side pagination to
+  Users/Affiliates/Offers/Feedback lists (URL `?page=`). `tsc` + lint clean.
 - ⬜ **R4 error log — NOT STARTED** (last redesign block). Plan: migration 009
   `error_log` table + `src/lib/log-error.ts` (best-effort service-role insert) wired into
   admin-route/inngest catch blocks + an admin **Errors** page (`/app/admin/errors`,
@@ -28,10 +273,10 @@ tested working. Branch still `feat/report-appendix-editlimit-demo-mode`, **NOT p
   until built).
 
 ## Redesign — next session
-1. Verify + commit R3 (if the subagent finished; files under `src/app/app/admin/*` +
-   `src/components/admin/`).
-2. Build R4 (error log) — Sonnet; needs migration 009 run by Danny after.
-3. Danny still to test R2 live: Edit-layout drag/resize + persistence + reset.
+1. Build R4 (error log) — Sonnet; needs migration 009 run by Danny after.
+2. Danny still to test R2 live: Edit-layout drag/resize + persistence + reset.
+3. Before deploy/merge, either build R4 or hide the current `/app/admin/errors` sidebar link
+   so the admin nav does not point at a 404.
 
 ---
 
@@ -77,15 +322,16 @@ invites error with a clean "email delivery isn't configured" message.**
 - If Block 5's "add account/invite" needs Supabase SMTP, that's a Danny setup step.
 
 ## Admin backend — ALL 9 BLOCKS DONE. Before it's usable in prod:
-1. **Run pending migrations 007 + 008** in Supabase (see migrations section above).
+1. **Migrations 003-008 are already run** in Supabase/database updated. Next pending is
+   migration 009 (`error_log`) after R4 is built.
 2. **Verify live locally**: click through `/app/admin` (dashboard tiles + graphs),
    Affiliates (done ✅), Users, Offers, Sales, Feedback. Submit a feedback rating on a
    report; feature it; confirm it shows on `/`.
 3. **Setup deps still needed**: Supabase SMTP (for the Users "invite" action) and Stripe
    (Phase 5 — offers redemption + real revenue; Sales tab shows $0 until then).
-4. **To deploy**: push the branch + merge to `main` (Vercel deploys from main), and run
-   migrations 003–008 against the PROD Supabase (only local has them so far... confirm
-   which Supabase project the migrations were run on).
+4. **To deploy**: push the branch + merge to `main` (Vercel deploys from main), and confirm
+   the target Supabase project is already updated through migration 008 before prod traffic
+   depends on these admin features.
 Standing rules in play: cheapest capable model, terse, ask before unrequested work,
 deletion always confirms, every admin API route self-gates isAdminEmail + service-role only
 after the check.

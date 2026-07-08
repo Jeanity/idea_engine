@@ -62,7 +62,7 @@ verifies the look locally.
   total count; reflect page in the URL (`?page=`). Reuse a shared `Pagination`
   component in `src/components/admin/`. No endless scroll.
 
-## Block R4 — Error log (Sonnet; has a migration)
+## Block R4 — Error log (Sonnet; has a migration) — ✅ BUILT 2026-07-08 (migration 009 run ✅)
 - Migration **009**: `error_log` table (id, occurred_at, source text, message text,
   detail jsonb null, path text null, user_id null). RLS on, service-role only.
 - `src/lib/log-error.ts`: `logError({source, message, detail, path, userId})` —
