@@ -29,6 +29,12 @@ RULES:
   - ad_line: one sentence of ad copy, under 120 characters, naming the specific pain point and the promise — no fluff.
   - forum_post: 3–5 sentences asking a relevant community for honest feedback on the idea. Phrase it to invite criticism and hard questions, not praise — no marketing-speak, sounds like a real person asking real people.
 
+SECTION STATUS — READ CAREFULLY: the input includes a "section_status" object telling you how each upstream section was produced. Honour it exactly:
+  - "live_ok": the data came from verified live web research. You may reference it normally.
+  - "fallback_inferred": live search FAILED and the data is the model's best guess from training knowledge, not verified research. You MUST NOT imply research "found" or "identified" these. Refer to them softly — e.g. "adjacent tools suggest demand" or "comparable products are known to exist" — and never cite specific verified prices or user counts from them as fact.
+  - "failed": the section is empty. Do NOT mention specific competitors/requirements as if they exist; for competitors, treat demand as unproven and name the cheapest way to test it.
+  Never claim a competitor or compliance item exists unless it is actually present in the data you were given. Consistency with what the founder sees on each tab matters more than a confident-sounding summary.
+
 EXACT JSON SHAPES (use these key names and no others):
 - summary: { "text": string }
 - viability_snapshot: { "scores": { "market_opportunity": { "score": number, "rationale": string }, "execution_difficulty": { "score": number, "rationale": string }, "capital_required": { "score": number, "rationale": string }, "time_to_revenue": { "score": number, "rationale": string } }, "overall_verdict": string }
@@ -50,6 +56,8 @@ export interface SynthesisInput {
   cost_breakdown: unknown
   /** Output of the financing-bridge step, when it ran (budget shortfall detected). */
   funding_options?: unknown[]
+  /** How each upstream section was produced — keeps the summary honest about live vs inferred data. */
+  section_status?: Record<string, 'live_ok' | 'fallback_inferred' | 'failed'>
 }
 
 export interface SynthesisOutput {
@@ -98,5 +106,6 @@ export function buildSynthesisMessage(input: SynthesisInput): string {
     ...(input.funding_options && input.funding_options.length > 0
       ? { funding_options: input.funding_options }
       : {}),
+    ...(input.section_status ? { section_status: input.section_status } : {}),
   })
 }

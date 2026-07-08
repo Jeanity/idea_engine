@@ -2,6 +2,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createDbClient } from '@/lib/db'
 import { ReportDocument, type ReportPdfInput } from '@/lib/pdf/ReportDocument'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
+import { deepStripCites } from '@/lib/cite'
 import { formatAnswer } from '@/lib/format-answer'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -54,10 +55,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .from('affiliate_links')
     .select('slug, match_domains')
     .eq('active', true)
-  const sections =
+  // Strip <cite …> web-search markers for print — the web UI renders them as
+  // highlighted quoted-from-source spans, but the PDF has no equivalent
+  // treatment, so the quoted text is kept and the tags dropped.
+  const sections = deepStripCites(
     affiliateLinks && affiliateLinks.length > 0
       ? rewriteAffiliateUrls(rawSections as Record<string, unknown>, affiliateLinks, request.nextUrl.origin, id)
       : rawSections
+  )
 
   const { data: profile } = await supabase
     .from('profiles')

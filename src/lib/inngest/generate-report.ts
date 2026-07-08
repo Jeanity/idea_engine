@@ -1,13 +1,23 @@
 import { inngest } from '@/lib/inngest'
 import { createServiceClient } from '@/lib/db'
-import { callAI } from '@/lib/ai'
-import { providerOverrideForUser } from '@/lib/demo-mode'
+import { callAI, HAIKU_MODEL, DEFAULT_MODEL, type AIResult } from '@/lib/ai'
+import { providerOverrideForUser, reportModelForUser } from '@/lib/demo-mode'
 import { calculateCosts, parseNumber } from '@/lib/cost-calculator'
 import {
   COMPETITOR_RESEARCH_SYSTEM_PROMPT,
   buildCompetitorResearchMessage,
 } from '@/lib/prompts/competitor-research'
+import {
+  COMPETITOR_FALLBACK_SYSTEM_PROMPT,
+  buildCompetitorFallbackMessage,
+} from '@/lib/prompts/competitor-fallback'
 import { COMPLIANCE_SYSTEM_PROMPT, buildComplianceMessage } from '@/lib/prompts/compliance'
+import {
+  COMPLIANCE_FALLBACK_SYSTEM_PROMPT,
+  buildComplianceFallbackMessage,
+} from '@/lib/prompts/compliance-fallback'
+import { staticComplianceBaseline } from '@/lib/compliance-baseline'
+import { logError } from '@/lib/log-error'
 import {
   SYNTHESIS_SYSTEM_PROMPT,
   buildSynthesisMessage,
@@ -25,6 +35,13 @@ interface Question {
   maps_to: string
 }
 
+// NOTE on <cite index="…">…</cite> markers: web-search responses interleave
+// the model's citation tags into the text. The index is meaningless once
+// stored (it points at that call's transient search results), but the tagged
+// SPAN is a verbatim quote backed by a live source — so we deliberately keep
+// the markers in the stored sections. The web UI renders them as highlighted
+// "quoted from a source" spans (src/lib/cite.ts); the PDF strips them.
+
 // Extracts the first JSON array or object from a string, tolerating prose preamble.
 function extractJson(text: string): unknown {
   const arrayMatch = text.match(/\[[\s\S]*\]/)
@@ -34,6 +51,20 @@ function extractJson(text: string): unknown {
     : arrayMatch ?? objectMatch
   if (!match) throw new Error(`No JSON found in response: ${text.slice(0, 120)}`)
   return JSON.parse(match[0])
+}
+
+function parseJsonArray(r: AIResult): unknown[] {
+  const parsed = extractJson(r.text)
+  if (!Array.isArray(parsed)) throw new Error('Response not a JSON array')
+  return parsed
+}
+
+function parseJsonObject(r: AIResult): Record<string, unknown> {
+  const parsed = extractJson(r.text)
+  if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
+    throw new Error('Response not a JSON object')
+  }
+  return parsed as Record<string, unknown>
 }
 
 function loadBank(archetype: string): Question[] {
@@ -47,19 +78,32 @@ function loadBank(archetype: string): Question[] {
 
 const UNAVAILABLE = (reason: string) => ({ status: 'unavailable', reason })
 
-// One retry protects against transient failures (truncation, malformed JSON,
-// API hiccups) without duplicating whole-step retries in Inngest.
-async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): Promise<T> {
-  let lastErr: unknown
-  for (let i = 1; i <= attempts; i++) {
-    try {
-      return await fn()
-    } catch (err) {
-      lastErr = err
-      console.warn(`${label}: attempt ${i}/${attempts} failed:`, err instanceof Error ? err.message : err)
-    }
-  }
-  throw lastErr
+function round4(n: number): number {
+  return Math.round(n * 10000) / 10000
+}
+
+// ── Cost-accurate AI step ────────────────────────────────────
+// How each upstream section was produced. Kept in _meta and passed to synthesis
+// so the summary never implies live research when it actually fell back.
+type SectionStatus = 'live_ok' | 'fallback_inferred' | 'failed'
+
+// Per-call diagnostics stored under _meta.steps (admin-visible). One entry per
+// callAI, so a section with a primary + fallback shows both.
+interface StepMeta {
+  status: 'ok' | 'failed'
+  model?: string
+  input_tokens: number
+  output_tokens: number
+  web_search_requests: number
+  cost_usd: number
+  error?: string
+}
+
+interface AiStepOutcome<T> {
+  value: T | null
+  status: 'ok' | 'failed'
+  costUsd: number
+  meta: StepMeta
 }
 
 // max_uses caps searches per call — search fees + result input tokens are the
@@ -67,9 +111,110 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 2): 
 const webSearchTool = (maxUses: number) =>
   [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: maxUses }]
 
-// Step results carry their AI cost so per-report cost tracking survives
-// Inngest step memoization/replays.
-interface StepResult<T> { value: T; costUsd: number }
+type StepRunner = { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> }
+
+// Runs an AI call up to `attempts` times and ALWAYS accounts for cost —
+// including failed attempts and truncations. Anthropic bills every call it
+// answers, so cost is banked before parsing and again from AICallError on the
+// throw paths. This never throws for API/parse failures: it returns status
+// 'failed' with value null so the caller can fall back, and the banked cost is
+// memoised with the step. (Root cause of the old $0.22-vs-$1.13 undercount:
+// cost was only taken from the successful attempt.)
+//
+// Truncation-aware retry: when an attempt fails because the output hit
+// maxTokens (AICallError kind 'truncated'), retrying at the SAME cap is
+// guaranteed to truncate again — so the next attempt runs with the cap
+// doubled. Live incident 2026-07-08: marketing (3072×2) and synthesis
+// (6144×2) both burned two identical truncated attempts and failed the
+// section. Cost risk is bounded — you only pay for tokens actually
+// generated, not the cap.
+async function aiStep<T>(
+  step: StepRunner,
+  id: string,
+  baseMaxTokens: number,
+  makeCall: (maxTokens: number) => Promise<AIResult>,
+  parse: (r: AIResult) => T,
+  attempts = 2,
+): Promise<AiStepOutcome<T>> {
+  return step.run(id, async (): Promise<AiStepOutcome<T>> => {
+    let costUsd = 0
+    let inputTokens = 0
+    let outputTokens = 0
+    let webSearchRequests = 0
+    let model: string | undefined
+    let lastErr: unknown
+    let cap = baseMaxTokens
+
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        const r = await makeCall(cap)
+        // Bank cost BEFORE parsing — a parse failure must not discard a billed call.
+        costUsd += r.costUsd
+        inputTokens += r.inputTokens
+        outputTokens += r.outputTokens
+        webSearchRequests += r.webSearchRequests
+        model = r.model
+        const value = parse(r)
+        return {
+          value,
+          status: 'ok',
+          costUsd,
+          meta: { status: 'ok', model, input_tokens: inputTokens, output_tokens: outputTokens, web_search_requests: webSearchRequests, cost_usd: round4(costUsd) },
+        }
+      } catch (err) {
+        lastErr = err
+        // AICallError (truncation / no text block) carries the billed cost of
+        // the failed attempt so it still counts toward the total.
+        const e = err as { costUsd?: number; inputTokens?: number; outputTokens?: number; webSearchRequests?: number; model?: string; kind?: string }
+        if (typeof e.costUsd === 'number') {
+          costUsd += e.costUsd
+          inputTokens += e.inputTokens ?? 0
+          outputTokens += e.outputTokens ?? 0
+          webSearchRequests += e.webSearchRequests ?? 0
+          model = e.model ?? model
+        }
+        // Same-cap retry after truncation is futile — double it.
+        if (e.kind === 'truncated') cap *= 2
+        console.warn(`${id}: attempt ${i}/${attempts} failed (next cap ${cap}):`, err instanceof Error ? err.message : err)
+      }
+    }
+
+    return {
+      value: null,
+      status: 'failed',
+      costUsd,
+      meta: { status: 'failed', model, input_tokens: inputTokens, output_tokens: outputTokens, web_search_requests: webSearchRequests, cost_usd: round4(costUsd), error: lastErr instanceof Error ? lastErr.message : String(lastErr) },
+    }
+  })
+}
+
+// Required sections must never be blank in a completed report. If any is
+// missing/empty/unavailable the report is flagged _meta.partial (a soft banner
+// in the UI) rather than silently "complete".
+const REQUIRED_SECTION_KEYS = [
+  'summary',
+  'viability_snapshot',
+  'competitors',
+  'cost_breakdown',
+  'legal_compliance',
+  'risks',
+  'next_steps',
+]
+
+function isUnavailable(v: unknown): boolean {
+  return typeof v === 'object' && v !== null && (v as Record<string, unknown>).status === 'unavailable'
+}
+
+function hasContent(v: unknown): boolean {
+  if (v === null || v === undefined) return false
+  if (isUnavailable(v)) return false
+  if (Array.isArray(v)) return v.length > 0
+  return true
+}
+
+function isNonEmptyArray(v: unknown): v is unknown[] {
+  return Array.isArray(v) && v.length > 0
+}
 
 export const generateReport = inngest.createFunction(
   {
@@ -77,10 +222,15 @@ export const generateReport = inngest.createFunction(
     retries: 0,
     triggers: [{ event: 'idea-engine/full-report.requested' }],
   },
-  async ({ event, step }: { event: { data: { reportId: string; ideaId: string; userId: string } }; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> } }) => {
+  async ({ event, step }: { event: { data: { reportId: string; ideaId: string; userId: string } }; step: StepRunner }) => {
     const { reportId, ideaId, userId } = event.data
     const supabase = createServiceClient()
     const provider = await providerOverrideForUser(supabase, userId)
+    // Admin model experiment: the owner's report_model (admin Settings) swaps
+    // the model for every PRIMARY step this run. Fallback steps stay on Haiku
+    // (they exist to be cheap). undefined → callAI's default (claude-sonnet-5).
+    const model = await reportModelForUser(supabase, userId)
+    const effectiveModel = model ?? DEFAULT_MODEL
 
     // ── Fetch idea + answers ───────────────────────────────────
     const { data: idea } = await supabase
@@ -89,7 +239,16 @@ export const generateReport = inngest.createFunction(
       .eq('id', ideaId)
       .single()
 
-    if (!idea) throw new Error(`Idea ${ideaId} not found`)
+    if (!idea) {
+      await logError({
+        source: 'inngest:generate-report',
+        message: `Idea ${ideaId} not found — cannot generate report ${reportId}`,
+        detail: { reportId, ideaId },
+        path: 'generate-report',
+        userId,
+      })
+      throw new Error(`Idea ${ideaId} not found`)
+    }
 
     const { data: answersRows } = await supabase
       .from('answers')
@@ -128,21 +287,79 @@ export const generateReport = inngest.createFunction(
       .eq('id', reportId)
       .single()
 
-    // Mark running
-    await supabase
-      .from('reports')
-      .update({ status: 'running', generation_started_at: new Date().toISOString() })
-      .eq('id', reportId)
+    // Mark running — MUST be a step. Inngest re-executes the whole function
+    // body at every step boundary (memoizing completed steps), so any DB write
+    // outside step.run re-fires on every replay — including the final replay
+    // AFTER assemble has set status='complete', which flipped reports back to
+    // 'running' and left the client polling forever (live incident 2026-07-08).
+    await step.run('mark-running', async () => {
+      await supabase
+        .from('reports')
+        .update({ status: 'running', generation_started_at: new Date().toISOString() })
+        .eq('id', reportId)
+    })
 
     const sections: Record<string, unknown> = {}
     let totalCostUsd = 0
+    // Per-call diagnostics (admin) + section-level status (synthesis + UI banners).
+    const stepMetas: Record<string, StepMeta> = {}
+    const sectionStatus: Record<string, SectionStatus> = {}
 
-    // ── Step 1: Competitor research ───────────────────────────
+    function bankStep(id: string, outcome: AiStepOutcome<unknown>) {
+      stepMetas[id] = outcome.meta
+      totalCostUsd += outcome.costUsd
+    }
+
+    // Progressive section writes drive the client progress screen. Each one is
+    // its own memoized step (unique id) for the same replay-safety reason as
+    // mark-running: a bare update here would re-run on the final replay and
+    // overwrite the assemble step's finished sections (stripping _meta).
+    async function persistSections(stepId: string) {
+      await step.run(stepId, async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+      })
+    }
+
+    // ── Step 1: Competitor research (live search, with inferred fallback) ──
+    const compPrimary = await aiStep(
+      step,
+      'research-competitors',
+      8192,
+      (maxTokens) => callAI({
+        messages: [{ role: 'user', content: buildCompetitorResearchMessage({
+          idea_raw_text: idea.raw_text,
+          archetype: idea.archetype,
+          location_country: idea.location_country,
+          location_region: idea.location_region,
+          restatement: idea.restatement,
+          target_customer: mapsTo['market.target_customer'] ?? null,
+          differentiator: mapsTo['market.differentiator'] ?? null,
+          geographic_scope: mapsTo['market.geographic_scope'] ?? null,
+        }) }],
+        system: COMPETITOR_RESEARCH_SYSTEM_PROMPT,
+        maxTokens,
+        tag: 'report:competitors',
+        tools: webSearchTool(5),
+        model,
+        provider,
+      }),
+      parseJsonArray,
+    )
+    bankStep('research-competitors', compPrimary)
+
     let competitors: unknown
-    try {
-      const res = await step.run('research-competitors', (): Promise<StepResult<unknown[]>> => withRetry('research-competitors', async () => {
-        const { text, costUsd } = await callAI({
-          messages: [{ role: 'user', content: buildCompetitorResearchMessage({
+    if (compPrimary.status === 'ok' && isNonEmptyArray(compPrimary.value)) {
+      competitors = compPrimary.value
+      sectionStatus.competitors = 'live_ok'
+    } else {
+      // Live search failed or returned nothing — cheap no-search inferred pass.
+      const compFallback = await aiStep(
+        step,
+        'research-competitors-fallback',
+        4096,
+        (maxTokens) => callAI({
+          messages: [{ role: 'user', content: buildCompetitorFallbackMessage({
             idea_raw_text: idea.raw_text,
             archetype: idea.archetype,
             location_country: idea.location_country,
@@ -152,46 +369,48 @@ export const generateReport = inngest.createFunction(
             differentiator: mapsTo['market.differentiator'] ?? null,
             geographic_scope: mapsTo['market.geographic_scope'] ?? null,
           }) }],
-          system: COMPETITOR_RESEARCH_SYSTEM_PROMPT,
-          maxTokens: 4096,
-          tag: 'report:competitors',
-          tools: webSearchTool(5),
+          system: COMPETITOR_FALLBACK_SYSTEM_PROMPT,
+          maxTokens,
+          tag: 'report:competitors-fallback',
+          model: HAIKU_MODEL,
           provider,
-        })
-        const parsed = extractJson(text)
-        if (!Array.isArray(parsed)) throw new Error('Competitor response not an array')
-        return { value: parsed, costUsd }
-      }))
-      competitors = res.value
-      totalCostUsd += res.costUsd
-    } catch (err) {
-      console.error('research-competitors failed:', err)
-      competitors = UNAVAILABLE('Competitor research could not be completed.')
+        }),
+        parseJsonArray,
+      )
+      bankStep('research-competitors-fallback', compFallback)
+      if (compFallback.status === 'ok' && isNonEmptyArray(compFallback.value)) {
+        competitors = compFallback.value
+        sectionStatus.competitors = 'fallback_inferred'
+      } else {
+        competitors = UNAVAILABLE('Live competitor search could not be completed.')
+        sectionStatus.competitors = 'failed'
+      }
     }
     sections.competitors = competitors
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    await persistSections('persist-competitors')
 
     // ── Step 2: Cost estimation ───────────────────────────────
+    const productArchetypes = ['physical_product', 'ecommerce_brand']
     let costBreakdown: unknown
-    try {
-      const res = await step.run('estimate-costs', (): Promise<StepResult<unknown>> => withRetry('estimate-costs', async () => {
-        const productArchetypes = ['physical_product', 'ecommerce_brand']
-        if (productArchetypes.includes(idea.archetype)) {
-          return { value: calculateCosts({
-            location_country: idea.location_country,
-            materials_batch_cost: parseNumber(mapsTo['cost.materials']),
-            packaging_per_unit: parseNumber(mapsTo['cost.packaging_per_unit']),
-            equipment_wattage: parseNumber(mapsTo['cost.equipment_wattage']),
-            active_minutes_per_batch: parseNumber(mapsTo['cost.active_minutes_per_batch']),
-            passive_minutes_per_batch: parseNumber(mapsTo['cost.passive_minutes_per_batch']),
-            batch_yield: parseNumber(mapsTo['cost.batch_yield']),
-            hourly_rate: parseNumber(mapsTo['cost.hourly_rate']),
-            unit_cost_estimate: parseNumber(mapsTo['cost.unit_cost_estimate']),
-          }), costUsd: 0 }
-        }
-        // Non-product archetypes: get a real LLM cost estimate instead of a stub
-        const { text, costUsd } = await callAI({
+    if (productArchetypes.includes(idea.archetype)) {
+      // Deterministic calculator — no AI call, no cost.
+      costBreakdown = calculateCosts({
+        location_country: idea.location_country,
+        materials_batch_cost: parseNumber(mapsTo['cost.materials']),
+        packaging_per_unit: parseNumber(mapsTo['cost.packaging_per_unit']),
+        equipment_wattage: parseNumber(mapsTo['cost.equipment_wattage']),
+        active_minutes_per_batch: parseNumber(mapsTo['cost.active_minutes_per_batch']),
+        passive_minutes_per_batch: parseNumber(mapsTo['cost.passive_minutes_per_batch']),
+        batch_yield: parseNumber(mapsTo['cost.batch_yield']),
+        hourly_rate: parseNumber(mapsTo['cost.hourly_rate']),
+        unit_cost_estimate: parseNumber(mapsTo['cost.unit_cost_estimate']),
+      })
+    } else {
+      const costOutcome = await aiStep(
+        step,
+        'estimate-costs',
+        4096,
+        (maxTokens) => callAI({
           messages: [{ role: 'user', content: buildCostEstimationMessage({
             idea_raw_text: idea.raw_text,
             archetype: idea.archetype,
@@ -202,27 +421,22 @@ export const generateReport = inngest.createFunction(
             competitors: Array.isArray(competitors) ? competitors : [],
           }) }],
           system: COST_ESTIMATION_SYSTEM_PROMPT,
-          maxTokens: 2048,
+          maxTokens,
           tag: 'report:costs',
+          model,
           provider,
-        })
-        const parsed = extractJson(text)
-        if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
-          throw new Error('Cost estimation response not an object')
-        }
-        return { value: parsed, costUsd }
-      }))
-      costBreakdown = res.value
-      totalCostUsd += res.costUsd
-    } catch (err) {
-      console.error('estimate-costs failed:', err)
-      costBreakdown = UNAVAILABLE('Cost estimation could not be completed.')
+        }),
+        parseJsonObject,
+      )
+      bankStep('estimate-costs', costOutcome)
+      costBreakdown = costOutcome.status === 'ok'
+        ? costOutcome.value
+        : UNAVAILABLE('Cost estimation could not be completed.')
     }
     sections.cost_breakdown = costBreakdown
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    await persistSections('persist-costs')
 
-    // ── Step 2b: Financing bridge (conditional) ───────────────
+    // ── Step 2b: Financing bridge (conditional, optional) ──────
     // Only runs when the founder's stated available capital falls short of
     // the estimated startup cost range — otherwise there's no gap to bridge.
     const statedCapital = parseNumber(mapsTo['cost.startup_capital'])
@@ -235,144 +449,179 @@ export const generateReport = inngest.createFunction(
       : null
 
     if (statedCapital !== null && startupLow !== null && statedCapital < startupLow) {
-      try {
-        const res = await step.run('financing-bridge', (): Promise<StepResult<unknown[]>> => withRetry('financing-bridge', async () => {
-          const { text, costUsd } = await callAI({
-            messages: [{ role: 'user', content: buildFinancingMessage({
-              idea_raw_text: idea.raw_text,
-              archetype: idea.archetype,
-              location_country: idea.location_country,
-              location_region: idea.location_region,
-              restatement: idea.restatement,
-              stated_capital: mapsTo['cost.startup_capital'] ?? null,
-              estimated_startup_low: startupLow,
-              estimated_startup_high: startupHigh,
-              currency: cb?.currency ?? null,
-            }) }],
-            system: FINANCING_SYSTEM_PROMPT,
-            // Search-enabled calls also spend output tokens on interim text
-            // between searches — 2048 truncated in live testing.
-            maxTokens: 4096,
-            tag: 'report:financing',
-            tools: webSearchTool(3),
-            provider,
-          })
-          const parsed = extractJson(text)
-          if (!Array.isArray(parsed)) throw new Error('Financing response not an array')
-          return { value: parsed, costUsd }
-        }))
-        totalCostUsd += res.costUsd
-        sections.funding_options = res.value
-      } catch (err) {
-        console.error('financing-bridge failed:', err)
-        sections.funding_options = UNAVAILABLE('Funding research could not be completed.')
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+      const financingOutcome = await aiStep(
+        step,
+        'financing-bridge',
+        8192,
+        (maxTokens) => callAI({
+          messages: [{ role: 'user', content: buildFinancingMessage({
+            idea_raw_text: idea.raw_text,
+            archetype: idea.archetype,
+            location_country: idea.location_country,
+            location_region: idea.location_region,
+            restatement: idea.restatement,
+            stated_capital: mapsTo['cost.startup_capital'] ?? null,
+            estimated_startup_low: startupLow,
+            estimated_startup_high: startupHigh,
+            currency: cb?.currency ?? null,
+          }) }],
+          system: FINANCING_SYSTEM_PROMPT,
+          // Search-enabled calls also spend output tokens on interim text
+          // between searches — 2048 truncated in live testing.
+          maxTokens,
+          tag: 'report:financing',
+          tools: webSearchTool(3),
+          model,
+          provider,
+        }),
+        parseJsonArray,
+      )
+      bankStep('financing-bridge', financingOutcome)
+      sections.funding_options = financingOutcome.status === 'ok'
+        ? financingOutcome.value
+        : UNAVAILABLE('Funding research could not be completed.')
+      await persistSections('persist-funding')
     }
 
-    // ── Step 3: Compliance check ──────────────────────────────
+    // ── Step 3: Compliance check (live search → inferred → static) ──
+    const compliancePrimary = await aiStep(
+      step,
+      'compliance-check',
+      6144,
+      (maxTokens) => callAI({
+        messages: [{ role: 'user', content: buildComplianceMessage({
+          archetype: idea.archetype,
+          location_country: idea.location_country,
+          location_region: idea.location_region,
+          restatement: idea.restatement,
+          sales_channel: mapsTo['idea.sales_channel'] ?? null,
+          production_location: mapsTo['cost.production_location'] ?? null,
+        }) }],
+        system: COMPLIANCE_SYSTEM_PROMPT,
+        maxTokens,
+        tag: 'report:compliance',
+        tools: webSearchTool(3),
+        model,
+        provider,
+      }),
+      parseJsonArray,
+    )
+    bankStep('compliance-check', compliancePrimary)
+
     let legalCompliance: unknown
-    try {
-      const res = await step.run('compliance-check', (): Promise<StepResult<unknown[]>> => withRetry('compliance-check', async () => {
-        const { text, costUsd } = await callAI({
-          messages: [{ role: 'user', content: buildComplianceMessage({
+    if (compliancePrimary.status === 'ok' && isNonEmptyArray(compliancePrimary.value)) {
+      legalCompliance = compliancePrimary.value
+      sectionStatus.legal_compliance = 'live_ok'
+    } else {
+      const complianceFallback = await aiStep(
+        step,
+        'compliance-check-fallback',
+        4096,
+        (maxTokens) => callAI({
+          messages: [{ role: 'user', content: buildComplianceFallbackMessage({
             archetype: idea.archetype,
             location_country: idea.location_country,
             location_region: idea.location_region,
             restatement: idea.restatement,
             sales_channel: mapsTo['idea.sales_channel'] ?? null,
-            production_location: mapsTo['cost.production_location'] ?? null,
+            business_model: mapsTo['idea.business_model'] ?? mapsTo['pricing.model'] ?? null,
           }) }],
-          system: COMPLIANCE_SYSTEM_PROMPT,
-          maxTokens: 3072,
-          tag: 'report:compliance',
-          tools: webSearchTool(3),
+          system: COMPLIANCE_FALLBACK_SYSTEM_PROMPT,
+          maxTokens,
+          tag: 'report:compliance-fallback',
+          model: HAIKU_MODEL,
           provider,
-        })
-        const parsed = extractJson(text)
-        if (!Array.isArray(parsed)) throw new Error('Compliance response not an array')
-        return { value: parsed, costUsd }
-      }))
-      legalCompliance = res.value
-      totalCostUsd += res.costUsd
-    } catch (err) {
-      console.error('compliance-check failed:', err)
-      legalCompliance = UNAVAILABLE('Compliance check could not be completed.')
+        }),
+        parseJsonArray,
+      )
+      bankStep('compliance-check-fallback', complianceFallback)
+      if (complianceFallback.status === 'ok' && isNonEmptyArray(complianceFallback.value)) {
+        legalCompliance = complianceFallback.value
+      } else {
+        // Deterministic last resort — never leaves the tab blank.
+        legalCompliance = staticComplianceBaseline(idea.archetype, idea.location_country)
+        stepMetas['compliance-check-static'] = { status: 'ok', input_tokens: 0, output_tokens: 0, web_search_requests: 0, cost_usd: 0 }
+      }
+      sectionStatus.legal_compliance = 'fallback_inferred'
     }
     sections.legal_compliance = legalCompliance
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    await persistSections('persist-compliance')
 
-    // ── Step 3.5: Marketing playbook ──────────────────────────
-    let marketingPlan: unknown
-    try {
-      const res = await step.run('marketing-plan', (): Promise<StepResult<unknown>> => withRetry('marketing-plan', async () => {
-        const { text, costUsd } = await callAI({
-          messages: [{ role: 'user', content: buildMarketingMessage({
-            idea_raw_text: idea.raw_text,
-            archetype: idea.archetype,
-            location_country: idea.location_country,
-            location_region: idea.location_region,
-            restatement: idea.restatement,
-            target_customer: mapsTo['market.target_customer'] ?? null,
-            geographic_scope: mapsTo['market.geographic_scope'] ?? null,
-            sales_channel: mapsTo['idea.sales_channel'] ?? null,
-            startup_capital: mapsTo['cost.startup_capital'] ?? null,
-            success_definition: mapsTo['founder.success_definition'] ?? null,
-          }) }],
-          system: MARKETING_SYSTEM_PROMPT,
-          maxTokens: 3072,
-          tag: 'report:marketing',
-          tools: webSearchTool(3),
-          provider,
-        })
-        const parsed = extractJson(text)
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Marketing response not an object')
-        return { value: parsed, costUsd }
-      }))
-      marketingPlan = res.value
-      totalCostUsd += res.costUsd
-    } catch (err) {
-      console.error('marketing-plan failed:', err)
-      marketingPlan = UNAVAILABLE('Marketing playbook could not be completed.')
-    }
-    sections.marketing_plan = marketingPlan
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    // ── Step 3.5: Marketing playbook (optional) ────────────────
+    const marketingOutcome = await aiStep(
+      step,
+      'marketing-plan',
+      // Live incident 2026-07-08: 3072 truncated twice (search interim text
+      // counts against the cap; input was 119k tokens of search results).
+      8192,
+      (maxTokens) => callAI({
+        messages: [{ role: 'user', content: buildMarketingMessage({
+          idea_raw_text: idea.raw_text,
+          archetype: idea.archetype,
+          location_country: idea.location_country,
+          location_region: idea.location_region,
+          restatement: idea.restatement,
+          target_customer: mapsTo['market.target_customer'] ?? null,
+          geographic_scope: mapsTo['market.geographic_scope'] ?? null,
+          sales_channel: mapsTo['idea.sales_channel'] ?? null,
+          startup_capital: mapsTo['cost.startup_capital'] ?? null,
+          success_definition: mapsTo['founder.success_definition'] ?? null,
+        }) }],
+        system: MARKETING_SYSTEM_PROMPT,
+        maxTokens,
+        tag: 'report:marketing',
+        tools: webSearchTool(3),
+        model,
+        provider,
+      }),
+      parseJsonObject,
+    )
+    bankStep('marketing-plan', marketingOutcome)
+    sections.marketing_plan = marketingOutcome.status === 'ok'
+      ? marketingOutcome.value
+      : UNAVAILABLE('Marketing playbook could not be completed.')
+    await persistSections('persist-marketing')
 
     // ── Step 4: Synthesis ─────────────────────────────────────
-    let synthesis: Partial<SynthesisOutput>
-    try {
-      const res = await step.run('synthesise', (): Promise<StepResult<SynthesisOutput>> => withRetry('synthesise', async () => {
-        const { text, costUsd } = await callAI({
-          messages: [{ role: 'user', content: buildSynthesisMessage({
-            idea_raw_text: idea.raw_text,
-            archetype: idea.archetype,
-            location_country: idea.location_country,
-            location_region: idea.location_region,
-            restatement: idea.restatement,
-            answers,
-            competitors: Array.isArray(competitors) ? competitors : [],
-            cost_breakdown: costBreakdown,
-            funding_options: Array.isArray(sections.funding_options) ? sections.funding_options : undefined,
-          }) }],
-          system: SYNTHESIS_SYSTEM_PROMPT,
-          // The synthesis JSON (summary + 4 scored dimensions + why-this-can-work +
-          // pricing + 3-5 risks + 3-5 next steps + one-thing-to-do + validation
-          // copy) regularly exceeds 2048 tokens — a low cap truncates the JSON
-          // and kills all eight sections at once.
-          maxTokens: 6144,
-          tag: 'report:synthesis',
-          provider,
-        })
-        return { value: extractJson(text) as SynthesisOutput, costUsd }
-      }))
-      synthesis = res.value
-      totalCostUsd += res.costUsd
-    } catch (err) {
-      console.error('synthesise failed:', err)
-      synthesis = {
+    const synthOutcome = await aiStep(
+      step,
+      'synthesise',
+      // The synthesis JSON (summary + 4 scored dimensions + why-this-can-work +
+      // pricing + 3-5 risks + 3-5 next steps + one-thing-to-do + validation
+      // copy) killed all eight sections at once when truncated — Sonnet 5
+      // exceeded 6144 twice in live testing (2026-07-08), so the base is
+      // generous and truncation retries double it. Cost only accrues for
+      // tokens actually generated, not the cap.
+      16384,
+      (maxTokens) => callAI({
+        messages: [{ role: 'user', content: buildSynthesisMessage({
+          idea_raw_text: idea.raw_text,
+          archetype: idea.archetype,
+          location_country: idea.location_country,
+          location_region: idea.location_region,
+          restatement: idea.restatement,
+          answers,
+          competitors: Array.isArray(competitors) ? competitors : [],
+          cost_breakdown: costBreakdown,
+          funding_options: Array.isArray(sections.funding_options) ? sections.funding_options : undefined,
+          section_status: {
+            competitors: sectionStatus.competitors ?? 'failed',
+            compliance: sectionStatus.legal_compliance ?? 'failed',
+          },
+        }) }],
+        system: SYNTHESIS_SYSTEM_PROMPT,
+        maxTokens,
+        tag: 'report:synthesis',
+        model,
+        provider,
+      }),
+      r => extractJson(r.text) as SynthesisOutput,
+    )
+    bankStep('synthesise', synthOutcome)
+
+    const synthesis: Partial<SynthesisOutput> = synthOutcome.status === 'ok' && synthOutcome.value
+      ? synthOutcome.value
+      : {
         summary: UNAVAILABLE('Summary generation failed.') as unknown as SynthesisOutput['summary'],
         viability_snapshot: UNAVAILABLE('Viability analysis failed.') as unknown as SynthesisOutput['viability_snapshot'],
         why_this_can_work: UNAVAILABLE('Opportunity framing failed.') as unknown as SynthesisOutput['why_this_can_work'],
@@ -382,16 +631,24 @@ export const generateReport = inngest.createFunction(
         one_thing_to_do: UNAVAILABLE('Priority action generation failed.') as unknown as SynthesisOutput['one_thing_to_do'],
         validation_copy: UNAVAILABLE('Validation copy generation failed.') as unknown as SynthesisOutput['validation_copy'],
       }
-    }
     Object.assign(sections, synthesis)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('reports').update({ sections: sections as any }).eq('id', reportId)
+    await persistSections('persist-synthesis')
 
     // ── Step 5: Assemble preview sections + complete ──────────
     await step.run('assemble', async () => {
-      // Admin-visible generation cost (USD, incl. web-search fees; excludes
-      // failed retry attempts). Underscore-prefixed so viewers skip it.
-      sections._meta = { cost_usd: Math.round(totalCostUsd * 10000) / 10000 }
+      const partial = REQUIRED_SECTION_KEYS.some(key => !hasContent(sections[key]))
+
+      // Admin-visible generation cost (USD, incl. web-search fees AND failed/
+      // fallback attempts) + per-step diagnostics + which required sections are
+      // thin. Underscore-prefixed so viewers skip it.
+      sections._meta = {
+        cost_usd: round4(totalCostUsd),
+        model: effectiveModel,
+        partial,
+        section_status: sectionStatus,
+        steps: stepMetas,
+      }
+
       const competitorList = Array.isArray(competitors) ? competitors as Array<Record<string, unknown>> : []
       const allNextSteps = Array.isArray(synthesis.next_steps) ? synthesis.next_steps as Array<Record<string, unknown>> : []
 
@@ -414,9 +671,27 @@ export const generateReport = inngest.createFunction(
         preview_sections: previewSections as any,
         status: 'complete',
         generation_completed_at: new Date().toISOString(),
-        model_version: 'claude-sonnet-4-6',
-        cost_usd: Math.round(((existingReport?.cost_usd ?? 0) + totalCostUsd) * 10000) / 10000,
+        model_version: effectiveModel,
+        cost_usd: round4((existingReport?.cost_usd ?? 0) + totalCostUsd),
       }).eq('id', reportId)
+
+      // Record any real AI-step failures (even when a fallback recovered the
+      // section) and partial reports, so the admin Errors page surfaces exactly
+      // the "section came back failed" cases without digging through logs.
+      const failedStepIds = Object.entries(stepMetas)
+        .filter(([, m]) => m.status === 'failed')
+        .map(([id]) => id)
+      if (partial || failedStepIds.length > 0) {
+        await logError({
+          source: 'inngest:generate-report',
+          message: partial
+            ? `Report ${reportId} completed PARTIAL (missing required section)${failedStepIds.length ? ` — failed steps: ${failedStepIds.join(', ')}` : ''}`
+            : `Report ${reportId} recovered via fallback — failed AI step(s): ${failedStepIds.join(', ')}`,
+          detail: { reportId, ideaId, partial, section_status: sectionStatus, steps: stepMetas },
+          path: 'generate-report',
+          userId,
+        })
+      }
     })
   }
 )

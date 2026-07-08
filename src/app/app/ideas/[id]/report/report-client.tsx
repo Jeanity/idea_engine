@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import Link from 'next/link'
 import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
+import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
 
 interface ReportData {
   id: string
@@ -406,6 +407,61 @@ function UnavailableSection({ title, reason }: { title: string; reason?: string 
   )
 }
 
+// Renders report prose, highlighting <cite>…</cite> spans — verbatim quotes
+// backed by a source found during live research. The stored index attr is
+// meaningless (transient search-result pointer), so the treatment is a subtle
+// highlight + tooltip, not a link. Plain strings pass through untouched.
+function CitedText({ text }: { text: string | null | undefined }) {
+  if (!text) return null
+  if (!hasCiteMarkers(text)) return <>{text}</>
+  return (
+    <>
+      {splitCiteSegments(text).map((seg, i) =>
+        seg.cited ? (
+          <span
+            key={i}
+            title="Quoted from a source found during live research"
+            className="bg-indigo-400/10 light:bg-indigo-50 border-b border-dotted border-indigo-400/60 light:border-indigo-400 rounded-[2px] px-0.5 cursor-help"
+          >
+            {seg.text}
+          </span>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  )
+}
+
+// Shown at the top of a tab whose content came from the model's own knowledge
+// because live web search was unavailable. Keeps the report honest without
+// leaving the tab blank.
+function InferredNote({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-4 py-2.5 flex gap-2 items-start">
+      <svg className="w-4 h-4 text-amber-300 light:text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+      </svg>
+      <p className="text-xs text-amber-200 light:text-amber-900 leading-relaxed">{children}</p>
+    </div>
+  )
+}
+
+// Report-level banner when a required section is thin (live + fallback both
+// failed). Driven by _meta.partial from the pipeline.
+function PartialReportBanner() {
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-4 py-3 mb-6 flex gap-2.5 items-start">
+      <svg className="w-5 h-5 text-amber-300 light:text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+      </svg>
+      <p className="text-xs text-amber-100 light:text-amber-900 leading-relaxed">
+        <span className="font-semibold">Some sections are incomplete.</span> One or more parts of this report couldn&rsquo;t be fully generated. What&rsquo;s shown is still accurate — you can regenerate the report below to try filling the gaps.
+      </p>
+    </div>
+  )
+}
+
 const SCORE_LABELS: Record<string, string> = {
   market_opportunity: 'Market opportunity',
   execution_difficulty: 'Execution difficulty',
@@ -430,12 +486,12 @@ function ViabilitySnapshot({ vs }: {
               <span className="font-medium text-slate-300 light:text-gray-700">{val.score}/5</span>
             </div>
             <ScoreBar score={val.score} />
-            <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{val.rationale}</p>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-1"><CitedText text={val.rationale} /></p>
           </div>
         ))}
       </div>
       <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 px-4 py-3">
-        <p className="text-sm text-indigo-200 light:text-indigo-900">{vs.overall_verdict}</p>
+        <p className="text-sm text-indigo-200 light:text-indigo-900"><CitedText text={vs.overall_verdict} /></p>
       </div>
     </div>
   )
@@ -584,6 +640,10 @@ export function FullReportViewer({ report }: { report: ReportData }) {
   const s = report.sections
   const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
 
+  const meta = s._meta as { partial?: boolean; section_status?: Record<string, string> } | undefined
+  const competitorsInferred = meta?.section_status?.competitors === 'fallback_inferred'
+  const complianceInferred = meta?.section_status?.legal_compliance === 'fallback_inferred'
+
   const summary = s.summary
   const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
   const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
@@ -608,9 +668,11 @@ export function FullReportViewer({ report }: { report: ReportData }) {
   // hide the tab entirely rather than showing an empty panel.
   const visibleTabs = REPORT_TABS.filter(tab => tab.key !== 'marketing' || marketing !== undefined)
 
-  function handleTabChange(key: ReportTabKey) {
+  function handleTabChange(key: ReportTabKey, el?: HTMLElement) {
     setActiveTab(key)
     window.scrollTo({ top: 0 })
+    // Keep the tapped tab fully in view within the horizontal scroller.
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
   }
 
   function panelClass(key: ReportTabKey) {
@@ -621,15 +683,15 @@ export function FullReportViewer({ report }: { report: ReportData }) {
     <div className="print-force-light max-w-3xl mx-auto px-6 py-10 print:py-4">
 
       {/* Tab bar */}
-      <div className="sticky top-0 z-10 bg-slate-950/90 light:bg-gray-50/95 backdrop-blur -mx-6 px-6 mb-6 border-b border-white/10 light:border-gray-200 overflow-x-auto print:hidden">
-        <div className="flex gap-1 whitespace-nowrap">
+      <div className="sticky top-0 z-10 bg-slate-950/90 light:bg-gray-50/95 backdrop-blur -mx-6 px-6 mb-6 border-b border-white/10 light:border-gray-200 overflow-x-auto tab-scroll print:hidden">
+        <div className="flex gap-0.5 whitespace-nowrap">
           {visibleTabs.map(tab => {
             const isActive = activeTab === tab.key
             return (
               <button
                 key={tab.key}
-                onClick={() => handleTabChange(tab.key)}
-                className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                onClick={(e) => handleTabChange(tab.key, e.currentTarget)}
+                className={`shrink-0 px-3 py-3 text-sm font-medium border-b-2 transition-colors
                   ${isActive
                     ? 'border-indigo-400 text-white light:text-indigo-700'
                     : 'border-transparent text-slate-400 hover:text-slate-200 light:text-gray-500 light:hover:text-gray-700'}`}
@@ -646,6 +708,8 @@ export function FullReportViewer({ report }: { report: ReportData }) {
         </div>
       </div>
 
+      {meta?.partial && <PartialReportBanner />}
+
       {/* Panel 1: Overview */}
       <div className={`${panelClass('overview')} space-y-6 break-inside-avoid`}>
         {isUnavailable(summary)
@@ -654,7 +718,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
             ? (
               <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
                 <h2 className="font-semibold text-white light:text-gray-900 mb-3">Summary</h2>
-                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{(summary as { text: string }).text}</p>
+                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed"><CitedText text={(summary as { text: string }).text} /></p>
               </div>
             )
             : <UnavailableSection title="Summary" />}
@@ -675,15 +739,15 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">What the market is telling you</p>
-                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.market_proof}</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed"><CitedText text={whyProceed.market_proof} /></p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Your edge</p>
-                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.your_edge}</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed"><CitedText text={whyProceed.your_edge} /></p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">The upside</p>
-                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{whyProceed.upside}</p>
+                    <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed"><CitedText text={whyProceed.upside} /></p>
                   </div>
                 </div>
               </div>
@@ -693,6 +757,11 @@ export function FullReportViewer({ report }: { report: ReportData }) {
 
       {/* Panel 2: Competitors */}
       <div className={`${panelClass('competitors')} space-y-6 break-inside-avoid`}>
+        {competitorsInferred && (
+          <InferredNote>
+            Live competitor search couldn&rsquo;t be completed, so these are drawn from the model&rsquo;s own knowledge rather than verified web results. Treat them as a starting point and confirm current details before relying on them.
+          </InferredNote>
+        )}
         {isUnavailable(competitors)
           ? <UnavailableSection title="Competitors" reason={competitors.reason} />
           : Array.isArray(competitors) && competitors.length > 0
@@ -700,27 +769,36 @@ export function FullReportViewer({ report }: { report: ReportData }) {
               <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
                   <h2 className="font-semibold text-white light:text-gray-900">Competitors</h2>
-                  <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{competitors.length} found</p>
+                  <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{competitors.length} {competitorsInferred ? 'listed' : 'found'}</p>
                 </div>
                 <div className="divide-y divide-white/10 light:divide-gray-100">
                   {(competitors as Array<Record<string, string>>).map((c, i) => (
                     <div key={i} className="px-5 py-4">
                       <div className="mb-2">
-                        <div className="min-w-0">
-                          <a href={c.url} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-medium text-indigo-300 underline underline-offset-2 text-sm break-words">{c.name}<ExternalLinkIcon /></a>
-                          <span className="text-xs text-slate-500 light:text-gray-400 ml-2">{c.location}</span>
+                        <div className="min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          {c.url
+                            ? <a href={c.url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-medium text-indigo-300 underline underline-offset-2 text-sm break-words">{c.name}<ExternalLinkIcon /></a>
+                            : <span className="font-medium text-slate-200 light:text-gray-800 text-sm break-words">{c.name}</span>}
+                          {c.kind && (
+                            <span className="text-[10px] uppercase tracking-wide font-medium text-slate-400 light:text-gray-500 bg-white/5 light:bg-gray-100 rounded px-1.5 py-0.5">{c.kind}</span>
+                          )}
+                          <span className="text-xs text-slate-500 light:text-gray-400">{c.location}</span>
                         </div>
                         {c.pricing_summary && (
-                          <p className="text-xs font-medium text-slate-300 light:text-gray-700 mt-0.5 break-words">{c.pricing_summary}</p>
+                          <p className="text-xs font-medium text-slate-300 light:text-gray-700 mt-0.5 break-words"><CitedText text={c.pricing_summary} /></p>
                         )}
                       </div>
-                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">
-                        <span className="font-medium text-slate-300 light:text-gray-700">Positioning: </span>{c.positioning_angle}
-                      </p>
-                      <p className="text-xs text-emerald-200 bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 light:text-emerald-800 rounded px-2 py-1.5">
-                        <span className="font-medium">Gap: </span>{c.gap_notes}
-                      </p>
+                      {c.positioning_angle && (
+                        <p className="text-sm text-slate-400 light:text-gray-500 mb-2">
+                          <span className="font-medium text-slate-300 light:text-gray-700">Positioning: </span><CitedText text={c.positioning_angle} />
+                        </p>
+                      )}
+                      {c.gap_notes && (
+                        <p className="text-xs text-emerald-200 bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 light:text-emerald-800 rounded px-2 py-1.5">
+                          <span className="font-medium">Gap: </span><CitedText text={c.gap_notes} />
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -818,7 +896,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                           <div key={i} className="flex justify-between items-start text-sm gap-4">
                             <div className="min-w-0">
                               <p className="text-slate-300 light:text-gray-700">{item.item}</p>
-                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{item.note}</p>}
+                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5"><CitedText text={item.note} /></p>}
                             </div>
                             <span className="font-medium text-slate-200 light:text-gray-800 whitespace-nowrap">
                               {fmt0(sym, item.estimate_low)}–{fmt0(sym, item.estimate_high)}
@@ -845,7 +923,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                           <div key={i} className="flex justify-between items-start text-sm gap-4">
                             <div className="min-w-0">
                               <p className="text-slate-300 light:text-gray-700">{item.item}</p>
-                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">{item.note}</p>}
+                              {item.note && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5"><CitedText text={item.note} /></p>}
                             </div>
                             <span className="font-medium text-slate-200 light:text-gray-800 whitespace-nowrap">
                               {fmt0(sym, item.estimate_monthly)}/mo
@@ -856,7 +934,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                     </div>
                   )}
 
-                  {cb.notes && <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">{cb.notes}</p>}
+                  {cb.notes && <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed"><CitedText text={cb.notes} /></p>}
                 </div>
               )
             })()
@@ -875,8 +953,8 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                     <p className="text-xs text-indigo-200 light:text-indigo-900 mb-0.5">Suggested price</p>
                     <p className="text-lg font-semibold text-indigo-200 light:text-indigo-900">{p.suggested_price_or_range}</p>
                   </div>
-                  <p className="text-sm text-slate-300 light:text-gray-700 mb-2">{p.rationale}</p>
-                  <p className="text-xs text-slate-500 light:text-gray-400">{p.comparable_market_rates}</p>
+                  <p className="text-sm text-slate-300 light:text-gray-700 mb-2"><CitedText text={p.rationale} /></p>
+                  <p className="text-xs text-slate-500 light:text-gray-400"><CitedText text={p.comparable_market_rates} /></p>
                 </div>
               )
             })()
@@ -900,15 +978,15 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                         <FundingTypeBadge type={item.type} />
                       </div>
                       <p className="text-xs text-slate-500 light:text-gray-400 mb-2">{item.jurisdiction}</p>
-                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{item.summary}</p>
+                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2"><CitedText text={item.summary} /></p>
                       {item.eligibility && (
                         <p className="text-xs text-slate-500 light:text-gray-400 mb-2">
-                          <span className="font-medium">Eligibility: </span>{item.eligibility}
+                          <span className="font-medium">Eligibility: </span><CitedText text={item.eligibility} />
                         </p>
                       )}
                       {item.fit_note && (
                         <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
-                          <span className="font-bold">Why this fits: </span>{item.fit_note}
+                          <span className="font-bold">Why this fits: </span><CitedText text={item.fit_note} />
                         </p>
                       )}
                     </div>
@@ -921,6 +999,11 @@ export function FullReportViewer({ report }: { report: ReportData }) {
 
       {/* Panel 4: Legal & Compliance */}
       <div className={`${panelClass('legal')} space-y-6 break-inside-avoid`}>
+        {complianceInferred && (
+          <InferredNote>
+            Live regulatory search couldn&rsquo;t be completed, so this is a baseline checklist from the model&rsquo;s own knowledge — not verified against official sources. Confirm each item with the relevant government body or a qualified professional before acting.
+          </InferredNote>
+        )}
         {isUnavailable(compliance)
           ? <UnavailableSection title="Legal & Compliance" reason={compliance.reason} />
           : Array.isArray(compliance) && compliance.length > 0
@@ -937,7 +1020,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                         <SeverityBadge severity={item.severity} />
                       </div>
                       <p className="text-xs text-slate-500 light:text-gray-400 mb-2">{item.jurisdiction}</p>
-                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{item.summary}</p>
+                      <p className="text-sm text-slate-400 light:text-gray-500 mb-2"><CitedText text={item.summary} /></p>
                       {item.official_source_url && (
                         <a href={item.official_source_url} target="_blank" rel="noopener noreferrer"
                           className="text-xs text-indigo-300 underline underline-offset-2 break-all">
@@ -970,11 +1053,11 @@ export function FullReportViewer({ report }: { report: ReportData }) {
               <>
                 <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
                   <h2 className="font-semibold text-white light:text-gray-900 mb-3">Getting the Word Out</h2>
-                  <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed mb-4">{marketing.strategy_summary}</p>
+                  <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed mb-4"><CitedText text={marketing.strategy_summary} /></p>
                   {marketing.free_first && (
                     <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 light:bg-emerald-50 light:border-emerald-100 px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200 light:text-emerald-800 mb-1">Before you spend a dollar</p>
-                      <p className="text-sm text-emerald-100 light:text-emerald-900 leading-relaxed">{marketing.free_first}</p>
+                      <p className="text-sm text-emerald-100 light:text-emerald-900 leading-relaxed"><CitedText text={marketing.free_first} /></p>
                     </div>
                   )}
                 </div>
@@ -1004,15 +1087,15 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                                 {ch.channel_type === 'free' ? 'Free' : 'Paid'}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-400 light:text-gray-500 mb-1">{ch.why_this_channel}</p>
+                            <p className="text-sm text-slate-400 light:text-gray-500 mb-1"><CitedText text={ch.why_this_channel} /></p>
                             {ch.channel_type !== 'free' && ch.est_cost && (
                               <p className="text-xs text-slate-300 light:text-gray-600 mb-1">
-                                <span className="font-medium text-slate-200 light:text-gray-700">Cost: </span>{ch.est_cost}
+                                <span className="font-medium text-slate-200 light:text-gray-700">Cost: </span><CitedText text={ch.est_cost} />
                               </p>
                             )}
                             {ch.how_to_start && (
                               <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
-                                <span className="font-medium">How to start: </span>{ch.how_to_start}
+                                <span className="font-medium">How to start: </span><CitedText text={ch.how_to_start} />
                               </p>
                             )}
                           </div>
@@ -1040,7 +1123,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                       </div>
                     )}
                     {marketing.starter_budget.note && (
-                      <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">{marketing.starter_budget.note}</p>
+                      <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed"><CitedText text={marketing.starter_budget.note} /></p>
                     )}
                   </div>
                 )}
@@ -1067,11 +1150,11 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                     const description = risk.description ?? risk.detail
                     return (
                       <div key={i} className="px-5 py-4">
-                        {title && <p className="text-sm font-medium text-slate-200 light:text-gray-800 mb-1">{title}</p>}
-                        {description && <p className="text-sm text-slate-400 light:text-gray-500 mb-2">{description}</p>}
+                        {title && <p className="text-sm font-medium text-slate-200 light:text-gray-800 mb-1"><CitedText text={title} /></p>}
+                        {description && <p className="text-sm text-slate-400 light:text-gray-500 mb-2"><CitedText text={description} /></p>}
                         {risk.mitigation && (
                           <p className="text-xs text-indigo-200 bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 light:text-indigo-900 rounded px-2 py-1.5">
-                            <span className="font-medium">How to handle it: </span>{risk.mitigation}
+                            <span className="font-medium">How to handle it: </span><CitedText text={risk.mitigation} />
                           </p>
                         )}
                       </div>
@@ -1099,8 +1182,8 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                       </div>
                       <div>
                         <span className="text-xs font-semibold text-indigo-300">{step.timeframe}</span>
-                        <p className="text-sm text-slate-200 light:text-gray-800 mt-0.5">{step.action}</p>
-                        {(step.rationale ?? step.detail) && <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{step.rationale ?? step.detail}</p>}
+                        <p className="text-sm text-slate-200 light:text-gray-800 mt-0.5"><CitedText text={step.action} /></p>
+                        {(step.rationale ?? step.detail) && <p className="text-xs text-slate-500 light:text-gray-400 mt-1"><CitedText text={step.rationale ?? step.detail} /></p>}
                       </div>
                     </div>
                   ))}
@@ -1121,19 +1204,19 @@ export function FullReportViewer({ report }: { report: ReportData }) {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Poll question</p>
                     <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
-                      &ldquo;{validationCopy.poll_question}&rdquo;
+                      &ldquo;<CitedText text={validationCopy.poll_question} />&rdquo;
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Ad line</p>
                     <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
-                      &ldquo;{validationCopy.ad_line}&rdquo;
+                      &ldquo;<CitedText text={validationCopy.ad_line} />&rdquo;
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Forum post</p>
                     <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
-                      &ldquo;{validationCopy.forum_post}&rdquo;
+                      &ldquo;<CitedText text={validationCopy.forum_post} />&rdquo;
                     </p>
                   </div>
                 </div>
@@ -1148,8 +1231,8 @@ export function FullReportViewer({ report }: { report: ReportData }) {
             ? (
               <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 light:bg-emerald-50/50 light:border-emerald-200 light:shadow-sm px-5 py-5">
                 <h2 className="font-semibold text-white light:text-gray-900 mb-3">If you do nothing else, do this</h2>
-                <p className="text-sm font-medium text-emerald-200 light:text-emerald-800 leading-relaxed mb-2">{oneThingToDo.action}</p>
-                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed">{oneThingToDo.why_first}</p>
+                <p className="text-sm font-medium text-emerald-200 light:text-emerald-800 leading-relaxed mb-2"><CitedText text={oneThingToDo.action} /></p>
+                <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed"><CitedText text={oneThingToDo.why_first} /></p>
               </div>
             )
             : null}
@@ -1392,7 +1475,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
       '• Cost estimation\n' +
       '• Compliance check (web search, max 3 searches)\n' +
       '• Synthesis\n\n' +
-      'Estimated cost: ~US$0.30–0.60\n\nContinue?'
+      'Estimated cost: ~US$0.50–1.20 (higher if live searches retry/fall back)\n\nContinue?'
     )
     if (!ok) return
     setLoading(true)
@@ -1417,7 +1500,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
     <div className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-5 py-4 text-center">
       <p className="text-xs font-semibold text-amber-200 light:text-amber-900 mb-1">Admin — Test mode</p>
       <p className="text-xs text-amber-300 light:text-amber-700 mb-3">
-        Runs the full research pipeline. ~US$0.30–0.60 per run.
+        Runs the full research pipeline. ~US$0.50–1.20 per run.
       </p>
       <button
         onClick={handleClick}
@@ -1447,7 +1530,9 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   const [regenerating, setRegenerating] = useState(false)
 
   const hasFullSections = report?.status === 'complete' && Object.keys(report.sections).length > 0
-  const generationCost = (report?.sections?._meta as { cost_usd?: number } | undefined)?.cost_usd
+  const reportMeta = report?.sections?._meta as { cost_usd?: number; model?: string } | undefined
+  const generationCost = reportMeta?.cost_usd
+  const generationModel = reportMeta?.model
 
   if (hasFullSections && !regenerating) {
     return (
@@ -1459,7 +1544,10 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-3 print:hidden">
           <DownloadPdfButton ideaId={ideaId} />
           {isAdmin && generationCost !== undefined && (
-            <p className="text-xs text-slate-500 light:text-gray-400">Generation cost: US${generationCost.toFixed(2)}</p>
+            <p className="text-xs text-slate-500 light:text-gray-400">
+              Generation cost: US${generationCost.toFixed(2)}
+              {generationModel && <span> · {generationModel}</span>}
+            </p>
           )}
           <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null) }} />
           <Link

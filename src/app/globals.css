@@ -52,6 +52,20 @@ select option {
   color: #111827; /* gray-900 */
 }
 
+/* Report tab bar: horizontally scrollable without the ugly native scrollbar,
+   with a subtle fade at both edges so overflow reads as "more to the side"
+   rather than a cut-off. The fade sits inside the container's own horizontal
+   padding, so it never dims the first/last tab at rest. */
+.tab-scroll {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* old Edge/IE */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+          mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+.tab-scroll::-webkit-scrollbar {  /* Chrome/Safari */
+  display: none;
+}
+
 /* ---------------------------------------------------------------------- */
 /* Landing page animations                                                 */
 /* ---------------------------------------------------------------------- */

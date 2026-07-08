@@ -12,6 +12,7 @@ import {
   MessageSquare,
   DollarSign,
   AlertTriangle,
+  Settings,
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
@@ -27,7 +28,7 @@ import { SectionLabel } from '@/components/admin/section-label'
 // Nav config — grouped, icon + label. `exact` matches only the exact path
 // (Dashboard, whose href is a prefix of every sibling). `noActive` items link
 // somewhere real but never own the active pill (Analytics = the dashboard's
-// growth section). Errors 404s until R4 adds the route — the link is fine.
+// growth section). Errors (R4) is a real page once migration 009 is run.
 // ---------------------------------------------------------------------------
 type NavItem = {
   href: string
@@ -61,7 +62,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'System',
-    items: [{ href: '/app/admin/errors', label: 'Errors', icon: AlertTriangle }],
+    items: [
+      { href: '/app/admin/errors', label: 'Errors', icon: AlertTriangle },
+      { href: '/app/admin/settings', label: 'Settings', icon: Settings },
+    ],
   },
 ]
 
