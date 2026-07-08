@@ -551,13 +551,34 @@ export default async function LandingPage() {
               <p className="mt-3 text-slate-400 light:text-gray-500">Real ratings from real reports.</p>
             </ScrollReveal>
 
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {testimonials.map((t, i) => (
-                <ScrollReveal key={t.id} delayMs={i * 80}>
-                  <TestimonialCard t={t} />
-                </ScrollReveal>
-              ))}
-            </div>
+            {testimonials.length >= 4 ? (
+              <div className="marquee-group overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+                <div className="marquee-track-reverse flex w-max">
+                  <div className="flex shrink-0 gap-6 pr-6">
+                    {testimonials.map(t => (
+                      <div key={t.id} className="w-[320px] shrink-0">
+                        <TestimonialCard t={t} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex shrink-0 gap-6 pr-6" aria-hidden="true">
+                    {testimonials.map(t => (
+                      <div key={`${t.id}-dup`} className="w-[320px] shrink-0">
+                        <TestimonialCard t={t} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {testimonials.map((t, i) => (
+                  <ScrollReveal key={t.id} delayMs={i * 80}>
+                    <TestimonialCard t={t} />
+                  </ScrollReveal>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}

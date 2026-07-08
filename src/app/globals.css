@@ -102,6 +102,11 @@ select option {
   to { transform: translateX(-50%); }
 }
 
+@keyframes marquee-scroll-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
 .animate-blob-1 {
   animation: blob-drift-1 22s ease-in-out infinite;
 }
@@ -131,7 +136,12 @@ select option {
   animation: marquee-scroll 40s linear infinite;
 }
 
-.marquee-group:hover .marquee-track {
+.marquee-track-reverse {
+  animation: marquee-scroll-reverse 50s linear infinite;
+}
+
+.marquee-group:hover .marquee-track,
+.marquee-group:hover .marquee-track-reverse {
   animation-play-state: paused;
 }
 
@@ -219,6 +229,7 @@ select option {
   .animate-pulse-dot,
   .gradient-text,
   .marquee-track,
+  .marquee-track-reverse,
   .score-ring-progress,
   .gear-spin,
   .gear-spin-reverse,
