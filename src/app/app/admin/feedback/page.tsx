@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/db'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+import { Pagination } from '@/components/admin'
+import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { FeatureToggle } from './feature-toggle'
 
 export const metadata = { title: 'Feedback — Admin — Idea Engine' }
@@ -29,19 +31,31 @@ function Stars({ rating }: { rating: number }) {
 export default async function AdminFeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rating?: string }>
+  searchParams: Promise<{ rating?: string; page?: string }>
 }) {
-  const { rating: ratingParam } = await searchParams
+  const { rating: ratingParam, page: pageParam } = await searchParams
   const ratingFilter = ratingParam ? Number(ratingParam) : null
+  const page = parsePage(pageParam)
+  const { from, to } = pageRange(page)
 
   const service = createServiceClient()
 
-  const { data: feedback } = await service
+  // Stats (average + histogram) are computed over ALL feedback regardless of
+  // the rating filter or current page — a single-column select keeps this
+  // cheap even as the table grows past what we'd want to paginate.
+  const { data: allRatings } = await service.from('report_feedback').select('rating')
+  const ratingRows = allRatings ?? []
+
+  let listQuery = service
     .from('report_feedback')
-    .select('id, report_id, user_id, rating, comment, allow_public, featured, created_at')
+    .select('id, report_id, user_id, rating, comment, allow_public, featured, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
+  if (ratingFilter) listQuery = listQuery.eq('rating', ratingFilter)
+  const { data: feedback, count } = await listQuery.range(from, to)
 
   const rows = feedback ?? []
+  const totalCount = count ?? 0
+  const pages = totalPageCount(totalCount)
 
   const reportIds = [...new Set(rows.map(r => r.report_id))]
   const userIds = [...new Set(rows.map(r => r.user_id))]
@@ -75,19 +89,15 @@ export default async function AdminFeedbackPage({
     }
   })
 
-  const average = rows.length
-    ? rows.reduce((sum, r) => sum + r.rating, 0) / rows.length
+  const average = ratingRows.length
+    ? ratingRows.reduce((sum, r) => sum + r.rating, 0) / ratingRows.length
     : null
 
   const histogram = [5, 4, 3, 2, 1].map(star => ({
     star,
-    count: rows.filter(r => r.rating === star).length,
+    count: ratingRows.filter(r => r.rating === star).length,
   }))
   const maxCount = Math.max(1, ...histogram.map(h => h.count))
-
-  const visible = ratingFilter
-    ? enriched.filter(fb => fb.rating === ratingFilter)
-    : enriched
 
   return (
     <div>
@@ -103,7 +113,7 @@ export default async function AdminFeedbackPage({
           <p className="text-3xl font-bold text-white light:text-gray-900">
             {average !== null ? average.toFixed(2) : '—'}
           </p>
-          <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{rows.length} response{rows.length === 1 ? '' : 's'}</p>
+          <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{ratingRows.length} response{ratingRows.length === 1 ? '' : 's'}</p>
         </div>
 
         <div className="sm:col-span-2 rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
@@ -154,11 +164,11 @@ export default async function AdminFeedbackPage({
       </div>
 
       {/* List */}
-      {visible.length === 0 ? (
+      {enriched.length === 0 ? (
         <p className="text-sm text-slate-500 light:text-gray-400 py-8 text-center">No feedback yet.</p>
       ) : (
         <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
-          {visible.map(fb => (
+          {enriched.map(fb => (
             <div key={fb.id} className="px-5 py-4 flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -188,6 +198,16 @@ export default async function AdminFeedbackPage({
             </div>
           ))}
         </div>
+      )}
+
+      {totalCount > ADMIN_PAGE_SIZE && (
+        <Pagination
+          page={page}
+          totalPages={pages}
+          totalCount={totalCount}
+          basePath="/app/admin/feedback"
+          searchParams={{ rating: ratingParam }}
+        />
       )}
     </div>
   )

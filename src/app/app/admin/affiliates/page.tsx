@@ -1,4 +1,6 @@
 import { createServiceClient } from '@/lib/db'
+import { Pagination } from '@/components/admin'
+import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { AffiliatesClient, type AffiliateLinkRow } from './affiliates-client'
 
 export const metadata = { title: 'Affiliates — Admin — Idea Engine' }
@@ -25,22 +27,35 @@ function bucketClicks(clicks: { link_id: string; occurred_at: string }[]) {
 // all links + clicks via createServiceClient here is safe BECAUSE that gate
 // already ran — never fetch with the service client before it.
 
-export default async function AdminAffiliatesPage() {
+export default async function AdminAffiliatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page: pageParam } = await searchParams
+  const page = parsePage(pageParam)
+  const { from, to } = pageRange(page)
+
   const service = createServiceClient()
 
-  const { data: links } = await service
+  const { data: links, count } = await service
     .from('affiliate_links')
-    .select('id, slug, name, target_url, match_domains, match_terms, active, notes, created_at, updated_at')
+    .select('id, slug, name, target_url, match_domains, match_terms, active, notes, created_at, updated_at', {
+      count: 'exact',
+    })
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   const rows = links ?? []
+  const totalCount = count ?? 0
+  const pages = totalPageCount(totalCount)
 
-  // Per-link click counts (7d / 30d / all-time). Volume is low; fetch the
-  // (link_id, occurred_at) pairs once and bucket in JS rather than firing
-  // three count queries per link.
-  const { data: clicks } = await service
-    .from('affiliate_clicks')
-    .select('link_id, occurred_at')
+  // Per-link click counts (7d / 30d / all-time), scoped to just this page's
+  // links rather than every click ever recorded.
+  const linkIds = rows.map(l => l.id)
+  const { data: clicks } = linkIds.length
+    ? await service.from('affiliate_clicks').select('link_id, occurred_at').in('link_id', linkIds)
+    : { data: [] as { link_id: string; occurred_at: string }[] }
 
   const counts = bucketClicks(clicks ?? [])
 
@@ -57,6 +72,9 @@ export default async function AdminAffiliatesPage() {
         tracking link at delivery time. Deactivate a link to stop rewriting it (old reports update on next view).
       </p>
       <AffiliatesClient initialLinks={enriched} />
+      {totalCount > ADMIN_PAGE_SIZE && (
+        <Pagination page={page} totalPages={pages} totalCount={totalCount} basePath="/app/admin/affiliates" />
+      )}
     </div>
   )
 }

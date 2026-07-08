@@ -1,4 +1,6 @@
 import { createServiceClient } from '@/lib/db'
+import { Pagination } from '@/components/admin'
+import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { OffersClient, type OfferRow } from './offers-client'
 
 export const metadata = { title: 'Offers — Admin — Idea Engine' }
@@ -8,17 +10,29 @@ export const metadata = { title: 'Offers — Admin — Idea Engine' }
 // all offers via createServiceClient here is safe BECAUSE that gate already
 // ran — never fetch with the service client before it.
 
-export default async function AdminOffersPage() {
+export default async function AdminOffersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page: pageParam } = await searchParams
+  const page = parsePage(pageParam)
+  const { from, to } = pageRange(page)
+
   const service = createServiceClient()
 
-  const { data: offers } = await service
+  const { data: offers, count } = await service
     .from('offers')
     .select(
-      'id, code, description, percent_off, amount_off_cents, audience, show_on_homepage, show_in_account, starts_at, ends_at, max_redemptions, redemption_count, active, stripe_promotion_code_id, created_at'
+      'id, code, description, percent_off, amount_off_cents, audience, show_on_homepage, show_in_account, starts_at, ends_at, max_redemptions, redemption_count, active, stripe_promotion_code_id, created_at',
+      { count: 'exact' }
     )
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   const rows: OfferRow[] = offers ?? []
+  const totalCount = count ?? 0
+  const pages = totalPageCount(totalCount)
 
   return (
     <div>
@@ -28,6 +42,9 @@ export default async function AdminOffersPage() {
         redemption and Stripe promotion codes plug in later; codes aren&rsquo;t enforced at checkout yet.
       </p>
       <OffersClient initialOffers={rows} />
+      {totalCount > ADMIN_PAGE_SIZE && (
+        <Pagination page={page} totalPages={pages} totalCount={totalCount} basePath="/app/admin/offers" />
+      )}
     </div>
   )
 }
