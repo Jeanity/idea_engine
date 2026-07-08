@@ -1,61 +1,74 @@
-# NEXT UP — Dashboard polish, sample reports, mobile review, feedback cards
-(NOT STARTED — spec only, 2026-07-09)
+# Handoff — 2026-07-09 (Dashboard polish, feedback cards, scrolling testimonials, local time)
 
-Danny's request, dictated as a batch. Seven pieces, separable.
+**Committed on branch `feat/report-appendix-editlimit-demo-mode`, NOT pushed.** Two commits
+this session: `390eb9e` and `c658e68`. tsc/build/70 tests all clean. NOT click-tested (auth).
 
-## 1. Per-model AI cost breakdown in reports
-- The `_meta.steps[id]` data already records per-call model + cost. Surface this as a chart on
-  the admin dashboard showing cost broken down by model (e.g. Haiku vs Sonnet vs hybrid).
-- Add a **donut chart** where each model fills its percentage of total cost — same visual
-  language as the existing report-types donut on the dashboard.
+## What shipped — commit `390eb9e`
 
-## 2. Admin dashboard layout — uniform box heights
-- Introduce a **half-height / full-height** sizing system for dashboard widgets so they tile
-  neatly. When two half-height boxes (e.g. AI Costs + Reports) stack, they should equal the
-  height of one full-height box (e.g. Overview).
-- Rule: if a widget's content doesn't fit legibly at half-height, it **must expand to
-  full-height** (e.g. the Sales box needs full height).
-- This gives Danny a tidy grid: he can arrange half+half beside a full, or fulls side by side,
-  and everything lines up. Applies to the existing Edit-layout drag/resize system — snap
-  heights to half/full increments rather than free-form.
+1. **Sample report updated** — `src/lib/sample-report.ts` now includes `marketing_plan` (5
+   channels, starter budget), `why_this_can_work`, `one_thing_to_do`, `validation_copy` sections.
+   The public `/sample-report` page now renders all current tabs.
 
-## 3. Update sample report — add marketing page
-- The static sample report (`src/lib/sample-report.ts` / `/sample-report`) predates the
-  marketing tab. Add sample marketing data so the public sample shows all current tabs.
+2. **Dashboard half/full height system** — `WidgetDef` and `LayoutItem` now carry a `height:
+   'half' | 'full'` dimension alongside the existing `span`. CSS grid uses `row-span-1` /
+   `row-span-2` with `gridAutoRows: minmax(200px, auto)`. Edit mode shows ½H / 1H toggle
+   buttons (separated by a divider from the width buttons). Default heights: KPI cards, report
+   types, report costs, affiliates, feedback = half; overview chart, sales = full. AdminCard
+   is now `flex flex-col`, WidgetCard body is `flex-1`, StatCard sparkline uses `mt-auto` —
+   all so cards stretch to fill their grid slot. Saved layouts auto-reconcile the new `height`
+   field (old layouts without it get the widget's `defaultHeight`).
 
-## 4. Admin sample-report management + public sample gallery
-- **Admin UI** (`/app/admin/sample-reports` or under a Content group): create and select sample
+3. **Per-model AI cost donut** — new dashboard widget `ai-cost-by-model` (half-height, span 1).
+   The `/api/admin/dashboard` route aggregates `cost_usd` from `sections._meta.steps` grouped
+   by model across all completed reports. `CostsData` interface extended with `costsByModel`.
+   Model names shortened for display (`claude-haiku-4.5-20251001` → `haiku-4.5`). Palette:
+   amber/indigo/emerald/pink/cyan/orange (6 colours cycling).
+
+4. **Local timezone** — all date computations switched from UTC to browser local time:
+   - `period-picker.tsx`: `toLocalDate()` replaces `toISOString().slice(0,10)`.
+   - `todays-sales-widget.tsx`, `report-costs-widget.tsx`: same `toLocalDate()` / local
+     date arithmetic.
+   - `overview-chart.tsx`, `growth-graphs.tsx`: new `utcHourToLocal()` converts UTC `HH:00`
+     labels to the browser's timezone for hourly chart axes.
+   - Sublabels changed: "Hour buckets are UTC." → "Hourly buckets, local time." /
+     "Day buckets are UTC calendar days." → "Daily buckets."
+
+5. **New period presets** — `PeriodPreset` type extended: `yesterday`, `wtd` (week to date,
+   Monday-based), `mtd` (month to date), `ytd` (year to date). Dashboard subtitle shows
+   readable labels ("Snapshot for week to date" etc.).
+
+## What shipped — commit `c658e68`
+
+6. **Admin feedback cards** — `src/app/app/admin/feedback/feedback-cards.tsx` (new client
+   component). The feedback page now renders entries as a responsive 3-column card grid
+   (1 col mobile, 2 tablet, 3 desktop) with client-side sort buttons: Date / Rating / Idea
+   type. Each card shows: stars, user name, archetype chip, comment (4-line clamp), date,
+   consent badge, and the existing `FeatureToggle`. Featured cards get an emerald border.
+   Rating filter chips remain (server-side, URL-based). Pagination still works below the cards.
+
+7. **Homepage scrolling testimonials** — when 4+ testimonials exist, the section switches
+   from a static grid to a **reverse-direction marquee** (scrolls right, opposite to the
+   report card marquee which scrolls left). CSS: `@keyframes marquee-scroll-reverse` (translateX
+   -50% → 0), `.marquee-track-reverse` (50s linear infinite), hover pauses, reduced-motion
+   stops. Under 4 testimonials: falls back to the original static ScrollReveal grid. Cards
+   are 320px wide with the same `TestimonialCard` component.
+
+## Still TODO from this batch
+
+### 4. Admin sample-report management + public sample gallery (NOT STARTED)
+- **Admin UI** (`/app/admin/sample-reports` or under Content group): create and select sample
   reports for the homepage. Admin can pick from existing real reports (anonymised/curated) or
-  create dedicated samples. Each sample tagged by idea type/archetype so there's coverage
-  across categories.
-- **Selectable list**: admin sees all samples, can feature/unfeature them, rotate which ones
-  appear on the homepage.
-- **Public sample page** (`/sample-report` updated): instead of one fixed sample, show a list
-  of sample cards (one per idea type) presented as static cards similar to the homepage
-  scrolling cards. Clicking a card opens the full sample report **in a popup modal** so the
-  user doesn't leave the page.
-- Needs a `sample_reports` table or a flag on `reports` (e.g. `is_sample`, `sample_title`,
-  `sample_archetype`) — decide at build time.
+  create dedicated samples. Each tagged by idea type/archetype.
+- **Selectable list**: admin sees all samples, can feature/unfeature, rotate which appear on
+  the homepage.
+- **Public sample page** (`/sample-report` updated): list of sample cards (one per idea type),
+  clicking opens full sample report **in a popup modal** (user stays on the page).
+- Needs a `sample_reports` table or a flag on `reports` — decide at build time.
 
-## 5. Mobile-responsive layout review (code-wide)
-- Full audit of every page/component for mobile breakpoints. Everything must look good on
-  phone-width viewports. Covers: homepage, report pages, wizard, account, admin dashboard,
-  admin lists, modals, the new sample gallery, etc.
-- Not a single fix — a systematic pass. Flag and fix issues per page.
-
-## 6. Homepage reviews — scrolling cards (opposite direction)
-- Once user reviews/testimonials accumulate, display them on the homepage as **scrolling cards
-  moving in the opposite direction** to the existing idea cards (visual contrast, shows
-  activity).
-- Cards show the review content, rating, idea type.
-
-## 7. Admin feedback cards — latest 15, sortable, feature-selectable
-- On the admin feedback page (or a dedicated section), show the **latest 15 reviews as cards**
-  (not just a table row list).
-- **Sortable by**: rating, date, idea type.
-- Admin can **select which ones to feature** on the homepage from this card view (toggle
-  featured status per card).
-- This replaces or augments the current feedback list for the purpose of homepage curation.
+### 5. Mobile-responsive layout review (code-wide, NOT STARTED)
+- Full audit of every page/component for mobile breakpoints. Systematic pass, not a single fix.
+- Covers: homepage, report pages, wizard, account, admin dashboard, admin lists, modals, the
+  new sample gallery.
 
 ---
 
