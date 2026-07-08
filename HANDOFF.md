@@ -1,3 +1,21 @@
+# Handoff — 2026-07-08 (Per-step hybrid model routing)
+
+**Committed on the branch.** After the Haiku experiment ($0.33, ~90% quality) Danny asked for
+multi-model routing. `STEP_MODELS` in generate-report.ts now routes per step:
+- **Haiku 4.5**: competitors, compliance, financing, marketing — the search/extract steps, whose
+  cost is dominated by search-result input tokens (competitors alone was $0.94 of a $1.70 Sonnet
+  run; Haiku's input rate is half).
+- **Sonnet 5**: cost estimation + synthesis — the judgment steps / the report's analytical voice.
+- Teasers + failure-fallbacks: Haiku (unchanged). Admin Settings `report_model` overrides EVERY
+  step when set; "App default" = hybrid. `model_version`/`_meta.model` records the override or
+  `hybrid (haiku + sonnet-5)`; true per-call models are always in `_meta.steps[].model`.
+- Expected COGS: **~$0.40–0.90/report** (from ~$1.20–1.70 all-Sonnet). Cost-estimate copy updated.
+- **Validation still owed:** n=1 evidence per model — run the 4B.3 quality matrix (now ~4× cheaper)
+  before treating hybrid quality as settled. Watch Haiku's gap_notes depth + JSON discipline in
+  `/app/admin/errors`.
+
+---
+
 # Handoff — 2026-07-08 (Hourly dashboard buckets + no chart hover-wash)
 
 **Uncommitted, same branch. No migration.** Danny: single-day dashboard ranges showed one lonely

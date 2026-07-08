@@ -62,9 +62,14 @@ export function ReportModelPicker({ current, options }: { current: string | null
             className="mt-1"
           />
           <span className="min-w-0">
-            <span className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-white light:text-gray-900">App default</span>
-              <span className="text-xs text-slate-500 light:text-gray-400">follows whatever the pipeline ships with (currently Sonnet 5)</span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-white light:text-gray-900">App default — hybrid routing</span>
+              </span>
+              <span className="block text-xs text-slate-500 light:text-gray-400 mt-0.5">
+                Haiku 4.5 for search/extract steps (competitors, compliance, financing, marketing);
+                Sonnet 5 for cost estimation and synthesis. Cheapest capable model per step.
+              </span>
             </span>
           </span>
         </label>

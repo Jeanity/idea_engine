@@ -226,11 +226,29 @@ export const generateReport = inngest.createFunction(
     const { reportId, ideaId, userId } = event.data
     const supabase = createServiceClient()
     const provider = await providerOverrideForUser(supabase, userId)
-    // Admin model experiment: the owner's report_model (admin Settings) swaps
-    // the model for every PRIMARY step this run. Fallback steps stay on Haiku
-    // (they exist to be cheap). undefined → callAI's default (claude-sonnet-5).
-    const model = await reportModelForUser(supabase, userId)
-    const effectiveModel = model ?? DEFAULT_MODEL
+
+    // Per-step model routing (cheapest capable model per step):
+    // search/extract steps run on Haiku — their cost is dominated by search-
+    // result INPUT tokens (competitors alone was $0.94 of a $1.70 Sonnet run)
+    // and Haiku's input rate is half Sonnet's, with quality holding up on
+    // extractive work (validated on the 2026-07-08 Haiku full run). Judgment
+    // steps (cost estimation, synthesis — the report's analytical voice,
+    // honesty rules, calibrated scores) stay on the default Sonnet.
+    // The admin's report_model (Settings page) overrides EVERY step for A/B
+    // experiments; failure-fallback steps are always Haiku regardless.
+    const STEP_MODELS = {
+      competitors: HAIKU_MODEL,
+      costs: DEFAULT_MODEL,
+      financing: HAIKU_MODEL,
+      compliance: HAIKU_MODEL,
+      marketing: HAIKU_MODEL,
+      synthesis: DEFAULT_MODEL,
+    } as const
+    const override = await reportModelForUser(supabase, userId)
+    const stepModel = (step: keyof typeof STEP_MODELS) => override ?? STEP_MODELS[step]
+    // Recorded in model_version + _meta.model (admin cost line). Per-call
+    // models are in _meta.steps[].model either way.
+    const effectiveModel = override ?? 'hybrid (haiku + sonnet-5)'
 
     // ── Fetch idea + answers ───────────────────────────────────
     const { data: idea } = await supabase
@@ -341,7 +359,7 @@ export const generateReport = inngest.createFunction(
         maxTokens,
         tag: 'report:competitors',
         tools: webSearchTool(5),
-        model,
+        model: stepModel('competitors'),
         provider,
       }),
       parseJsonArray,
@@ -423,7 +441,7 @@ export const generateReport = inngest.createFunction(
           system: COST_ESTIMATION_SYSTEM_PROMPT,
           maxTokens,
           tag: 'report:costs',
-          model,
+          model: stepModel('costs'),
           provider,
         }),
         parseJsonObject,
@@ -471,7 +489,7 @@ export const generateReport = inngest.createFunction(
           maxTokens,
           tag: 'report:financing',
           tools: webSearchTool(3),
-          model,
+          model: stepModel('financing'),
           provider,
         }),
         parseJsonArray,
@@ -501,7 +519,7 @@ export const generateReport = inngest.createFunction(
         maxTokens,
         tag: 'report:compliance',
         tools: webSearchTool(3),
-        model,
+        model: stepModel('compliance'),
         provider,
       }),
       parseJsonArray,
@@ -571,7 +589,7 @@ export const generateReport = inngest.createFunction(
         maxTokens,
         tag: 'report:marketing',
         tools: webSearchTool(3),
-        model,
+        model: stepModel('marketing'),
         provider,
       }),
       parseJsonObject,
@@ -612,7 +630,7 @@ export const generateReport = inngest.createFunction(
         system: SYNTHESIS_SYSTEM_PROMPT,
         maxTokens,
         tag: 'report:synthesis',
-        model,
+        model: stepModel('synthesis'),
         provider,
       }),
       r => extractJson(r.text) as SynthesisOutput,

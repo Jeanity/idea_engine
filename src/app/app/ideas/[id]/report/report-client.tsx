@@ -1475,7 +1475,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
       '• Cost estimation\n' +
       '• Compliance check (web search, max 3 searches)\n' +
       '• Synthesis\n\n' +
-      'Estimated cost: ~US$0.50–1.20 (higher if live searches retry/fall back)\n\nContinue?'
+      'Estimated cost: ~US$0.40–0.90 hybrid routing (more if a specific model is set in admin Settings)\n\nContinue?'
     )
     if (!ok) return
     setLoading(true)
@@ -1500,7 +1500,7 @@ function GenerateFullReportButton({ ideaId, onStart }: { ideaId: string; onStart
     <div className="rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-5 py-4 text-center">
       <p className="text-xs font-semibold text-amber-200 light:text-amber-900 mb-1">Admin — Test mode</p>
       <p className="text-xs text-amber-300 light:text-amber-700 mb-3">
-        Runs the full research pipeline. ~US$0.50–1.20 per run.
+        Runs the full research pipeline. ~US$0.40–0.90 per run (hybrid routing).
       </p>
       <button
         onClick={handleClick}

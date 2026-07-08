@@ -27,9 +27,10 @@ export default async function AdminSettingsPage() {
         <h2 className="font-semibold text-white light:text-gray-900 mb-1">Report model</h2>
         <p className="text-xs text-slate-500 light:text-gray-400 mb-4 leading-relaxed">
           Which Claude model generates <span className="font-medium">full reports for your own ideas</span> — compare quality and
-          cost across models (each report records its model and per-step cost in <span className="font-mono">_meta</span>).
-          Other users are never affected. Teasers and failure-fallbacks stay on Haiku regardless. Prices are per million tokens;
-          web search adds $10 per 1,000 searches on any model.
+          cost across models (each report records its models and per-step cost in <span className="font-mono">_meta</span>).
+          Picking a specific model overrides the hybrid routing for <span className="font-medium">every</span> step of your runs;
+          &ldquo;App default&rdquo; restores per-step routing. Other users are never affected. Teasers and failure-fallbacks stay on
+          Haiku regardless. Prices are per million tokens; web search adds $10 per 1,000 searches on any model.
         </p>
         <ReportModelPicker current={profile?.report_model ?? null} options={REPORT_MODEL_OPTIONS} />
       </div>
