@@ -193,7 +193,7 @@ export function OffersClient({ initialOffers }: { initialOffers: OfferRow[] }) {
   }
 
   const renderForm = (
-    <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/80 light:bg-white light:border-indigo-200 light:shadow-sm px-5 py-5 mb-6">
+    <div className="rounded-lg border border-indigo-500/30 bg-slate-900/80 light:bg-white light:border-indigo-200 light:shadow-sm px-5 py-5 mb-6">
       <h2 className="text-sm font-semibold text-white light:text-gray-900 mb-4">
         {editing === 'new' ? 'Add offer' : 'Edit offer'}
       </h2>
@@ -312,7 +312,7 @@ export function OffersClient({ initialOffers }: { initialOffers: OfferRow[] }) {
             ) : (
               <div
                 key={offer.id}
-                className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4"
+                className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">

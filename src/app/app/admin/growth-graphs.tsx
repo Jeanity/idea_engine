@@ -86,7 +86,7 @@ function ChartCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm p-5">
+    <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm p-5">
       <p className="text-sm font-medium text-white light:text-gray-900">{title}</p>
       {sublabel && <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5 mb-2">{sublabel}</p>}
       <div className="relative mt-2" style={{ width: '100%', height: 240 }}>
@@ -236,7 +236,7 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+          <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
             <p className="text-xs uppercase tracking-wide text-slate-500 light:text-gray-400 px-4 pt-4 pb-2">
               Top referrers
             </p>
@@ -274,7 +274,7 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+          <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
             <p className="text-xs uppercase tracking-wide text-slate-500 light:text-gray-400 px-4 pt-4 pb-2">
               Top campaigns
             </p>

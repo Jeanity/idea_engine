@@ -246,7 +246,7 @@ function SortableWidget({
       ref={setNodeRef}
       style={style}
       className={`relative ${SPAN_CLASS[span]} ${isDragging ? 'opacity-80' : ''} ${
-        editing ? 'rounded-2xl ring-2 ring-indigo-500/30 ring-offset-2 ring-offset-slate-950 light:ring-offset-gray-50' : ''
+        editing ? 'rounded-lg ring-2 ring-indigo-500/30 ring-offset-2 ring-offset-slate-950 light:ring-offset-gray-50' : ''
       }`}
     >
       {editing && (

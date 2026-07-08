@@ -16,7 +16,7 @@ interface SalesPayload {
 
 function StatTile({ label, value, sublabel, warn }: { label: string; value: string; sublabel?: string; warn?: boolean }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+    <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
       <p className="text-xs text-slate-500 light:text-gray-400 mb-1">{label}</p>
       <p className={`text-3xl font-bold ${warn ? 'text-amber-400 light:text-amber-600' : 'text-white light:text-gray-900'}`}>
         {value}
@@ -116,7 +116,7 @@ export function SalesClient() {
         </p>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
         <p className="text-xs uppercase tracking-wide text-slate-500 light:text-gray-400 px-5 pt-4 pb-2">
           Per-currency breakdown
         </p>

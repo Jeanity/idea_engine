@@ -13,7 +13,7 @@ export const metadata = { title: 'User — Admin — Idea Engine' }
 // the auth admin API is safe BECAUSE that gate already ran.
 
 const cardCls =
-  'rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5'
+  'rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5'
 
 const statusColor: Record<string, string> = {
   complete: 'bg-emerald-500/10 text-emerald-300 light:bg-emerald-50 light:text-emerald-700',

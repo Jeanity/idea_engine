@@ -36,7 +36,7 @@ export function UsersClient({ users }: { users: UserRow[] }) {
       {users.length === 0 ? (
         <p className="text-sm text-slate-500 light:text-gray-400 py-8 text-center">No users found.</p>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
+        <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
           {users.map(u => (
             <div key={u.id} className="px-5 py-4 flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0">

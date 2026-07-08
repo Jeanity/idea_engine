@@ -98,7 +98,7 @@ export default async function AdminFeedbackPage({
 
       {/* Stats: average + histogram */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+        <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
           <p className="text-xs text-slate-500 light:text-gray-400 mb-1">Average rating</p>
           <p className="text-3xl font-bold text-white light:text-gray-900">
             {average !== null ? average.toFixed(2) : '—'}
@@ -106,7 +106,7 @@ export default async function AdminFeedbackPage({
           <p className="text-xs text-slate-500 light:text-gray-400 mt-1">{rows.length} response{rows.length === 1 ? '' : 's'}</p>
         </div>
 
-        <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+        <div className="sm:col-span-2 rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
           <p className="text-xs text-slate-500 light:text-gray-400 mb-3">Ratings distribution</p>
           <div className="space-y-1.5">
             {histogram.map(({ star, count }) => (
@@ -157,7 +157,7 @@ export default async function AdminFeedbackPage({
       {visible.length === 0 ? (
         <p className="text-sm text-slate-500 light:text-gray-400 py-8 text-center">No feedback yet.</p>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
+        <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
           {visible.map(fb => (
             <div key={fb.id} className="px-5 py-4 flex items-start justify-between gap-4">
               <div className="min-w-0">

@@ -64,7 +64,7 @@ export function InviteUserForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/80 light:bg-white light:border-indigo-200 light:shadow-sm px-5 py-5 mb-6">
+    <div className="rounded-lg border border-indigo-500/30 bg-slate-900/80 light:bg-white light:border-indigo-200 light:shadow-sm px-5 py-5 mb-6">
       <h2 className="text-sm font-semibold text-white light:text-gray-900 mb-3">Invite a new user</h2>
       <div className="flex items-center gap-3 flex-wrap">
         <input
