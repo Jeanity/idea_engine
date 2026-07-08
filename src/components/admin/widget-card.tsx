@@ -33,7 +33,7 @@ export function WidgetCard({
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className={bodyClassName === '' ? 'p-5' : bodyClassName}>{children}</div>
+      <div className={`flex-1 ${bodyClassName === '' ? 'p-5' : bodyClassName}`}>{children}</div>
     </AdminCard>
   )
 }

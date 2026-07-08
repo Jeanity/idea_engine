@@ -17,7 +17,7 @@ export function AdminCard({
 }) {
   return (
     <div
-      className={`rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm ${
+      className={`flex flex-col rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm ${
         padded ? 'p-5' : ''
       } ${className}`}
     >

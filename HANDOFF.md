@@ -1,3 +1,64 @@
+# NEXT UP — Dashboard polish, sample reports, mobile review, feedback cards
+(NOT STARTED — spec only, 2026-07-09)
+
+Danny's request, dictated as a batch. Seven pieces, separable.
+
+## 1. Per-model AI cost breakdown in reports
+- The `_meta.steps[id]` data already records per-call model + cost. Surface this as a chart on
+  the admin dashboard showing cost broken down by model (e.g. Haiku vs Sonnet vs hybrid).
+- Add a **donut chart** where each model fills its percentage of total cost — same visual
+  language as the existing report-types donut on the dashboard.
+
+## 2. Admin dashboard layout — uniform box heights
+- Introduce a **half-height / full-height** sizing system for dashboard widgets so they tile
+  neatly. When two half-height boxes (e.g. AI Costs + Reports) stack, they should equal the
+  height of one full-height box (e.g. Overview).
+- Rule: if a widget's content doesn't fit legibly at half-height, it **must expand to
+  full-height** (e.g. the Sales box needs full height).
+- This gives Danny a tidy grid: he can arrange half+half beside a full, or fulls side by side,
+  and everything lines up. Applies to the existing Edit-layout drag/resize system — snap
+  heights to half/full increments rather than free-form.
+
+## 3. Update sample report — add marketing page
+- The static sample report (`src/lib/sample-report.ts` / `/sample-report`) predates the
+  marketing tab. Add sample marketing data so the public sample shows all current tabs.
+
+## 4. Admin sample-report management + public sample gallery
+- **Admin UI** (`/app/admin/sample-reports` or under a Content group): create and select sample
+  reports for the homepage. Admin can pick from existing real reports (anonymised/curated) or
+  create dedicated samples. Each sample tagged by idea type/archetype so there's coverage
+  across categories.
+- **Selectable list**: admin sees all samples, can feature/unfeature them, rotate which ones
+  appear on the homepage.
+- **Public sample page** (`/sample-report` updated): instead of one fixed sample, show a list
+  of sample cards (one per idea type) presented as static cards similar to the homepage
+  scrolling cards. Clicking a card opens the full sample report **in a popup modal** so the
+  user doesn't leave the page.
+- Needs a `sample_reports` table or a flag on `reports` (e.g. `is_sample`, `sample_title`,
+  `sample_archetype`) — decide at build time.
+
+## 5. Mobile-responsive layout review (code-wide)
+- Full audit of every page/component for mobile breakpoints. Everything must look good on
+  phone-width viewports. Covers: homepage, report pages, wizard, account, admin dashboard,
+  admin lists, modals, the new sample gallery, etc.
+- Not a single fix — a systematic pass. Flag and fix issues per page.
+
+## 6. Homepage reviews — scrolling cards (opposite direction)
+- Once user reviews/testimonials accumulate, display them on the homepage as **scrolling cards
+  moving in the opposite direction** to the existing idea cards (visual contrast, shows
+  activity).
+- Cards show the review content, rating, idea type.
+
+## 7. Admin feedback cards — latest 15, sortable, feature-selectable
+- On the admin feedback page (or a dedicated section), show the **latest 15 reviews as cards**
+  (not just a table row list).
+- **Sortable by**: rating, date, idea type.
+- Admin can **select which ones to feature** on the homepage from this card view (toggle
+  featured status per card).
+- This replaces or augments the current feedback list for the purpose of homepage curation.
+
+---
+
 # NEXT UP — Public site: footer, socials, blog/FAQ, contact form, account nav
 (NOT STARTED — spec only, 2026-07-08)
 

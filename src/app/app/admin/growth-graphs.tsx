@@ -79,6 +79,15 @@ function shortDay(day: string): string {
   return day.slice(5)
 }
 
+/** Offset a UTC 'HH:00' label to the browser's local timezone. */
+function utcHourToLocal(utcLabel: string): string {
+  const utcHour = parseInt(utcLabel, 10)
+  if (Number.isNaN(utcHour)) return utcLabel
+  const now = new Date()
+  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour))
+  return `${String(utcDate.getHours()).padStart(2, '0')}:00`
+}
+
 function ChartCard({
   title,
   sublabel,
@@ -140,10 +149,8 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
     fetchGraphs(period.from, period.to)
   }, [fetchGraphs, period])
 
-  // Single-day ranges come back as 24 'HH:00' hour buckets — label as-is;
-  // multi-day ranges are 'YYYY-MM-DD' and get shortened.
   const hourly = data?.granularity === 'hour'
-  const fmtBucket = hourly ? (d: string) => d : shortDay
+  const fmtBucket = hourly ? utcHourToLocal : shortDay
   const per = hourly ? 'per hour' : 'per day'
 
   const hasAnyTraffic = !!data && data.traffic.some(d => d.sessions > 0 || d.uniqueVisitors > 0)
@@ -156,7 +163,7 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
     <div className="mt-10">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
         <p className="text-xs uppercase tracking-wide text-slate-500 light:text-gray-400">Growth</p>
-        <p className="text-xs text-slate-500 light:text-gray-400">{hourly ? 'Hour buckets are UTC.' : 'Day buckets are UTC calendar days.'}</p>
+        <p className="text-xs text-slate-500 light:text-gray-400">{hourly ? 'Hourly buckets, local time.' : 'Daily buckets.'}</p>
       </div>
 
       {error && <p className="text-sm text-red-300 light:text-red-600 mb-4">{error}</p>}

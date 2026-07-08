@@ -311,4 +311,91 @@ export const SAMPLE_REPORT_SECTIONS: Record<string, unknown> = {
       rationale: 'If the pilot clears ~120 cups/day, equipment finance turns the van into a monthly cost the revenue already covers.',
     },
   ],
+
+  why_this_can_work: {
+    market_proof:
+      'Six active mobile coffee operators already serve Sydney weekends — that is not a warning, it is proof that people routinely pay $5.50 for a flat white at a market or sports ground. The established operators are booked out and turning down small venues, which means demand exceeds supply at the venue level even though the market looks competitive from the outside.',
+    your_edge:
+      'Every incumbent targets the marquee weekend markets and festival circuit. Junior sport, parkrun, and dawn trade yards before 7am are structurally ignored because they are too early, too small, or too suburban for a fitted van operator chasing $2k days. A cart-first operator with low overheads can profitably serve 80-cup venues that the big vans cannot justify.',
+    upside:
+      'At your stated goal of replacing a part-time income, the numbers work comfortably: 150 cups across two weekend mornings at $5.50 with ~73% gross margin is roughly $600/weekend before site fees. That clears a meaningful second income without touching weekdays — and every venue agreement you lock in is a recurring revenue slot, not a one-off sale.',
+  },
+
+  one_thing_to_do: {
+    action:
+      'This weekend, go to the nearest junior sport ground or parkrun at 6:30am with a thermos of good coffee and talk to 20 parents. Ask one question: "If someone was here selling proper flat whites for five bucks every Saturday, would you buy one?" Count the yeses.',
+    why_first:
+      'Everything else — the cart, the registrations, the Food Safety course — costs money or time. This costs a Saturday morning and tells you whether people at your target venue actually want what you are planning to sell. If 15 out of 20 say yes, every dollar you spend afterwards is backed by evidence, not hope.',
+  },
+
+  validation_copy: {
+    poll_question:
+      'Parents of Sydney — if a specialty coffee cart showed up at weekend sport/parkrun with $5 flat whites before 8am, would you buy? Yes / No / Depends on the coffee',
+    ad_line:
+      'Proper flat whites at junior sport — every Saturday from 6:30am. No instant, no urn, no waiting till the café opens.',
+    forum_post:
+      'Thinking of starting a coffee cart at Sydney weekend sport grounds and parkruns — the early-morning ones where the only option right now is an urn of instant from the canteen. I would do specialty beans, $5 flat whites, and be set up before 7am. Before I spend anything on equipment, I want to know: would you actually buy a proper coffee at the ground, or do you just grab one on the drive? And is $5 about right, or would you expect to pay less outside a café? Honest answers only — better to find out now.',
+  },
+
+  marketing_plan: {
+    strategy_summary:
+      'Your customers are parents and runners who are physically at the same venues every weekend — hyper-local, habit-driven, and reachable through the communities that organise those events. Start with free channels that put you directly in front of those groups, then layer in a small paid spend once you have a venue locked in and photos to show.',
+    free_first:
+      'Week 1, zero spend: join the Facebook groups for every junior sport club and parkrun within your service radius. Post a short intro — who you are, what you are planning, that you are looking for a venue partner — and ask if there is interest. Share a photo of your setup (even a test run at home). This seeds word-of-mouth before you have traded a single cup.',
+    channels: [
+      {
+        name: 'Local community Facebook groups (sport clubs, parkrun, parent groups)',
+        channel_type: 'free',
+        priority: 1,
+        why_this_channel: 'Your target customers — parents at sport and runners at parkrun — already gather in these groups weekly and discuss exactly where to get coffee.',
+        how_to_start: 'Join 5–8 relevant groups, post an intro with a photo of your setup, and ask the admin if you can share a "first weekend" announcement when you launch.',
+        est_cost: 'Free',
+        link: null,
+      },
+      {
+        name: 'Google Business Profile',
+        channel_type: 'free',
+        priority: 2,
+        why_this_channel: 'When someone searches "coffee near me" at a sports ground on a Saturday morning, a Google Business listing with your hours and location is what appears.',
+        how_to_start: 'Create a free listing with your service area set to your target suburbs, add weekend hours, and upload at least three photos of the cart and coffee.',
+        est_cost: 'Free',
+        link: '#',
+      },
+      {
+        name: 'Instagram (local food/coffee niche)',
+        channel_type: 'free',
+        priority: 3,
+        why_this_channel: 'Sydney has a strong local coffee culture on Instagram — latte art, market-morning shots, and venue tags spread organically among the exact audience you want.',
+        how_to_start: 'Post 3 photos per weekend (setup, pour, happy customers with permission), tag the venue and use local hashtags (#SydneyCoffee, #WeekendMarkets, #ParkrunSydney).',
+        est_cost: 'Free',
+        link: '#',
+      },
+      {
+        name: 'Venue partnerships (club newsletters, ground signage)',
+        channel_type: 'free',
+        priority: 4,
+        why_this_channel: 'Sports clubs and parkrun organisers already email hundreds of families weekly — a mention in their newsletter puts you in front of a captive, local audience for free.',
+        how_to_start: 'Offer the club a small per-cup donation or free coffees for volunteers in exchange for a newsletter mention and permission to put up a small A-frame sign on game days.',
+        est_cost: 'Free (cost is the volunteer coffees, ~A$15/session)',
+        link: null,
+      },
+      {
+        name: 'Meta ads (Facebook + Instagram, local targeting)',
+        channel_type: 'paid',
+        priority: 5,
+        why_this_channel: 'Once you have venue photos and a few customer posts, a small geo-targeted ad to parents within 10km of your venue drives awareness faster than organic alone.',
+        how_to_start: 'Boost your best-performing Instagram post to a 10km radius around your primary venue, targeting ages 25–45 with interests in coffee or local parenting groups.',
+        est_cost: 'A$5–10/day (A$35–70/week)',
+        link: '#',
+      },
+    ],
+    starter_budget: {
+      weekly_total: 'A$50/week to start',
+      allocation: [
+        { channel: 'Meta ads (Facebook + Instagram, local targeting)', amount: 'A$35–50/week' },
+        { channel: 'Venue partnerships (club newsletters, ground signage)', amount: 'A$15/week (volunteer coffees)' },
+      ],
+      note: 'Start paid ads only after your first two trading weekends — you need real photos and a confirmed venue. Scale to A$100/week once you can see which ad is actually driving new faces to the cart.',
+    },
+  },
 }

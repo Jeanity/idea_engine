@@ -64,6 +64,14 @@ function shortDay(day: string): string {
   return day.slice(5)
 }
 
+function utcHourToLocal(utcLabel: string): string {
+  const utcHour = parseInt(utcLabel, 10)
+  if (Number.isNaN(utcHour)) return utcLabel
+  const now = new Date()
+  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour))
+  return `${String(utcDate.getHours()).padStart(2, '0')}:00`
+}
+
 export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoint[] | null; granularity?: 'hour' | 'day' }) {
   const [metric, setMetric] = useState<Metric>('reports')
   const active = METRICS.find(m => m.key === metric)!
@@ -95,7 +103,7 @@ export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoi
   )
 
   return (
-    <WidgetCard title="Overview" subtitle={hourly ? 'Hourly activity (UTC) for the selected day' : 'Daily activity for the selected period'} action={tabs}>
+    <WidgetCard title="Overview" subtitle={hourly ? 'Hourly activity for the selected day' : 'Daily activity for the selected period'} action={tabs}>
       <div className="relative" style={{ width: '100%', height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data ?? []} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -106,7 +114,7 @@ export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoi
               </linearGradient>
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={hourly ? undefined : shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={hourly ? utcHourToLocal : shortDay} {...axisProps} />
             <YAxis allowDecimals={!!active.usd} {...axisProps} />
             <Tooltip {...tooltipStyle} formatter={active.usd ? v => fmtUsd(Number(v ?? 0)) : undefined} />
             <Area

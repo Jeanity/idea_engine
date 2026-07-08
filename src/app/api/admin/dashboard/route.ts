@@ -193,6 +193,31 @@ export async function GET(request: NextRequest) {
     displayName: nameById.get(f.user_id) ?? 'Unknown user',
   }))
 
+  // --- Per-model cost breakdown (from _meta.steps in sections JSONB). ---
+  const { data: metaRows, error: metaErr } = await service
+    .from('reports')
+    .select('sections')
+    .not('cost_usd', 'is', null)
+    .not('generation_completed_at', 'is', null)
+
+  if (metaErr) console.error('Admin dashboard: meta query failed:', metaErr)
+
+  const costByModel: Record<string, number> = {}
+  for (const row of metaRows ?? []) {
+    const meta = (row.sections as Record<string, unknown>)?._meta as
+      | { steps?: Record<string, { model?: string; cost_usd?: number }> }
+      | undefined
+    if (!meta?.steps) continue
+    for (const step of Object.values(meta.steps)) {
+      const model = step.model ?? 'unknown'
+      costByModel[model] = (costByModel[model] ?? 0) + (step.cost_usd ?? 0)
+    }
+  }
+
+  const costsByModel = Object.entries(costByModel)
+    .map(([model, totalUsd]) => ({ model, totalUsd: round4(totalUsd) }))
+    .sort((a, b) => b.totalUsd - a.totalUsd)
+
   return NextResponse.json({
     costs: {
       lastHour: { totalUsd: round4(lastHour.totalUsd), count: lastHour.count },
@@ -201,6 +226,7 @@ export async function GET(request: NextRequest) {
       last30d: { totalUsd: round4(last30d.totalUsd), count: last30d.count },
       average: { avgPerReportUsd: round4(avgPerReportUsd), count: allTimeCount },
       custom,
+      costsByModel,
     },
     affiliates,
     feedback,

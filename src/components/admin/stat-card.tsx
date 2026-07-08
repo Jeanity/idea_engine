@@ -76,7 +76,7 @@ export function StatCard({
       </div>
 
       {sparkline && sparkline.length > 1 && (
-        <div className="mt-3 h-10 w-full" aria-hidden="true">
+        <div className="mt-auto pt-3 h-10 w-full" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={sparkline.map((v, i) => ({ i, v }))} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
               <Line type="monotone" dataKey="v" stroke={accent} strokeWidth={2} dot={false} isAnimationActive={false} />

@@ -9,7 +9,7 @@ import { PeriodPicker, rangeForPreset, type PeriodRange } from './period-picker'
 import { GrowthGraphs } from './growth-graphs'
 import { DashboardGrid, type WidgetDef } from './dashboard-grid'
 import { OverviewChart, type OverviewPoint } from './overview-chart'
-import { ReportCostsWidget, type CostsData } from './report-costs-widget'
+import { ReportCostsWidget, type CostsData, type ModelCostEntry } from './report-costs-widget'
 import { TodaysSalesWidget } from './todays-sales-widget'
 
 const LIVE_POLL_MS = 30_000
@@ -68,6 +68,7 @@ function Stars({ rating }: { rating: number }) {
 }
 
 const DONUT_COLORS = ['#818cf8', '#34d399']
+const MODEL_DONUT_COLORS = ['#fbbf24', '#818cf8', '#34d399', '#f472b6', '#22d3ee', '#fb923c']
 
 function ReportTypesDonut({ initial, full }: { initial: number; full: number }) {
   const total = initial + full
@@ -102,6 +103,51 @@ function ReportTypesDonut({ initial, full }: { initial: number; full: number }) 
                 <span className="ml-auto text-sm font-semibold text-white light:text-gray-900">{d.value}</span>
                 <span className="w-10 text-right text-xs text-slate-500 light:text-gray-400">
                   {Math.round((d.value / total) * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </WidgetCard>
+  )
+}
+
+function shortModelName(model: string): string {
+  return model
+    .replace('claude-', '')
+    .replace(/-\d{8}$/, '')
+}
+
+function AiCostByModelDonut({ entries }: { entries: ModelCostEntry[] | null }) {
+  const total = entries?.reduce((sum, e) => sum + e.totalUsd, 0) ?? 0
+  return (
+    <WidgetCard title="AI cost by model" subtitle="All-time spend per model">
+      {!entries || total === 0 ? (
+        <div className="flex h-[180px] items-center justify-center text-xs text-slate-500 light:text-gray-400">
+          No AI cost data yet.
+        </div>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div style={{ width: 128, height: 128 }} className="shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={entries} dataKey="totalUsd" innerRadius={40} outerRadius={60} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                  {entries.map((_, i) => (
+                    <Cell key={i} fill={MODEL_DONUT_COLORS[i % MODEL_DONUT_COLORS.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="min-w-0 space-y-1.5">
+            {entries.map((d, i) => (
+              <div key={d.model} className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: MODEL_DONUT_COLORS[i % MODEL_DONUT_COLORS.length] }} aria-hidden="true" />
+                <span className="truncate text-xs text-slate-300 light:text-gray-700">{shortModelName(d.model)}</span>
+                <span className="ml-auto text-xs font-semibold text-white light:text-gray-900">{fmtUsd(d.totalUsd)}</span>
+                <span className="w-10 text-right text-[11px] text-slate-500 light:text-gray-400">
+                  {Math.round((d.totalUsd / total) * 100)}%
                 </span>
               </div>
             ))}
@@ -264,6 +310,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       {
         id: 'kpi-users',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <StatCard
             label="Users online"
@@ -277,6 +324,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       {
         id: 'kpi-reports',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <StatCard
             label="Reports"
@@ -292,6 +340,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       {
         id: 'kpi-signups',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <StatCard
             label="Signups"
@@ -307,6 +356,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       {
         id: 'kpi-revenue',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <StatCard
             label="Revenue"
@@ -322,6 +372,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
       {
         id: 'kpi-ai-cost',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <StatCard
             label="AI cost"
@@ -334,10 +385,11 @@ export function DashboardClient({ adminId }: { adminId: string }) {
           />
         ),
       },
-      { id: 'overview', defaultSpan: 3, node: <OverviewChart data={overviewData} granularity={graphs?.granularity ?? 'day'} /> },
+      { id: 'overview', defaultSpan: 3, defaultHeight: 'full', node: <OverviewChart data={overviewData} granularity={graphs?.granularity ?? 'day'} /> },
       {
         id: 'report-types',
         defaultSpan: 1,
+        defaultHeight: 'half',
         node: (
           <ReportTypesDonut
             initial={stats?.reportsCompleted.initial ?? 0}
@@ -345,15 +397,25 @@ export function DashboardClient({ adminId }: { adminId: string }) {
           />
         ),
       },
-      { id: 'report-costs', defaultSpan: 1, node: <ReportCostsWidget presets={dash?.costs ?? null} /> },
-      { id: 'todays-sales', defaultSpan: 1, node: <TodaysSalesWidget /> },
-      { id: 'latest-affiliates', defaultSpan: 1, node: <LatestAffiliates rows={dash?.affiliates ?? null} /> },
-      { id: 'latest-feedback', defaultSpan: 1, node: <LatestFeedback rows={dash?.feedback ?? null} /> },
+      { id: 'report-costs', defaultSpan: 1, defaultHeight: 'half', node: <ReportCostsWidget presets={dash?.costs ?? null} /> },
+      { id: 'ai-cost-by-model', defaultSpan: 1, defaultHeight: 'half', node: <AiCostByModelDonut entries={dash?.costs?.costsByModel ?? null} /> },
+      { id: 'todays-sales', defaultSpan: 1, defaultHeight: 'full', node: <TodaysSalesWidget /> },
+      { id: 'latest-affiliates', defaultSpan: 1, defaultHeight: 'half', node: <LatestAffiliates rows={dash?.affiliates ?? null} /> },
+      { id: 'latest-feedback', defaultSpan: 1, defaultHeight: 'half', node: <LatestFeedback rows={dash?.feedback ?? null} /> },
     ],
     [stats, sales, dash, graphs, reportsSeries, signupsSeries, revenueSeries, costSeries, overviewData, reportsTotal, revenueUsd, costTotalUsd]
   )
 
-  const periodLabel = period.from === period.to ? period.from : `${period.from} → ${period.to}`
+  const PRESET_LABELS: Record<string, string> = {
+    today: 'today',
+    yesterday: 'yesterday',
+    '7d': 'the last 7 days',
+    '30d': 'the last 30 days',
+    wtd: 'week to date',
+    mtd: 'month to date',
+    ytd: 'year to date',
+  }
+  const periodLabel = PRESET_LABELS[period.preset] ?? (period.from === period.to ? period.from : `${period.from} → ${period.to}`)
 
   return (
     <div>

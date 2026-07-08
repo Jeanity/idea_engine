@@ -14,6 +14,11 @@ export interface CostBucket {
   count: number
 }
 
+export interface ModelCostEntry {
+  model: string
+  totalUsd: number
+}
+
 export interface CostsData {
   lastHour: CostBucket
   today: CostBucket
@@ -21,6 +26,7 @@ export interface CostsData {
   last30d: CostBucket
   average: { avgPerReportUsd: number; count: number }
   custom: (CostBucket & { from: string; to: string }) | null
+  costsByModel?: ModelCostEntry[]
 }
 
 type Mode = 'average' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
@@ -43,14 +49,18 @@ function fmtUsd(n: number): string {
   }).format(n)
 }
 
-function todayUTC(): string {
-  return new Date().toISOString().slice(0, 10)
+function todayLocal(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export function ReportCostsWidget({ presets }: { presets: CostsData | null }) {
   const [mode, setMode] = useState<Mode>('daily')
-  const [customFrom, setCustomFrom] = useState(todayUTC())
-  const [customTo, setCustomTo] = useState(todayUTC())
+  const [customFrom, setCustomFrom] = useState(todayLocal())
+  const [customTo, setCustomTo] = useState(todayLocal())
   const [custom, setCustom] = useState<(CostBucket & { from: string; to: string }) | null>(null)
   const [loadingCustom, setLoadingCustom] = useState(false)
 
@@ -139,7 +149,7 @@ export function ReportCostsWidget({ presets }: { presets: CostsData | null }) {
             type="date"
             value={customTo}
             min={customFrom}
-            max={todayUTC()}
+            max={todayLocal()}
             onChange={e => {
               setCustomTo(e.target.value)
               if (e.target.value) fetchCustom(customFrom, e.target.value)

@@ -2,38 +2,75 @@
 
 import { useState } from 'react'
 
-export type PeriodPreset = 'today' | '7d' | '30d' | 'custom'
+export type PeriodPreset = 'today' | 'yesterday' | '7d' | '30d' | 'wtd' | 'mtd' | 'ytd' | 'custom'
 
 export interface PeriodRange {
   preset: PeriodPreset
-  /** yyyy-mm-dd, UTC, inclusive */
+  /** yyyy-mm-dd, local time, inclusive */
   from: string
-  /** yyyy-mm-dd, UTC, inclusive */
+  /** yyyy-mm-dd, local time, inclusive */
   to: string
 }
 
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+function toLocalDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
-// Ranges are computed in UTC (see Block 8 note: pick UTC, label it, so
-// dashboard/graph date buckets stay consistent with each other).
+function startOfWeek(d: Date): Date {
+  const copy = new Date(d)
+  const dow = copy.getDay()
+  const diff = dow === 0 ? 6 : dow - 1
+  copy.setDate(copy.getDate() - diff)
+  return copy
+}
+
 export function rangeForPreset(preset: Exclude<PeriodPreset, 'custom'>): PeriodRange {
-  const today = toISODate(new Date())
+  const now = new Date()
+  const today = toLocalDate(now)
+
   if (preset === 'today') return { preset, from: today, to: today }
 
+  if (preset === 'yesterday') {
+    const y = new Date(now)
+    y.setDate(y.getDate() - 1)
+    const yd = toLocalDate(y)
+    return { preset, from: yd, to: yd }
+  }
+
+  if (preset === 'wtd') {
+    return { preset, from: toLocalDate(startOfWeek(now)), to: today }
+  }
+
+  if (preset === 'mtd') {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    return { preset, from: toLocalDate(monthStart), to: today }
+  }
+
+  if (preset === 'ytd') {
+    const yearStart = new Date(now.getFullYear(), 0, 1)
+    return { preset, from: toLocalDate(yearStart), to: today }
+  }
+
+  // 7d / 30d
   const days = preset === '7d' ? 6 : 29
-  const from = new Date()
-  from.setUTCDate(from.getUTCDate() - days)
-  return { preset, from: toISODate(from), to: today }
+  const from = new Date(now)
+  from.setDate(from.getDate() - days)
+  return { preset, from: toLocalDate(from), to: today }
 }
 
 export const DEFAULT_PERIOD: PeriodRange = rangeForPreset('today')
 
 const PRESETS: { key: Exclude<PeriodPreset, 'custom'>; label: string }[] = [
   { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
   { key: '7d', label: '7d' },
   { key: '30d', label: '30d' },
+  { key: 'wtd', label: 'WTD' },
+  { key: 'mtd', label: 'MTD' },
+  { key: 'ytd', label: 'YTD' },
 ]
 
 const pillClass = (active: boolean) =>
@@ -44,10 +81,8 @@ const pillClass = (active: boolean) =>
   }`
 
 /**
- * Today / 7d / 30d / Custom (from–to) period picker. Controlled component —
- * the caller owns the selected range and re-fetches whatever it drives
- * on change. Reused by Blocks 7/8 (sales, growth graphs) alongside this
- * dashboard, so it stays free of any dashboard-specific data fetching.
+ * Period picker with preset ranges and custom date inputs. All dates are in
+ * the browser's local timezone so "Today" matches the user's actual day.
  */
 export function PeriodPicker({
   value,
@@ -58,10 +93,10 @@ export function PeriodPicker({
 }) {
   const [customFrom, setCustomFrom] = useState(value.preset === 'custom' ? value.from : value.to)
   const [customTo, setCustomTo] = useState(value.preset === 'custom' ? value.to : value.to)
-  const todayStr = toISODate(new Date())
+  const todayStr = toLocalDate(new Date())
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {PRESETS.map(({ key, label }) => (
         <button
           key={key}

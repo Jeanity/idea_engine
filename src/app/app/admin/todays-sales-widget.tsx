@@ -23,16 +23,20 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'custom', label: 'Custom' },
 ]
 
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+function toLocalDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function rangeFor(mode: Exclude<Mode, 'custom'>): { from: string; to: string } {
-  const to = toISODate(new Date())
+  const now = new Date()
+  const to = toLocalDate(now)
   const days = mode === '7d' ? 6 : 29
-  const from = new Date()
-  from.setUTCDate(from.getUTCDate() - days)
-  return { from: toISODate(from), to }
+  const from = new Date(now)
+  from.setDate(from.getDate() - days)
+  return { from: toLocalDate(from), to }
 }
 
 function fmtCurrency(cents: number, currency: string): string {
@@ -49,8 +53,8 @@ function fmtUsd(n: number): string {
 
 export function TodaysSalesWidget() {
   const [mode, setMode] = useState<Mode>('7d')
-  const [customFrom, setCustomFrom] = useState(toISODate(new Date()))
-  const [customTo, setCustomTo] = useState(toISODate(new Date()))
+  const [customFrom, setCustomFrom] = useState(toLocalDate(new Date()))
+  const [customTo, setCustomTo] = useState(toLocalDate(new Date()))
   const [data, setData] = useState<SalesPayload | null>(null)
 
   const fetchSales = useCallback((from: string, to: string) => {
@@ -141,7 +145,7 @@ export function TodaysSalesWidget() {
             type="date"
             value={customTo}
             min={customFrom}
-            max={toISODate(new Date())}
+            max={toLocalDate(new Date())}
             onChange={e => setCustomTo(e.target.value)}
             className="rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1.5 text-xs text-slate-200 light:border-gray-200 light:bg-white light:text-gray-800"
           />

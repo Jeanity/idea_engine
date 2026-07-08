@@ -28,17 +28,21 @@ import { GripVertical, LayoutGrid, RotateCcw, Check } from 'lucide-react'
 // layout state — no server data is touched.
 
 export type WidgetSpan = 1 | 2 | 3 | 4
+export type WidgetHeight = 'half' | 'full'
 
 export interface WidgetDef {
   id: string
   /** Default column span when no saved layout exists. */
   defaultSpan: WidgetSpan
+  /** Default row height. 'half' = one grid row, 'full' = two (stacking two halves = one full). */
+  defaultHeight: WidgetHeight
   node: ReactNode
 }
 
 interface LayoutItem {
   id: string
   span: WidgetSpan
+  height: WidgetHeight
 }
 
 // Literal class names so Tailwind's scanner keeps them. base grid is 1-col
@@ -50,11 +54,21 @@ const SPAN_CLASS: Record<WidgetSpan, string> = {
   4: 'lg:col-span-4',
 }
 
+const HEIGHT_CLASS: Record<WidgetHeight, string> = {
+  half: 'lg:row-span-1',
+  full: 'lg:row-span-2',
+}
+
 const SPAN_OPTIONS: { span: WidgetSpan; label: string; title: string }[] = [
   { span: 1, label: '¼', title: 'Quarter width' },
   { span: 2, label: '½', title: 'Half width' },
   { span: 3, label: '¾', title: 'Three-quarter width' },
   { span: 4, label: '1', title: 'Full width' },
+]
+
+const HEIGHT_OPTIONS: { height: WidgetHeight; label: string; title: string }[] = [
+  { height: 'half', label: '½H', title: 'Half height' },
+  { height: 'full', label: '1H', title: 'Full height' },
 ]
 
 function storageKey(adminId: string): string {
@@ -65,11 +79,15 @@ function isSpan(n: unknown): n is WidgetSpan {
   return n === 1 || n === 2 || n === 3 || n === 4
 }
 
+function isHeight(h: unknown): h is WidgetHeight {
+  return h === 'half' || h === 'full'
+}
+
 /**
  * Reconcile a persisted layout with the current widget set: keep saved order +
- * span for ids that still exist, drop unknown ids, and append any newly-added
- * widgets at their default span. Keeps old saved layouts working as the widget
- * set evolves.
+ * span + height for ids that still exist, drop unknown ids, and append any
+ * newly-added widgets at their defaults. Keeps old saved layouts working as the
+ * widget set evolves.
  */
 function reconcile(saved: LayoutItem[] | null, widgets: WidgetDef[]): LayoutItem[] {
   const byId = new Map(widgets.map(w => [w.id, w]))
@@ -78,17 +96,21 @@ function reconcile(saved: LayoutItem[] | null, widgets: WidgetDef[]): LayoutItem
   for (const item of saved ?? []) {
     const def = byId.get(item.id)
     if (!def || seen.has(item.id)) continue
-    out.push({ id: item.id, span: isSpan(item.span) ? item.span : def.defaultSpan })
+    out.push({
+      id: item.id,
+      span: isSpan(item.span) ? item.span : def.defaultSpan,
+      height: isHeight(item.height) ? item.height : def.defaultHeight,
+    })
     seen.add(item.id)
   }
   for (const w of widgets) {
-    if (!seen.has(w.id)) out.push({ id: w.id, span: w.defaultSpan })
+    if (!seen.has(w.id)) out.push({ id: w.id, span: w.defaultSpan, height: w.defaultHeight })
   }
   return out
 }
 
 function defaultLayout(widgets: WidgetDef[]): LayoutItem[] {
-  return widgets.map(w => ({ id: w.id, span: w.defaultSpan }))
+  return widgets.map(w => ({ id: w.id, span: w.defaultSpan, height: w.defaultHeight }))
 }
 
 export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; adminId: string }) {
@@ -155,6 +177,14 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
     })
   }
 
+  function setHeight(id: string, height: WidgetHeight) {
+    setLayout(prev => {
+      const next = prev.map(i => (i.id === id ? { ...i, height } : i))
+      persist(next)
+      return next
+    })
+  }
+
   function resetLayout() {
     const next = defaultLayout(widgets)
     setLayout(next)
@@ -200,14 +230,16 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 gap-4 lg:auto-rows-min lg:grid-flow-row-dense lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-flow-row-dense lg:grid-cols-4" style={{ gridAutoRows: 'minmax(200px, auto)' }}>
             {items.map(item => (
               <SortableWidget
                 key={item.id}
                 id={item.id}
                 span={item.span}
+                height={item.height}
                 editing={editing}
                 onSpanChange={span => setSpan(item.id, span)}
+                onHeightChange={height => setHeight(item.id, height)}
               >
                 {nodeById.get(item.id)}
               </SortableWidget>
@@ -222,14 +254,18 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
 function SortableWidget({
   id,
   span,
+  height,
   editing,
   onSpanChange,
+  onHeightChange,
   children,
 }: {
   id: string
   span: WidgetSpan
+  height: WidgetHeight
   editing: boolean
   onSpanChange: (span: WidgetSpan) => void
+  onHeightChange: (height: WidgetHeight) => void
   children: ReactNode
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
@@ -245,7 +281,7 @@ function SortableWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative ${SPAN_CLASS[span]} ${isDragging ? 'opacity-80' : ''} ${
+      className={`relative ${SPAN_CLASS[span]} ${HEIGHT_CLASS[height]} ${isDragging ? 'opacity-80' : ''} ${
         editing ? 'rounded-lg ring-2 ring-indigo-500/30 ring-offset-2 ring-offset-slate-950 light:ring-offset-gray-50' : ''
       }`}
     >
@@ -280,9 +316,29 @@ function SortableWidget({
               </button>
             ))}
           </div>
+          <div className="mx-0.5 hidden h-4 w-px bg-white/10 light:bg-gray-200 lg:block" aria-hidden="true" />
+          <div className="hidden items-center gap-0.5 lg:flex" role="group" aria-label="Widget height">
+            {HEIGHT_OPTIONS.map(opt => (
+              <button
+                key={opt.height}
+                type="button"
+                title={opt.title}
+                aria-label={opt.title}
+                aria-pressed={height === opt.height}
+                onClick={() => onHeightChange(opt.height)}
+                className={`h-6 w-6 rounded-md text-xs font-medium transition-colors ${
+                  height === opt.height
+                    ? 'bg-indigo-500/20 text-indigo-300 light:bg-indigo-100 light:text-indigo-700'
+                    : 'text-slate-400 hover:bg-white/10 hover:text-white light:text-gray-400 light:hover:bg-gray-100 light:hover:text-gray-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
-      {children}
+      <div className="h-full [&>*]:h-full">{children}</div>
     </div>
   )
 }
