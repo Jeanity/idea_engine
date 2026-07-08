@@ -1,3 +1,102 @@
+# NEXT UP — Bug report widget (NOT STARTED — spec only, 2026-07-08)
+
+Danny's request. Not built — he was low on usage this session, picking up next time. Lets a user
+flag a bug from inside a report (initial/teaser or full) with an optional screenshot, sent straight
+to the admin.
+
+## Requirements (Danny's words, mapped)
+1. A "report bug" box/modal, **hidden until** a small link or icon is clicked — not in the way.
+2. Visible on **both** report pages: the initial (teaser) report and the full ("final") report.
+3. Submitting sends the report **straight to admin** — i.e. it must land somewhere Danny actually
+   sees it, not just sit in a table nobody looks at.
+4. Users can **attach a screenshot** when reporting.
+5. A dedicated **bug report page** (admin-facing, to review/manage reports).
+
+## Recommended design
+
+### Trigger placement
+Small text link or subtle icon-button (e.g. a bug/flag icon), **fixed near the bottom of the
+report viewport** — same register as the existing "Regenerate initial report" / "Review / edit
+answers" links already in `report-client.tsx` (both `TeaserViewer` and `FullReportViewer` render
+those in a small centered link stack under the CTA). Adding "Report a bug" as one more line in that
+same stack keeps it consistent and out of the way — no floating action button needed. Opens a modal
+(don't build a separate route for the form — keep it in-context so the user doesn't lose their
+place in the report).
+
+### Modal contents
+- What went wrong (required, textarea)
+- Optional screenshot attachment (see below)
+- Auto-captured context (silent, not user-facing fields): `idea_id`, `report_id`, current tab
+  (`activeTab` state already exists in `FullReportViewer`), `report.status`, browser `navigator.
+  userAgent`, current URL. This is what makes the report actually actionable — "something's wrong"
+  with no context is useless to Danny.
+- Submit button + a lightweight confirmation ("Thanks — we'll take a look") that closes the modal.
+
+### Screenshot attachment
+No file-upload/storage infra exists yet in this codebase (checked — no Supabase Storage bucket is
+configured anywhere). Two viable approaches, pick one:
+- **(a) Supabase Storage bucket** (`bug-screenshots`, private, RLS: insert-only for authenticated
+  users, no public read — admin reads via service client): user picks a file via `<input type=
+  "file" accept="image/*">`, upload via `supabase.storage.from('bug-screenshots').upload(...)`
+  client-side, store the returned path on the bug_reports row. Standard, scales fine, needs the
+  bucket created in Supabase (dashboard, not a SQL migration).
+- **(b) Client-side screen capture** (e.g. a canvas-based DOM screenshot of the report content) —
+  more "automatic" (no file picker) but heavier to implement correctly (cross-origin images, fonts,
+  scroll state) and overkill given the user is already looking at the exact page — a manual
+  screenshot + upload is simpler and more reliable. **Recommend (a).**
+- Max file size (e.g. 5MB) and image-only MIME check before upload.
+
+### Data model — migration 011 (not yet written)
+New `bug_reports` table:
+```
+id, created_at, user_id (nullable — best-effort, don't block on auth edge cases),
+idea_id, report_id, report_tab text null, description text not null,
+screenshot_path text null (Storage object path, not a public URL),
+browser_info text null, page_url text null,
+status text not null default 'open' check (status in ('open','triaged','resolved','wontfix')),
+admin_notes text null
+```
+RLS: insert-only for `authenticated` (their own `user_id`), no select for anon/authenticated
+(reports shouldn't be user-readable after submission) — service-role/admin reads only, same
+pattern as `error_log` (migration 009) and `offers`/`affiliate_links` writes.
+
+### "Sent straight to admin" — email notification
+Requirement #3 needs Danny to actually *see* it without polling a page. Two options, can do both:
+- **In-app**: reuse the `logError()` pattern (`src/lib/log-error.ts`) as precedent — but bug reports
+  are user-submitted content, not error diagnostics, so they should NOT go into `error_log`; give
+  them their own table (above) and their own admin page, linked from the sidebar (`System` group,
+  next to Errors — `/app/admin/bugs`, `AlertTriangle`-style icon, maybe `Bug` from lucide-react).
+- **Email**: same SMTP blocker as the feedback-replies spec above and the Users "invite" action —
+  Supabase SMTP still isn't configured. Once it is, a bug-report insert should trigger a
+  notification email to `ADMIN_EMAIL`. Until then, the admin page + a next-session polling habit
+  is the fallback — flag this dependency to Danny same as the other two features blocked on it.
+
+### Admin bug reports page (`/app/admin/bugs`)
+Same shape as `/app/admin/errors` (already built, migration 009) — reuse conventions: newest-first,
+R3 pagination (`src/lib/admin-pagination.ts`), status filter chips (open/triaged/resolved/wontfix),
+expandable rows for full description + browser info + link to the idea/report, a way to view the
+attached screenshot (signed URL via service client — `supabase.storage.from('bug-screenshots').
+createSignedUrl(path, 60)`, not a public URL, since the bucket is private), and a status-update
+control (open → triaged → resolved, simple dropdown/buttons, no typed-confirm needed since nothing
+is destructive here — only a hard "delete report" action would need the deletion ground rule).
+New route `/api/admin/bugs` (list/update), self-gates `isAdminEmail` like every other admin route.
+
+### Submission route
+`POST /api/ideas/[id]/report/bug` (or a flatter `/api/bug-reports`) — authenticated (signed-in
+users only, matches how feedback/regenerate routes work), validates description non-empty,
+uploads/records the screenshot path if present, inserts the row, and (once SMTP exists) fires the
+notification email.
+
+## Dependencies / open decisions for Danny
+1. **Supabase Storage bucket must be created** (dashboard action, not a migration) before screenshot
+   upload works — flag this the same way the SMTP gap is flagged elsewhere in this file.
+2. **Email notification is blocked on SMTP** (shared blocker with feedback-replies +  Users invite).
+3. Confirm the trigger copy/icon — plain text link ("Report a bug") vs. an icon-only button; text
+   link is simpler and matches the existing "Regenerate initial report" / "Review / edit answers"
+   style already used in both viewers.
+
+---
+
 # Handoff — 2026-07-08 (Per-step hybrid model routing)
 
 **Committed on the branch.** After the Haiku experiment ($0.33, ~90% quality) Danny asked for
