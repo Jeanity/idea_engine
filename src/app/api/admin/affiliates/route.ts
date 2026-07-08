@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { logError } from '@/lib/log-error'
 import type { Database } from '@/lib/database.types'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'That slug is already in use.' }, { status: 409 })
     }
     console.error('Error creating affiliate link:', error)
+    await logError({ source: 'api:admin/affiliates', message: `Create affiliate link failed: ${error.message}`, detail: error, path: 'POST /api/admin/affiliates' })
     return NextResponse.json({ error: 'Failed to create link.' }, { status: 500 })
   }
 
@@ -131,6 +133,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'That slug is already in use.' }, { status: 409 })
     }
     console.error('Error updating affiliate link:', error)
+    await logError({ source: 'api:admin/affiliates', message: `Update affiliate link failed: ${error.message}`, detail: error, path: 'PATCH /api/admin/affiliates' })
     return NextResponse.json({ error: 'Failed to update link.' }, { status: 500 })
   }
 
@@ -156,6 +159,7 @@ export async function DELETE(request: NextRequest) {
 
   if (error) {
     console.error('Error deleting affiliate link:', error)
+    await logError({ source: 'api:admin/affiliates', message: `Delete affiliate link failed: ${error.message}`, detail: error, path: 'DELETE /api/admin/affiliates' })
     return NextResponse.json({ error: 'Failed to delete link.' }, { status: 500 })
   }
 

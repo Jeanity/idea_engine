@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { logError } from '@/lib/log-error'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Admin-only toggle for `report_feedback.featured`. The admin Feedback page
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('Error updating feedback featured flag:', error)
+    await logError({ source: 'api:admin/feedback', message: `Update feedback featured flag failed: ${error.message}`, detail: error, path: 'POST /api/admin/feedback' })
     return NextResponse.json({ error: 'Failed to update feedback' }, { status: 500 })
   }
 

@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { logError } from '@/lib/log-error'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Admin-only "add account" action. The /app/admin layout gates the PAGE, but
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error(`[admin] invite failed: ${admin.email} tried to invite ${email}:`, error.message)
+    await logError({ source: 'api:admin/users', message: `Invite failed for ${email}: ${error.message}`, detail: { inviteEmail: email, adminEmail: admin.email, error: error.message }, path: 'POST /api/admin/users/invite' })
     const looksLikeSmtp = /smtp|mail|email/i.test(error.message)
     return NextResponse.json(
       {

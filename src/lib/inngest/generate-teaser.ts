@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
 import { providerOverrideForUser } from '@/lib/demo-mode'
 import { TEASER_SYSTEM_PROMPT, buildTeaserMessage } from '@/lib/prompts/teaser'
+import { logError, errorMessage } from '@/lib/log-error'
 import type { Json } from '@/lib/database.types'
 
 interface Question {
@@ -33,6 +34,7 @@ export const generateTeaser = inngest.createFunction(
   },
   async ({ event }: { event: { data: { reportId: string; ideaId: string; userId: string } } }) => {
     const { reportId, ideaId, userId } = event.data
+    try {
     const supabase = createServiceClient()
     const provider = await providerOverrideForUser(supabase, userId)
 
@@ -99,8 +101,20 @@ export const generateTeaser = inngest.createFunction(
       sections: {},
       status: 'complete',
       generation_completed_at: new Date().toISOString(),
-      model_version: 'claude-sonnet-4-6',
+      model_version: 'claude-haiku-4-5-20251001',
       cost_usd: Math.round(((existingReport?.cost_usd ?? 0) + costUsd) * 10000) / 10000,
     }).eq('id', reportId)
+    } catch (err) {
+      // Best-effort record then rethrow so Inngest's own retry/failure handling
+      // (retries: 2) is unchanged — this only adds visibility to the admin log.
+      await logError({
+        source: 'inngest:generate-teaser',
+        message: `Teaser generation failed for report ${reportId}: ${errorMessage(err)}`,
+        detail: err,
+        path: 'generate-teaser',
+        userId,
+      })
+      throw err
+    }
   }
 )

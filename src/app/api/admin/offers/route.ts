@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { logError } from '@/lib/log-error'
 import type { Database, OfferAudience } from '@/lib/database.types'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -173,6 +174,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'That code is already in use.' }, { status: 409 })
     }
     console.error('Error creating offer:', error)
+    await logError({ source: 'api:admin/offers', message: `Create offer failed: ${error.message}`, detail: error, path: 'POST /api/admin/offers' })
     return NextResponse.json({ error: 'Failed to create offer.' }, { status: 500 })
   }
 
@@ -201,6 +203,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'That code is already in use.' }, { status: 409 })
     }
     console.error('Error updating offer:', error)
+    await logError({ source: 'api:admin/offers', message: `Update offer failed: ${error.message}`, detail: error, path: 'PATCH /api/admin/offers' })
     return NextResponse.json({ error: 'Failed to update offer.' }, { status: 500 })
   }
 
@@ -227,6 +230,7 @@ export async function DELETE(request: NextRequest) {
 
   if (error) {
     console.error('Error deleting offer:', error)
+    await logError({ source: 'api:admin/offers', message: `Delete offer failed: ${error.message}`, detail: error, path: 'DELETE /api/admin/offers' })
     return NextResponse.json({ error: 'Failed to delete offer.' }, { status: 500 })
   }
 

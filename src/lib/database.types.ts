@@ -30,6 +30,7 @@ export type Database = {
           default_region: string | null
           marketing_opt_in: boolean
           demo_mode: boolean
+          report_model: string | null
           last_seen_at: string | null
           acquisition: Json | null
           created_at: string
@@ -43,6 +44,7 @@ export type Database = {
           default_region?: string | null
           marketing_opt_in?: boolean
           demo_mode?: boolean
+          report_model?: string | null
           last_seen_at?: string | null
           acquisition?: Json | null
           created_at?: string
@@ -55,6 +57,7 @@ export type Database = {
           default_region?: string | null
           marketing_opt_in?: boolean
           demo_mode?: boolean
+          report_model?: string | null
           last_seen_at?: string | null
           acquisition?: Json | null
           updated_at?: string
@@ -339,6 +342,33 @@ export type Database = {
             referencedColumns: ['id']
           }
         ]
+      }
+      error_log: {
+        Row: {
+          id: string
+          occurred_at: string
+          source: string
+          message: string
+          detail: Json | null
+          path: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          occurred_at?: string
+          source: string
+          message: string
+          detail?: Json | null
+          path?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          source?: string
+          message?: string
+          detail?: Json | null
+          path?: string | null
+        }
+        Relationships: []
       }
       affiliate_links: {
         Row: {

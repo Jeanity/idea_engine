@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
+import { logError } from '@/lib/log-error'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Admin-only "remove account" action. The /app/admin layout gates the PAGE,
@@ -64,6 +65,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const { error: deleteError } = await service.auth.admin.deleteUser(id)
   if (deleteError) {
     console.error(`[admin] delete failed: ${admin.email} tried to delete ${targetEmail} (${id}):`, deleteError.message)
+    await logError({ source: 'api:admin/users', message: `Delete account failed for ${targetEmail}: ${deleteError.message}`, detail: { targetId: id, targetEmail, adminEmail: admin.email, error: deleteError.message }, path: `DELETE /api/admin/users/${id}` })
     return NextResponse.json({ error: 'Failed to delete account.' }, { status: 500 })
   }
 
