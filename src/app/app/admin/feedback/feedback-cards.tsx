@@ -66,7 +66,7 @@ export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className="text-xs text-slate-500 light:text-gray-400">Sort:</span>
         {SORT_OPTIONS.map(opt => (
           <button

@@ -140,7 +140,7 @@ export default async function AdminUsersPage({
         {grandTotal} account{grandTotal === 1 ? '' : 's'} total.
       </p>
 
-      <form action="/app/admin/users" method="GET" className="flex items-center gap-2 mb-6">
+      <form action="/app/admin/users" method="GET" className="flex flex-wrap items-center gap-2 mb-6">
         <input
           type="text"
           name="q"

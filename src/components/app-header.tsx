@@ -31,12 +31,12 @@ export async function AppHeader({ email }: { email: string }) {
   }
 
   return (
-    <header className="bg-slate-950/80 backdrop-blur border-b border-white/10 light:bg-white/80 light:border-gray-200 px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-6">
+    <header className="bg-slate-950/80 backdrop-blur border-b border-white/10 light:bg-white/80 light:border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-6">
         <Link href="/app" className="font-semibold text-white light:text-gray-900 hover:text-slate-200 light:hover:text-gray-700 transition-colors">
           Idea Engine
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
           {hasIdeas && (
             <Link href="/app/account" className="text-sm text-slate-300 light:text-gray-600 hover:text-white light:hover:text-gray-900 font-medium transition-colors">
               My ideas
@@ -63,7 +63,7 @@ export async function AppHeader({ email }: { email: string }) {
           )}
         </nav>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
         <ThemeToggle />
         <Link
           href="/app/account"

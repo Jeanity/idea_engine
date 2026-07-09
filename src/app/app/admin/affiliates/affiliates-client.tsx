@@ -249,7 +249,7 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
                   </button>
 
                   {confirmingDelete === link.id ? (
-                    <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex flex-wrap items-center gap-2">
                       <span className="text-xs text-red-300 light:text-red-600">Delete permanently? Clicks are lost.</span>
                       <button
                         onClick={() => confirmDelete(link.id)}

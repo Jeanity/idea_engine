@@ -125,32 +125,34 @@ export function SalesClient() {
         ) : currencies.length === 0 ? (
           <p className="text-sm text-slate-500 light:text-gray-400 px-5 pb-5">No purchases in this period yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-slate-500 light:text-gray-400 border-b border-white/10 light:border-gray-100">
-                <th className="px-5 py-2 font-medium">Currency</th>
-                <th className="px-5 py-2 font-medium">Revenue</th>
-                <th className="px-5 py-2 font-medium">Refunds</th>
-                <th className="px-5 py-2 font-medium">Net</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currencies.map(currency => (
-                <tr key={currency} className="border-b border-white/5 light:border-gray-50 last:border-0">
-                  <td className="px-5 py-2.5 uppercase text-slate-300 light:text-gray-700">{currency}</td>
-                  <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
-                    {formatCents(sales.revenueByCurrency[currency] ?? 0, currency)}
-                  </td>
-                  <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
-                    {formatCents(sales.refundsByCurrency[currency] ?? 0, currency)}
-                  </td>
-                  <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
-                    {formatCents(sales.netByCurrency[currency] ?? 0, currency)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-500 light:text-gray-400 border-b border-white/10 light:border-gray-100">
+                  <th className="px-5 py-2 font-medium">Currency</th>
+                  <th className="px-5 py-2 font-medium">Revenue</th>
+                  <th className="px-5 py-2 font-medium">Refunds</th>
+                  <th className="px-5 py-2 font-medium">Net</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currencies.map(currency => (
+                  <tr key={currency} className="border-b border-white/5 light:border-gray-50 last:border-0">
+                    <td className="px-5 py-2.5 uppercase text-slate-300 light:text-gray-700">{currency}</td>
+                    <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
+                      {formatCents(sales.revenueByCurrency[currency] ?? 0, currency)}
+                    </td>
+                    <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
+                      {formatCents(sales.refundsByCurrency[currency] ?? 0, currency)}
+                    </td>
+                    <td className="px-5 py-2.5 text-slate-200 light:text-gray-800">
+                      {formatCents(sales.netByCurrency[currency] ?? 0, currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

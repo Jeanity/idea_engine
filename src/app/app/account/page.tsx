@@ -167,7 +167,7 @@ export default async function MyIdeasPage() {
                     </p>
                   </Link>
 
-                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                  <div className="flex w-28 shrink-0 flex-col items-end gap-1.5 text-right sm:w-auto">
                     {/* A finished report gets an action button, not a status badge —
                         ideas.status never advances past 'researching' when a report
                         completes, so canDownload (a finished report existing) is the

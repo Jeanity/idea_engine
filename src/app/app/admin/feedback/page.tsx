@@ -120,7 +120,7 @@ export default async function AdminFeedbackPage({
       </div>
 
       {/* Rating filter */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         <span className="text-xs text-slate-500 light:text-gray-400">Filter:</span>
         <Link
           href="/app/admin/feedback"

@@ -354,7 +354,7 @@ export function OffersClient({ initialOffers }: { initialOffers: OfferRow[] }) {
                   </button>
 
                   {confirmingDelete === offer.id ? (
-                    <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex flex-wrap items-center gap-2">
                       <span className="text-xs text-red-300 light:text-red-600">Delete permanently?</span>
                       <button
                         onClick={() => confirmDelete(offer.id)}

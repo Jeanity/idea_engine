@@ -174,7 +174,7 @@ function ClearAllButton({ disabled }: { disabled: boolean }) {
 export function ErrorLogList({ rows }: { rows: ErrorRow[] }) {
   return (
     <div>
-      <div className="flex items-center justify-end gap-2 mb-3">
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
         {rows.length > 0 && (
           <CopyButton
             label="Copy page"
