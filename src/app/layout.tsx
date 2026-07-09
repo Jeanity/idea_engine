@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { AnalyticsBeacon } from '@/components/analytics-beacon'
+import { CookieConsentBanner } from '@/components/cookie-consent'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-white text-gray-900">
         <AnalyticsBeacon />
         {children}
+        <CookieConsentBanner />
       </body>
     </html>
   )

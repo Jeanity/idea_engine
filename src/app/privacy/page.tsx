@@ -66,7 +66,35 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <H2>6. Changes to this policy</H2>
+        <H2>6. Cookies</H2>
+        <p className="mt-3">We use three categories of first-party cookies, and nothing from third-party ad networks:</p>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5">
+          <li>
+            <strong>Necessary</strong> — Supabase authentication (keeps you signed in) and{' '}
+            <code>ie_consent</code> (remembers your cookie choice). These are required for the
+            site to function and are never gated behind a choice.
+          </li>
+          <li>
+            <strong>Functional</strong> — your theme preference (light/dark), stored in your
+            browser&apos;s local storage rather than a cookie. Disclosed here, not gated.
+          </li>
+          <li>
+            <strong>Analytics</strong> — a session cookie and a persistent visitor cookie (
+            <code>ie_vid</code>) we use to count page views and understand product usage. Off by
+            default; you choose whether to allow it in the cookie banner or via &quot;Cookie
+            preferences&quot; in the footer.
+          </li>
+        </ul>
+        <p className="mt-3">
+          If you decline analytics, we send a single anonymous page-view ping (no persistent
+          identifier, no <code>ie_vid</code>) so we can still see that a visit happened — after
+          that, nothing further is tracked for that visit. Accepting or declining never changes
+          what the product itself can do.
+        </p>
+      </section>
+
+      <section>
+        <H2>7. Changes to this policy</H2>
         <p className="mt-3">
           We may update this policy as the product develops. Material changes will be reflected on
           this page with an updated review status.

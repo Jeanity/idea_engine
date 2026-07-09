@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CookiePreferencesLink } from '@/components/cookie-preferences-link'
 
 /**
  * Shared footer for public pages (homepage, /sample-report, /sign-in, and the
@@ -69,6 +70,9 @@ export function SiteFooter() {
                 <Link href="/privacy" className="text-sm text-slate-400 hover:text-white transition-colors light:text-gray-500 light:hover:text-gray-900">
                   Privacy
                 </Link>
+              </li>
+              <li>
+                <CookiePreferencesLink />
               </li>
             </ul>
           </div>
