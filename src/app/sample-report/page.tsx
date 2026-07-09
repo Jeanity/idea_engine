@@ -48,16 +48,35 @@ async function getActiveSamples(): Promise<GalleryCard[]> {
   }))
 }
 
-export default async function SampleReportPage() {
+export default async function SampleReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>
+}) {
   const cards = await getActiveSamples()
+
+  // "Back to where you came from" — only honour in-app paths so the param
+  // can't be abused as an open redirect (must start with a single '/').
+  const { from } = await searchParams
+  const backHref = from && /^\/(?!\/)/.test(from) ? from : null
 
   return (
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">
       {/* Header */}
       <header className="relative z-10 px-6 py-5 flex items-center justify-between border-b border-white/10 light:border-gray-200">
-        <Link href="/" className="font-semibold tracking-tight text-white light:text-gray-900">
-          Idea Engine
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="font-semibold tracking-tight text-white light:text-gray-900">
+            Idea Engine
+          </Link>
+          {backHref && (
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300 hover:border-white/25 hover:text-white light:border-gray-200 light:text-gray-600 light:hover:border-gray-300 light:hover:text-gray-900 transition-colors"
+            >
+              ← Back to your report
+            </Link>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <HeaderAuthLink />

@@ -616,10 +616,17 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
             'Why this is worth pursuing — what the competition proves, your edge, and your realistic upside',
             'Cost breakdown — materials, labour, power, margin',
             'Pricing strategy with comparable market rates',
+            'Funding options — grants, loans, and low-capital paths for your country',
             'Legal & compliance checklist with official source links',
+            'Getting set up — the accountants, banking, insurance, and online services every business needs',
             'Marketing playbook — the right channels for your customers, with starter budgets',
+            'Ready-to-use demand tests — a poll question, ad line, and forum post you can paste today',
+            "'If you do nothing else, do this' — your single highest-leverage action",
             'Things to consider — with how to handle each',
             'Complete prioritised next steps',
+            'Download as a professional PDF — yours to keep',
+            // TODO(SMTP): when report-ready emails ship, add:
+            // 'Emailed to you the moment it completes',
           ].map(item => (
             <li key={item} className="flex gap-2 items-start">
               <svg className="w-4 h-4 text-slate-500 light:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -647,6 +654,15 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
             Unlock full report — coming soon
           </button>
         )}
+        <p className="mt-3 text-center text-xs text-slate-500 light:text-gray-400">
+          Still not sure?{' '}
+          <Link
+            href={`/sample-report?from=${encodeURIComponent(`/app/ideas/${ideaId}/report`)}`}
+            className="font-medium text-indigo-400 hover:text-indigo-300 light:text-indigo-600 light:hover:text-indigo-700 underline underline-offset-2"
+          >
+            See a full sample report
+          </Link>
+        </p>
       </div>
 
       {isAdmin && (
