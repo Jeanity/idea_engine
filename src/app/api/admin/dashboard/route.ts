@@ -49,6 +49,14 @@ export async function GET(request: NextRequest) {
   let costTo = parseDateParam(searchParams.get('costTo'))
   if (costFrom && costTo && costFrom > costTo) [costFrom, costTo] = [costTo, costFrom]
 
+  // Optional period window for the per-model cost donuts (local-midnight
+  // boundaries via the browser's tz offset). All-time when absent.
+  let modelFrom = parseDateParam(searchParams.get('from'))
+  let modelTo = parseDateParam(searchParams.get('to'))
+  if (modelFrom && modelTo && modelFrom > modelTo) [modelFrom, modelTo] = [modelTo, modelFrom]
+  const tzRaw = Number(searchParams.get('tz'))
+  const tz = Number.isFinite(tzRaw) ? Math.max(-840, Math.min(840, Math.trunc(tzRaw))) : 0
+
   // Only used AFTER the isAdminEmail check above, per project ground rules.
   const service = createServiceClient()
 
@@ -198,11 +206,17 @@ export async function GET(request: NextRequest) {
   // Initial reports (teasers) don't write _meta — their cost is the difference
   // between the row's cost_usd and _meta.cost_usd (or the full cost_usd when
   // no _meta exists, i.e. teaser-only reports). Teasers always use Haiku.
-  const { data: metaRows, error: metaErr } = await service
+  let metaQuery = service
     .from('reports')
     .select('cost_usd, sections')
     .not('cost_usd', 'is', null)
     .not('generation_completed_at', 'is', null)
+  if (modelFrom && modelTo) {
+    const periodStart = new Date(Date.parse(`${modelFrom}T00:00:00.000Z`) + tz * 60000).toISOString()
+    const periodEndExclusive = new Date(Date.parse(`${modelTo}T00:00:00.000Z`) + tz * 60000 + DAY_MS).toISOString()
+    metaQuery = metaQuery.gte('generation_completed_at', periodStart).lt('generation_completed_at', periodEndExclusive)
+  }
+  const { data: metaRows, error: metaErr } = await metaQuery
 
   if (metaErr) console.error('Admin dashboard: meta query failed:', metaErr)
 

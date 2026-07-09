@@ -64,13 +64,8 @@ function shortDay(day: string): string {
   return day.slice(5)
 }
 
-function utcHourToLocal(utcLabel: string): string {
-  const utcHour = parseInt(utcLabel, 10)
-  if (Number.isNaN(utcHour)) return utcLabel
-  const now = new Date()
-  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour))
-  return `${String(utcDate.getHours()).padStart(2, '0')}:00`
-}
+// Hourly labels arrive from the API already in the browser's local timezone
+// (the tz param shifts the day window and bucketing server-side).
 
 export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoint[] | null; granularity?: 'hour' | 'day' }) {
   const [metric, setMetric] = useState<Metric>('reports')
@@ -114,7 +109,7 @@ export function OverviewChart({ data, granularity = 'day' }: { data: OverviewPoi
               </linearGradient>
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-            <XAxis dataKey="day" tickFormatter={hourly ? utcHourToLocal : shortDay} {...axisProps} />
+            <XAxis dataKey="day" tickFormatter={hourly ? undefined : shortDay} {...axisProps} />
             <YAxis allowDecimals={!!active.usd} {...axisProps} />
             <Tooltip {...tooltipStyle} formatter={active.usd ? v => fmtUsd(Number(v ?? 0)) : undefined} />
             <Area

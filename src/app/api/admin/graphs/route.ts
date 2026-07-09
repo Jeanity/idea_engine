@@ -35,6 +35,14 @@ function parseDateParam(value: string | null): string {
   return todayUTC()
 }
 
+/** Browser tz offset in minutes (Date.getTimezoneOffset() semantics: UTC − local,
+ *  e.g. Sydney = -600). Clamped to real-world offsets; 0 when missing/invalid. */
+function parseTzParam(value: string | null): number {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 0
+  return Math.max(-840, Math.min(840, Math.trunc(n)))
+}
+
 // Full report = sections populated with a `competitors` key, same rule as
 // reportDisplayState() in src/app/app/account/page.tsx and the Block 3 stats
 // route. Anything else with generation_completed_at set is an initial report.
@@ -92,17 +100,28 @@ export async function GET(request: NextRequest) {
   let to = parseDateParam(searchParams.get('to'))
   // Guard against an inverted range (e.g. a stale custom picker state).
   if (from > to) [from, to] = [to, from]
+  const tz = parseTzParam(searchParams.get('tz'))
 
-  const fromDate = new Date(`${from}T00:00:00.000Z`)
-  const toDate = new Date(`${to}T00:00:00.000Z`)
+  // Single-day ranges bucket by HOUR (24 buckets, 'HH:00') instead of one
+  // lonely day point. The `day` field name is kept in the payload for both
+  // granularities so chart components need no data-shape changes.
+  //
+  // Hourly mode runs in the BROWSER'S timezone (tz param): the day starts at
+  // the user's local midnight and buckets are local hours, so "today" reads
+  // 00:00 → 23:00 wall-clock instead of starting at whatever UTC midnight is
+  // locally. Multi-day mode stays on UTC calendar days — the per-day RPCs
+  // group on UTC dates and can't shift per-request.
+  const hourly = from === to
+  const tzShiftMs = hourly ? tz * 60000 : 0
+
+  const fromDate = new Date(Date.parse(`${from}T00:00:00.000Z`) + tzShiftMs)
+  const toDate = new Date(Date.parse(`${to}T00:00:00.000Z`) + tzShiftMs)
   const rangeStart = fromDate.toISOString()
   const rangeEndExclusive = new Date(toDate.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
-  // Single-day ranges bucket by UTC HOUR (24 buckets, 'HH:00') instead of one
-  // lonely day point. The `day` field name is kept in the payload for both
-  // granularities so chart components need no data-shape changes.
-  const hourly = from === to
-  const bucketOf = (at: Date) => (hourly ? utcHourLabel(at) : utcDay(at))
+  /** Local-hour label of a UTC instant (identity when tz=0 / daily mode). */
+  const localHourLabel = (at: Date) => utcHourLabel(new Date(at.getTime() - tz * 60000))
+  const bucketOf = (at: Date) => (hourly ? localHourLabel(at) : utcDay(at))
   const bucketKeys = hourly ? UTC_HOUR_LABELS : enumerateUtcDays(fromDate, toDate)
 
   // Only used AFTER the isAdminEmail check above, per project ground rules.
@@ -181,7 +200,7 @@ export async function GET(request: NextRequest) {
     const visitorsByHour = new Map<string, Set<string>>()
     const dayVisitors = new Set<string>()
     for (const ev of events ?? []) {
-      const hour = utcHourLabel(new Date(ev.occurred_at))
+      const hour = localHourLabel(new Date(ev.occurred_at))
       if (!sessionsByHour.has(hour)) sessionsByHour.set(hour, new Set())
       sessionsByHour.get(hour)!.add(ev.session_id)
       if (ev.visitor_id) {

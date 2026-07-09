@@ -164,7 +164,7 @@ const FULL_DONUT_COLORS = ['#fbbf24', '#818cf8', '#34d399', '#f472b6', '#22d3ee'
 function AiCostByModelDonut({ data }: { data: { initial: ModelCostEntry[]; full: ModelCostEntry[] } | null }) {
   const hasAny = data && ([...data.initial, ...data.full].some(e => e.totalUsd > 0))
   return (
-    <WidgetCard title="AI cost by model" subtitle="Initial vs. full report spend">
+    <WidgetCard title="AI cost by model" subtitle="Initial vs. full spend, selected period">
       {!data || !hasAny ? (
         <div className="flex h-[180px] items-center justify-center text-xs text-slate-500 light:text-gray-400">
           No AI cost data yet.
@@ -274,7 +274,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
   }, [])
 
   const fetchGraphs = useCallback((from: string, to: string) => {
-    fetch(`/api/admin/graphs?from=${from}&to=${to}`, { cache: 'no-store' })
+    fetch(`/api/admin/graphs?from=${from}&to=${to}&tz=${new Date().getTimezoneOffset()}`, { cache: 'no-store' })
       .then(res => (res.ok ? (res.json() as Promise<GraphsPayload>) : Promise.reject(new Error(`${res.status}`))))
       .then(setGraphs)
       .catch(err => console.error('Failed to load admin graphs:', err))
@@ -296,14 +296,16 @@ export function DashboardClient({ adminId }: { adminId: string }) {
     return () => clearInterval(id)
   }, [fetchStats, fetchGraphs, fetchSales, period])
 
-  // Quick-view aggregate (costs presets + latest affiliates + feedback) —
-  // period-independent, fetched once on mount.
+  // Quick-view aggregate (costs presets + per-model donuts + latest
+  // affiliates + feedback). Refetched on period change so the cost-by-model
+  // donuts track the selected period (the preset buckets are fixed windows
+  // and simply refresh).
   useEffect(() => {
-    fetch('/api/admin/dashboard', { cache: 'no-store' })
+    fetch(`/api/admin/dashboard?from=${period.from}&to=${period.to}&tz=${new Date().getTimezoneOffset()}`, { cache: 'no-store' })
       .then(res => (res.ok ? (res.json() as Promise<DashboardPayload>) : Promise.reject(new Error(`${res.status}`))))
       .then(setDash)
       .catch(err => console.error('Failed to load dashboard aggregate:', err))
-  }, [])
+  }, [period])
 
   // Derived series for sparklines + the overview chart.
   const reportsSeries = useMemo(() => (graphs?.reports ?? []).map(r => r.initial + r.full), [graphs])

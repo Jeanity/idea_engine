@@ -79,14 +79,9 @@ function shortDay(day: string): string {
   return day.slice(5)
 }
 
-/** Offset a UTC 'HH:00' label to the browser's local timezone. */
-function utcHourToLocal(utcLabel: string): string {
-  const utcHour = parseInt(utcLabel, 10)
-  if (Number.isNaN(utcHour)) return utcLabel
-  const now = new Date()
-  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour))
-  return `${String(utcDate.getHours()).padStart(2, '0')}:00`
-}
+// Hourly labels arrive from the API already in the browser's local timezone
+// (the tz param shifts the day window and bucketing server-side), so they
+// pass through the axis unchanged.
 
 function ChartCard({
   title,
@@ -130,7 +125,7 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchGraphs = useCallback((from: string, to: string) => {
-    fetch(`/api/admin/graphs?from=${from}&to=${to}`, { cache: 'no-store' })
+    fetch(`/api/admin/graphs?from=${from}&to=${to}&tz=${new Date().getTimezoneOffset()}`, { cache: 'no-store' })
       .then(res => {
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
         return res.json() as Promise<GraphsPayload>
@@ -150,7 +145,7 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
   }, [fetchGraphs, period])
 
   const hourly = data?.granularity === 'hour'
-  const fmtBucket = hourly ? utcHourToLocal : shortDay
+  const fmtBucket = hourly ? (label: string) => label : shortDay
   const per = hourly ? 'per hour' : 'per day'
 
   const hasAnyTraffic = !!data && data.traffic.some(d => d.sessions > 0 || d.uniqueVisitors > 0)
