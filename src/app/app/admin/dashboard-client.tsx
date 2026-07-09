@@ -55,6 +55,16 @@ function fmtUsd(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 }
 
+/** AI costs are fractions of a cent per report — always show 4 decimals. */
+function fmtCostUsd(n: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(n)
+}
+
 function Stars({ rating }: { rating: number }) {
   return (
     <span className="inline-flex gap-0.5" aria-label={`${rating} out of 5 stars`}>
@@ -149,7 +159,7 @@ function MiniDonut({ label, entries, colors }: { label: string; entries: ModelCo
             <div key={d.model} className="flex items-center gap-1.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colors[i % colors.length] }} aria-hidden="true" />
               <span className="truncate text-[11px] text-slate-300 light:text-gray-700">{shortModelName(d.model)}</span>
-              <span className="ml-auto text-[11px] font-semibold text-white light:text-gray-900">{fmtUsd(d.totalUsd)}</span>
+              <span className="ml-auto text-[11px] font-semibold text-white light:text-gray-900">{fmtCostUsd(d.totalUsd)}</span>
             </div>
           ))}
         </div>
@@ -400,7 +410,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
         node: (
           <StatCard
             label="AI cost"
-            value={graphs ? fmtUsd(costTotalUsd) : '—'}
+            value={graphs ? fmtCostUsd(costTotalUsd) : '—'}
             icon={<Cpu className="h-4 w-4" />}
             deltaPct={seriesDelta(costSeries)}
             deltaLabel="this period"

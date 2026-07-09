@@ -36,8 +36,14 @@ const METRICS: { key: Metric; label: string; color: string; usd?: boolean }[] = 
   { key: 'costs', label: 'AI costs', color: '#fbbf24', usd: true },
 ]
 
+/** AI costs are fractions of a cent per report — always show 4 decimals. */
 function fmtUsd(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(n)
 }
 
 const axisProps = {

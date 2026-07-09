@@ -51,6 +51,16 @@ function fmtUsd(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 }
 
+/** AI costs are fractions of a cent per report — always show 4 decimals. */
+function fmtCostUsd(n: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(n)
+}
+
 export function TodaysSalesWidget() {
   const [mode, setMode] = useState<Mode>('7d')
   const [customFrom, setCustomFrom] = useState(toLocalDate(new Date()))
@@ -114,7 +124,7 @@ export function TodaysSalesWidget() {
         <div className="rounded-xl border border-white/5 bg-white/5 px-3 py-2 light:border-gray-100 light:bg-gray-50">
           <p className="text-[11px] text-slate-500 light:text-gray-400">AI cost</p>
           <p className="text-sm font-semibold text-slate-200 light:text-gray-800">
-            {data ? fmtUsd(data.aiCostUsd) : '—'}
+            {data ? fmtCostUsd(data.aiCostUsd) : '—'}
           </p>
         </div>
         <div className="rounded-xl border border-white/5 bg-white/5 px-3 py-2 light:border-gray-100 light:bg-gray-50">

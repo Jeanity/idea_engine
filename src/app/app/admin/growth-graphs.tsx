@@ -116,6 +116,16 @@ function formatUsd(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 }
 
+/** AI costs are fractions of a cent per report — always show 4 decimals. */
+function formatCostUsd(n: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(n)
+}
+
 function funnelCell(v: number) {
   return <td className="px-4 py-2.5 text-slate-200 light:text-gray-800 text-right">{v}</td>
 }
@@ -225,7 +235,10 @@ export function GrowthGraphs({ period }: { period: PeriodRange }) {
               <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
               <XAxis dataKey="day" tickFormatter={fmtBucket} {...axisProps} />
               <YAxis {...axisProps} />
-              <Tooltip {...tooltipStyle} formatter={v => formatUsd(Number(v))} />
+              <Tooltip
+                {...tooltipStyle}
+                formatter={(v, name) => (name === 'AI cost' ? formatCostUsd(Number(v)) : formatUsd(Number(v)))}
+              />
               <Legend wrapperStyle={legendStyle} />
               <Line type="monotone" dataKey="revenueUsd" name="Revenue" stroke={COLOR_EMERALD} strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="costUsd" name="AI cost" stroke={COLOR_VIOLET} strokeWidth={2} dot={false} />
