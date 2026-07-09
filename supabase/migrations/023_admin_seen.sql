@@ -1,0 +1,23 @@
+-- Migration 023: per-admin "seen" timestamps for nav badge notifications
+-- Run in the Supabase SQL editor after 022_contact_replies.sql. RUN MANUALLY.
+--
+-- Powers the "new since I last looked" nav badges in
+-- src/app/app/admin/admin-shell.tsx (GET /api/admin/nav-status) and the
+-- auto-acknowledge-on-visit behaviour (POST /api/admin/nav-status/seen,
+-- src/components/admin/mark-seen.tsx). Shape:
+--   { "contact": "<ISO8601>", "feedback": "<ISO8601>", "bugs": "<ISO8601>", "errors": "<ISO8601>" }
+-- A missing key (including a null column, i.e. never visited anything) means
+-- "everything in that section counts as new" — nav-status treats an absent
+-- per-section timestamp as the epoch.
+--
+-- Graceful degradation: until this migration is run, GET /api/admin/nav-status
+-- and POST /api/admin/nav-status/seen both catch the missing-column condition
+-- (Postgres 42703 / PostgREST PGRST204) — nav-status falls back to the
+-- pre-023 semantics (open-count / 24h-window) and the seen route no-ops.
+--
+-- No RLS policy change needed: the existing "profiles: update own" policy
+-- (migration 001) already lets a signed-in user update their own row, so the
+-- seen route uses the per-request (cookie-scoped) client rather than the
+-- service role — same rationale as admin_dashboard_layout (migration 021).
+
+alter table public.profiles add column admin_seen jsonb;

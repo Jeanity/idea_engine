@@ -28,6 +28,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle'
 import SignOutButton from '@/app/app/sign-out-button'
 import { SectionLabel } from '@/components/admin/section-label'
+import { ADMIN_NAV_SEEN_EVENT } from '@/lib/admin-nav-events'
 
 // ---------------------------------------------------------------------------
 // Nav config — grouped, icon + label. `exact` matches only the exact path
@@ -87,34 +88,62 @@ function isItemActive(item: NavItem, pathname: string): boolean {
 
 // ---------------------------------------------------------------------------
 // Live nav status (GET /api/admin/nav-status) — survey-active dot on Surveys,
-// open-count badge on Contact, 24h-new-count badge on Feedback. Fetched on
-// mount, on every route change (so the queues feel live as Danny works through
-// them), and on a 60s poll. Any fetch failure is silent — no badges, no error UI.
+// and "new since I last visited that page" count badges on Contact, Feedback,
+// Bugs, and Errors (migration 023, admin_seen). Fetched on mount, on every
+// route change (so the queues feel live as Danny works through them), and on
+// a 60s poll — plus once more whenever a MarkSeen component finishes marking
+// a page seen (see admin-nav-events.ts) so the badge for the page you just
+// opened clears immediately rather than waiting for the next poll. Any fetch
+// failure is silent — no badges, no error UI.
 // ---------------------------------------------------------------------------
 
 interface NavStatus {
   surveyActive: boolean
-  openContacts: number
-  recentFeedback24h: number
+  contactCount: number
+  feedbackCount: number
+  bugsCount: number
+  errorsCount: number
 }
 
-const EMPTY_NAV_STATUS: NavStatus = { surveyActive: false, openContacts: 0, recentFeedback24h: 0 }
+const EMPTY_NAV_STATUS: NavStatus = {
+  surveyActive: false,
+  contactCount: 0,
+  feedbackCount: 0,
+  bugsCount: 0,
+  errorsCount: 0,
+}
 const NAV_STATUS_POLL_MS = 60_000
 
-/** Badge state for a single nav item — at most one of dot/count applies per item. */
-function getNavBadge(href: string, status: NavStatus): { dot: boolean; count: number } {
-  if (href === '/app/admin/surveys') return { dot: status.surveyActive, count: 0 }
-  if (href === '/app/admin/contact') return { dot: false, count: status.openContacts }
-  if (href === '/app/admin/feedback') return { dot: false, count: status.recentFeedback24h }
-  return { dot: false, count: 0 }
+type BadgeKind = 'none' | 'dot-emerald' | 'count-amber' | 'count-red'
+
+/** Badge state for a single nav item — at most one kind applies per item. */
+function getNavBadge(href: string, status: NavStatus): { kind: BadgeKind; count: number } {
+  if (href === '/app/admin/surveys') return { kind: status.surveyActive ? 'dot-emerald' : 'none', count: 0 }
+  if (href === '/app/admin/contact') return { kind: status.contactCount > 0 ? 'count-amber' : 'none', count: status.contactCount }
+  if (href === '/app/admin/feedback') return { kind: status.feedbackCount > 0 ? 'count-amber' : 'none', count: status.feedbackCount }
+  if (href === '/app/admin/bugs') return { kind: status.bugsCount > 0 ? 'count-amber' : 'none', count: status.bugsCount }
+  if (href === '/app/admin/errors') return { kind: status.errorsCount > 0 ? 'count-red' : 'none', count: status.errorsCount }
+  return { kind: 'none', count: 0 }
 }
 
 /** Human-readable suffix appended to the link's title/aria-label — keeps the badge non-colour-only. */
 function badgeDescription(href: string, status: NavStatus): string {
   if (href === '/app/admin/surveys' && status.surveyActive) return ' — survey active'
-  if (href === '/app/admin/contact' && status.openContacts > 0) return ` — ${status.openContacts} open`
-  if (href === '/app/admin/feedback' && status.recentFeedback24h > 0) return ` — ${status.recentFeedback24h} new`
+  if (href === '/app/admin/contact' && status.contactCount > 0) return ` — ${status.contactCount} new since last visit`
+  if (href === '/app/admin/feedback' && status.feedbackCount > 0) return ` — ${status.feedbackCount} new since last visit`
+  if (href === '/app/admin/bugs' && status.bugsCount > 0) return ` — ${status.bugsCount} new since last visit`
+  if (href === '/app/admin/errors' && status.errorsCount > 0) return ` — ${status.errorsCount} new since last visit`
   return ''
+}
+
+/** Worst-case severity across every section — red > amber > emerald — used for
+ *  the single combined dot on the mobile hamburger button, the only spot
+ *  where the per-item indicators below are literally invisible (drawer closed). */
+function overallSeverity(status: NavStatus): 'red' | 'amber' | 'emerald' | null {
+  if (status.errorsCount > 0) return 'red'
+  if (status.bugsCount > 0 || status.contactCount > 0 || status.feedbackCount > 0) return 'amber'
+  if (status.surveyActive) return 'emerald'
+  return null
 }
 
 function useNavStatus(pathname: string): NavStatus {
@@ -132,8 +161,10 @@ function useNavStatus(pathname: string): NavStatus {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus({
           surveyActive: !!data.surveyActive,
-          openContacts: Number.isFinite(data.openContacts) ? data.openContacts : 0,
-          recentFeedback24h: Number.isFinite(data.recentFeedback24h) ? data.recentFeedback24h : 0,
+          contactCount: Number.isFinite(data.contactCount) ? data.contactCount : 0,
+          feedbackCount: Number.isFinite(data.feedbackCount) ? data.feedbackCount : 0,
+          bugsCount: Number.isFinite(data.bugsCount) ? data.bugsCount : 0,
+          errorsCount: Number.isFinite(data.errorsCount) ? data.errorsCount : 0,
         })
       } catch {
         /* silent — no badges on failure */
@@ -142,9 +173,14 @@ function useNavStatus(pathname: string): NavStatus {
 
     load()
     const interval = setInterval(load, NAV_STATUS_POLL_MS)
+    // See admin-nav-events.ts: MarkSeen (mounted on the 4 badge-bearing pages)
+    // dispatches this once its mark-seen POST settles, so the badge for the
+    // page just visited clears right away instead of on the next 60s poll.
+    window.addEventListener(ADMIN_NAV_SEEN_EVENT, load)
     return () => {
       cancelled = true
       clearInterval(interval)
+      window.removeEventListener(ADMIN_NAV_SEEN_EVENT, load)
     }
     // Refetch whenever the route changes, in addition to the mount fetch + poll above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,6 +267,7 @@ export function AdminShell({ email, children }: { email: string; children: React
           title={pageTitle(pathname)}
           email={email}
           collapsed={collapsed}
+          navStatus={navStatus}
           onToggleCollapsed={toggleCollapsed}
           onOpenMobile={() => setMobileOpen(true)}
         />
@@ -296,7 +333,7 @@ function Sidebar({
                 const active = isItemActive(item, pathname)
                 const Icon = item.icon
                 const badge = getNavBadge(item.href, navStatus)
-                const hasIndicator = badge.dot || badge.count > 0
+                const hasIndicator = badge.kind !== 'none'
                 const desc = badgeDescription(item.href, navStatus)
                 const linkLabel = desc ? `${item.label}${desc}` : undefined
                 return (
@@ -323,25 +360,37 @@ function Sidebar({
                         {collapsed && hasIndicator && (
                           <span
                             className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-slate-900 light:ring-white ${
-                              badge.dot ? 'bg-emerald-400 light:bg-emerald-500' : 'bg-amber-400 light:bg-amber-500'
+                              badge.kind === 'dot-emerald'
+                                ? 'bg-emerald-400 light:bg-emerald-500'
+                                : badge.kind === 'count-red'
+                                  ? 'bg-red-400 light:bg-red-500'
+                                  : 'bg-amber-400 light:bg-amber-500'
                             }`}
                             aria-hidden="true"
                           />
                         )}
                       </span>
                       <span className={collapsed ? 'lg:hidden' : ''}>{item.label}</span>
-                      {!collapsed && badge.dot && (
+                      {!collapsed && badge.kind === 'dot-emerald' && (
                         <span
                           className="animate-pulse-dot ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-400 light:bg-emerald-500"
                           aria-hidden="true"
                         />
                       )}
-                      {!collapsed && badge.count > 0 && (
+                      {!collapsed && badge.kind === 'count-amber' && badge.count > 0 && (
                         <span
                           className="ml-auto inline-flex min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-300 light:bg-amber-100 light:text-amber-700"
                           aria-hidden="true"
                         >
                           {badge.count > 99 ? '99+' : badge.count}
+                        </span>
+                      )}
+                      {!collapsed && badge.kind === 'count-red' && badge.count > 0 && (
+                        <span
+                          className="ml-auto inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-red-500/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-red-300 light:bg-red-100 light:text-red-700"
+                          aria-hidden="true"
+                        >
+                          !{badge.count > 99 ? '99+' : badge.count}
                         </span>
                       )}
                     </Link>
@@ -380,25 +429,45 @@ function TopBar({
   title,
   email,
   collapsed,
+  navStatus,
   onToggleCollapsed,
   onOpenMobile,
 }: {
   title: string
   email: string
   collapsed: boolean
+  navStatus: NavStatus
   onToggleCollapsed: () => void
   onOpenMobile: () => void
 }) {
+  // On mobile the drawer (and every per-item indicator inside it) is fully
+  // hidden until this button is tapped, so this is the one spot that needs a
+  // single combined dot summarising ALL sections — hence the severity
+  // precedence (red > amber > emerald) in overallSeverity().
+  const severity = overallSeverity(navStatus)
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-white/10 bg-slate-950/80 px-6 backdrop-blur light:border-gray-200 light:bg-gray-50/80">
       {/* Mobile: open drawer */}
       <button
         type="button"
-        aria-label="Open menu"
+        aria-label={severity ? 'Open menu — new activity to review' : 'Open menu'}
         onClick={onOpenMobile}
-        className="rounded-lg p-2 text-slate-300 hover:bg-white/5 hover:text-white light:text-gray-500 light:hover:bg-gray-100 light:hover:text-gray-900 lg:hidden"
+        className="relative rounded-lg p-2 text-slate-300 hover:bg-white/5 hover:text-white light:text-gray-500 light:hover:bg-gray-100 light:hover:text-gray-900 lg:hidden"
       >
         <Menu className="h-5 w-5" aria-hidden="true" />
+        {severity && (
+          <span
+            className={`absolute right-1 top-1 h-2 w-2 rounded-full ring-2 ring-slate-950 light:ring-gray-50 ${
+              severity === 'red'
+                ? 'bg-red-400 light:bg-red-500'
+                : severity === 'amber'
+                  ? 'bg-amber-400 light:bg-amber-500'
+                  : 'bg-emerald-400 light:bg-emerald-500'
+            }`}
+            aria-hidden="true"
+          />
+        )}
       </button>
 
       {/* Desktop: collapse toggle */}

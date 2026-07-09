@@ -38,6 +38,7 @@ export type Database = {
           last_seen_at: string | null
           acquisition: Json | null
           admin_dashboard_layout: Json | null
+          admin_seen: Json | null
           created_at: string
           updated_at: string
         }
@@ -53,6 +54,7 @@ export type Database = {
           last_seen_at?: string | null
           acquisition?: Json | null
           admin_dashboard_layout?: Json | null
+          admin_seen?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -67,6 +69,7 @@ export type Database = {
           last_seen_at?: string | null
           acquisition?: Json | null
           admin_dashboard_layout?: Json | null
+          admin_seen?: Json | null
           updated_at?: string
         }
         Relationships: []

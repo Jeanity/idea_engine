@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/db'
-import { Pagination } from '@/components/admin'
+import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import type { BugReportStatus } from '@/lib/database.types'
 import { BugQueueList, type BugRow } from './bug-queue-list'
@@ -65,6 +65,7 @@ export default async function AdminBugsPage({
 
   return (
     <div>
+      <MarkSeen section="bugs" />
       <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Bugs</h1>
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8 max-w-2xl">
         Bugs flagged by users from inside their reports, with auto-captured context and an

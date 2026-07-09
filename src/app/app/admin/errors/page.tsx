@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/db'
-import { Pagination } from '@/components/admin'
+import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { ErrorLogList, type ErrorRow } from './errors-client'
 
@@ -40,6 +40,7 @@ export default async function AdminErrorsPage({
 
   return (
     <div>
+      <MarkSeen section="errors" />
       <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Errors</h1>
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8">
         Server-side failures recorded across the app — report generation, admin actions, and more.

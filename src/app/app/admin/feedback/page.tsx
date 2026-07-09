@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/db'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
-import { Pagination } from '@/components/admin'
+import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { FeedbackCards } from './feedback-cards'
 
@@ -145,6 +145,7 @@ export default async function AdminFeedbackPage({
 
   return (
     <div>
+      <MarkSeen section="feedback" />
       <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Feedback</h1>
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8">
         Ratings and comments left by users on their reports. Featured + consented feedback appears on the homepage.
