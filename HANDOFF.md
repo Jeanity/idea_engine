@@ -102,7 +102,17 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
 
 ## Decisions made today (bind future work)
 - **Payments LAST**, multi-processor (Stripe + PayPal + Afterpay — Danny researching). Don't
-  suggest Stripe signup as a next action.
+  suggest Stripe signup as a next action. Facts gathered 2026-07-10: Danny is ALREADY a
+  PayPal + Afterpay merchant via Jeanity — PayPal likely reusable (same-ABN account, new API
+  app, check buyer-facing display name isn't "Jeanity"); Afterpay status is probably
+  Shopify-bound so the path for hadidea is Afterpay-through-Stripe-Checkout (bundled for AU,
+  no separate Afterpay onboarding). Shopify Buy Button evaluated and REJECTED (checkout
+  disconnected from app auth → fragile order→user matching, wrong brand, monthly cost).
+  Paddle / Lemon Squeezy flagged as merchant-of-record alternatives (handle global GST/VAT —
+  worth weighing as solo operator). Refund policy is now LIVE in /terms §5 (2026-07-10,
+  `5f731fd`): full refund pre-generation, regenerate-or-refund for defective, no
+  change-of-mind post-delivery, ACL rights preserved — Stripe's visible-refund-policy
+  requirement is met.
 - **Blog/Articles on the back burner** with payments.
 - **SMTP**: Danny will use his own business-domain email accounts once hosting is set up;
   the wiring task then covers: contact/bug/feedback-reply notifications, report-ready email,
