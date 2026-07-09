@@ -1,3 +1,47 @@
+# Handoff — 2026-07-10 (domain, email, admin ops polish — continuation of the marathon)
+
+All pushed to main; migrations through **023** RUN in prod (Danny confirmed).
+
+## Infrastructure (Danny-side, done and verified live)
+- **hadidea.com live on Vercel**: apex-canonical (www 308s to apex), auto-SSL verified externally.
+- **Supabase auth**: Site URL https://hadidea.com, allowlist covers apex/www/vercel.app/localhost.
+- **Google OAuth**: origins updated, consent-screen branding (home/privacy/terms links,
+  authorized domains), publishing status = In production. Brand verification NOT yet submitted —
+  consent popup still shows the supabase.co domain until verified (or the ~$10/mo Supabase
+  custom-auth-domain add-on, deferred to paid launch, which would also fix magic-link URLs).
+- **IONOS email live**: hello@ (contact + admin notifications), reports@ (sender), me@ (personal).
+  SPF/DKIM/DMARC verified in DNS. Supabase dashboard SMTP → reports@. Vercel env vars set
+  (SMTP_*, MAIL_FROM, ADMIN_NOTIFY_EMAIL, NEXT_PUBLIC_SITE_URL). Magic-link flow tested end-to-end.
+- Codebase confirmed free of hardcoded app URLs (everything origin-derived).
+
+## Shipped (commit order)
+1. `b95fa62` — **email wiring** (nodemailer, src/lib/mailer.ts, no-ops when env unset): admin
+   notifications (contact incl. PARTNERSHIP-flagged subject + replyTo submitter / bug / feedback),
+   feedback-reply emails (sets emailed_at), full-report-ready email (memoized Inngest step, can
+   never fail the run), upsell "Emailed to you the moment it completes" line activated.
+2. `8fe2ba4` — **per-admin dashboard layout** (migration 021, profiles.admin_dashboard_layout):
+   server-persisted, localStorage as cache, debounced save, confirm-gated reset.
+3. `f31dc05` — **contact reply modal** (migration 022, contact_replies): modal per Danny's
+   standing modals-over-navigation rule; sends from reports@ w/ replyTo hello@, quotes original,
+   sent/failed badge, auto-flips status to replied only on successful send.
+4. `e507ed0` / `ac1047e` — **delete with two-step confirm** for feedback entries and contact
+   submissions (replies cascade; list updates instantly).
+5. `bd21c55` / `a1eefb5` — **admin nav notifications** (migration 023, profiles.admin_seen):
+   Surveys emerald pulse when live; Contact/Feedback/Bugs amber count chips + Errors RED "!"
+   chip, all meaning "new since I last opened that page"; visiting a page auto-acknowledges
+   (MarkSeen POST + window-event refetch); collapsed sidebar + mobile hamburger carry
+   severity dots (red > amber > emerald). Per-admin timestamps.
+
+## Notes for next session
+- Cookie banner final copy is the cheeky "not the creepy kind… we'll ask first" (Danny-approved).
+- A separate chip session fixed samples-admin PGRST205 detection (was uncommitted in this
+  session's tree throughout — check git status/log for its final state).
+- Survey v2 spec (multi-survey/groups/targeting + nav dropdown) is below — still the next big
+  build when Danny calls it.
+- Launch runway unchanged: paste survey questions → set promo caps → Start.
+
+---
+
 # Handoff — 2026-07-09 (marathon session — launch-trial infrastructure)
 
 Everything below is BUILT, PUSHED to main, and (per Danny) migrations 011–020 are RUN in prod.
