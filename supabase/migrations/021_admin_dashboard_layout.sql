@@ -1,0 +1,23 @@
+-- Migration 021: per-admin dashboard grid layout persistence
+-- Run in the Supabase SQL editor after 020_promo_identity.sql. RUN MANUALLY.
+--
+-- The admin dashboard's drag-reorder/resize grid (order, column span, row
+-- height per widget — src/app/app/admin/dashboard-grid.tsx) previously
+-- persisted only to localStorage, so an admin lost their arrangement in
+-- incognito or on another device. This column stores the same JSON
+-- server-side on the admin's own profiles row, so each admin keeps their own
+-- layout tied to their account. null = no saved layout (defaults apply).
+--
+-- Graceful degradation: until this migration is run, the load path
+-- (src/app/app/admin/page.tsx) and the save route
+-- (src/app/api/admin/layout/route.ts) both catch the missing-column
+-- condition (Postgres 42703 / PostgREST PGRST204) and fall back to
+-- localStorage-only behavior, exactly as before this migration.
+--
+-- No RLS policy change needed: the existing "profiles: update own" policy
+-- (migration 001) already lets a signed-in user update their own row, so the
+-- save route uses the per-request (cookie-scoped) client rather than the
+-- service role — there's no cross-account write here for a service client
+-- to add value over.
+
+alter table public.profiles add column admin_dashboard_layout jsonb;

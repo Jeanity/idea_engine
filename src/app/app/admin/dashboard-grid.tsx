@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -22,10 +22,18 @@ import { GripVertical, LayoutGrid, RotateCcw, Check } from 'lucide-react'
 
 // Reorderable + resizable widget grid (Block R2). The dashboard body is a
 // 4-column CSS grid on lg+; each widget owns an order slot and a column span
-// (1–4 → ¼ / ½ / ¾ / full). Order AND span persist to localStorage keyed per
-// admin id. Below lg everything stacks full width regardless of saved span
-// (grid-cols-1 makes the lg:col-span-* classes inert). This is pure client
-// layout state — no server data is touched.
+// (1–4 → ¼ / ½ / ¾ / full). Below lg everything stacks full width regardless
+// of saved span (grid-cols-1 makes the lg:col-span-* classes inert).
+//
+// Persistence precedence on load: server layout (initialLayout, the admin's
+// own profiles.admin_dashboard_layout — the source of truth, tied to their
+// account) → localStorage (legacy fallback + instant cache before the server
+// round-trip lands, e.g. offline/pre-migration) → widget defaults. Every
+// change writes localStorage immediately (instant local cache) and debounces
+// a PATCH to /api/admin/layout so the arrangement follows the admin across
+// browsers/devices. Save failures (including pre-migration 503s) are
+// swallowed to a console.warn — layout persistence is a nicety, never a
+// blocker for using the dashboard.
 
 export type WidgetSpan = 1 | 2 | 3 | 4
 export type WidgetHeight = 'half' | 'full'
@@ -39,11 +47,13 @@ export interface WidgetDef {
   node: ReactNode
 }
 
-interface LayoutItem {
+export interface LayoutItem {
   id: string
   span: WidgetSpan
   height: WidgetHeight
 }
+
+const SAVE_DEBOUNCE_MS = 1500
 
 // Literal class names so Tailwind's scanner keeps them. base grid is 1-col
 // (mobile) so these only bite at lg+, giving full-width stacking on mobile.
@@ -83,6 +93,28 @@ function isHeight(h: unknown): h is WidgetHeight {
   return h === 'half' || h === 'full'
 }
 
+/** Loosely validates an unknown value (server jsonb, parsed localStorage) as a layout array. */
+function asLayoutArray(v: unknown): LayoutItem[] | null {
+  if (!Array.isArray(v)) return null
+  return v.filter(
+    (item): item is LayoutItem =>
+      !!item && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string'
+  )
+}
+
+/** Best-effort PATCH to persist the layout server-side; failures never block the UI. */
+function saveLayoutToServer(layout: LayoutItem[] | null) {
+  fetch('/api/admin/layout', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ layout }),
+  })
+    .then(res => {
+      if (!res.ok) console.warn(`Dashboard layout save failed (${res.status})`)
+    })
+    .catch(err => console.warn('Dashboard layout save failed:', err))
+}
+
 /**
  * Reconcile a persisted layout with the current widget set: keep saved order +
  * span + height for ids that still exist, drop unknown ids, and append any
@@ -113,22 +145,35 @@ function defaultLayout(widgets: WidgetDef[]): LayoutItem[] {
   return widgets.map(w => ({ id: w.id, span: w.defaultSpan, height: w.defaultHeight }))
 }
 
-export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; adminId: string }) {
+export function DashboardGrid({
+  widgets,
+  adminId,
+  initialLayout,
+}: {
+  widgets: WidgetDef[]
+  adminId: string
+  /** Server-loaded profiles.admin_dashboard_layout for the signed-in admin, if any. */
+  initialLayout?: unknown
+}) {
   const [layout, setLayout] = useState<LayoutItem[]>(() => defaultLayout(widgets))
   const [editing, setEditing] = useState(false)
+  const [confirmingReset, setConfirmingReset] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Restore persisted layout post-mount (SSR renders the default order/spans).
+  // Precedence: server layout (this admin's own account, works cross-device)
+  // → localStorage (legacy fallback / instant cache, e.g. pre-migration or
+  // offline) → widget defaults.
   useEffect(() => {
-    let saved: LayoutItem[] | null = null
-    try {
-      const raw = localStorage.getItem(storageKey(adminId))
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) saved = parsed as LayoutItem[]
+    let saved = asLayoutArray(initialLayout)
+    if (!saved) {
+      try {
+        const raw = localStorage.getItem(storageKey(adminId))
+        if (raw) saved = asLayoutArray(JSON.parse(raw))
+      } catch {
+        /* ignore corrupt/private-mode storage */
       }
-    } catch {
-      /* ignore corrupt/private-mode storage */
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLayout(reconcile(saved, widgets))
@@ -136,7 +181,15 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
     // Reconcile only against the widget id set, not node identity (nodes change
     // every render as data loads).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminId, widgets.map(w => w.id).join(',')])
+  }, [adminId, initialLayout, widgets.map(w => w.id).join(',')])
+
+  // Clear any pending debounced save on unmount so it can't fire after the
+  // grid (and its adminId) is gone.
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [])
 
   const persist = useCallback(
     (next: LayoutItem[]) => {
@@ -145,6 +198,10 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
       } catch {
         /* ignore private-mode storage failures */
       }
+      // Debounce the server round-trip so a drag or a burst of span clicks
+      // doesn't fire a PATCH per intermediate state.
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = setTimeout(() => saveLayoutToServer(next), SAVE_DEBOUNCE_MS)
     },
     [adminId]
   )
@@ -185,6 +242,9 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
     })
   }
 
+  // Discards the custom arrangement — called only after the inline confirm
+  // step below (this clears both the local cache and the account-level
+  // server value, per the project's destructive-action rule).
   function resetLayout() {
     const next = defaultLayout(widgets)
     setLayout(next)
@@ -193,6 +253,9 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
     } catch {
       /* ignore */
     }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    saveLayoutToServer(null)
+    setConfirmingReset(false)
   }
 
   // Render nothing layout-specific until hydrated to avoid a flash of the
@@ -204,18 +267,41 @@ export function DashboardGrid({ widgets, adminId }: { widgets: WidgetDef[]; admi
     <div>
       <div className="mb-4 flex items-center justify-end gap-2">
         {editing && (
-          <button
-            type="button"
-            onClick={resetLayout}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:text-white light:border-gray-200 light:bg-gray-50 light:text-gray-600 light:hover:text-gray-900"
-          >
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-            Reset layout
-          </button>
+          confirmingReset ? (
+            <span className="inline-flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 light:border-amber-200 light:bg-amber-50">
+              <span className="text-xs text-amber-300 light:text-amber-700">Discard your custom layout?</span>
+              <button
+                type="button"
+                onClick={resetLayout}
+                className="text-xs font-medium text-amber-200 underline hover:text-white light:text-amber-800 light:hover:text-amber-900"
+              >
+                Yes, reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingReset(false)}
+                className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingReset(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:text-white light:border-gray-200 light:bg-gray-50 light:text-gray-600 light:hover:text-gray-900"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              Reset layout
+            </button>
+          )
         )}
         <button
           type="button"
-          onClick={() => setEditing(e => !e)}
+          onClick={() => {
+            setEditing(e => !e)
+            setConfirmingReset(false)
+          }}
           aria-pressed={editing}
           className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
             editing

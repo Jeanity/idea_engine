@@ -259,7 +259,7 @@ function LatestFeedback({ rows }: { rows: DashboardPayload['feedback'] | null })
   )
 }
 
-export function DashboardClient({ adminId }: { adminId: string }) {
+export function DashboardClient({ adminId, initialLayout }: { adminId: string; initialLayout?: unknown }) {
   const [period, setPeriod] = useState<PeriodRange>(() => rangeForPreset('today'))
   const [stats, setStats] = useState<StatsPayload | null>(null)
   const [graphs, setGraphs] = useState<GraphsPayload | null>(null)
@@ -465,7 +465,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
 
       {error && <p className="mb-4 text-sm text-amber-300 light:text-amber-600">{error}</p>}
 
-      <DashboardGrid widgets={widgets} adminId={adminId} />
+      <DashboardGrid widgets={widgets} adminId={adminId} initialLayout={initialLayout} />
 
       <div id="growth" className="scroll-mt-20">
         <GrowthGraphs period={period} />
