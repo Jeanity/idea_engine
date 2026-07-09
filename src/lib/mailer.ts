@@ -58,17 +58,44 @@ const FOOTER_TEXT = "You're receiving this because of activity on your Idea Engi
  * it can be unit-tested without touching SMTP.
  */
 export function buildEmail(input: { bodyHtml: string; bodyText: string }): { html: string; text: string } {
+  const currentYear = new Date().getFullYear()
+  const siteUrl = getSiteUrl()
+  const contactUrl = `${siteUrl}/contact`
+  const privacyUrl = `${siteUrl}/privacy`
+
+  // HTML version with branded header and footer
   const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #f8fafc; padding: 32px 24px;">
-  <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 24px;">Idea Engine</div>
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; color: #1e293b; font-size: 15px; line-height: 1.6;">
+  <!-- Header wordmark + accent line -->
+  <div style="margin-bottom: 32px;">
+    <a href="${siteUrl}" style="font-size: 20px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-block; margin-bottom: 12px;">Idea Engine</a>
+    <!-- Wordmark PNG can replace text here in future (email clients don't render SVG reliably) -->
+    <div style="height: 3px; background: #6366f1; width: 100%;"></div>
+  </div>
+  <!-- Content body -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; color: #1e293b; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
     ${input.bodyHtml}
   </div>
-  <div style="color: #94a3b8; font-size: 12px; margin-top: 24px; line-height: 1.5;">
-    ${FOOTER_TEXT}
+  <!-- Divider -->
+  <div style="height: 1px; background: #e2e8f0; margin: 24px 0;"></div>
+  <!-- Footer: signature, links, copyright -->
+  <div style="color: #64748b; font-size: 13px; line-height: 1.6;">
+    <div style="margin-bottom: 12px;">— The Idea Engine team</div>
+    <div style="margin-bottom: 12px;">
+      <a href="${siteUrl}" style="color: #64748b; text-decoration: none;">Idea Engine</a>
+      <span style="color: #cbd5e1;">·</span>
+      <a href="${contactUrl}" style="color: #64748b; text-decoration: none;">Contact</a>
+      <span style="color: #cbd5e1;">·</span>
+      <a href="${privacyUrl}" style="color: #64748b; text-decoration: none;">Privacy</a>
+    </div>
+    <div style="margin-bottom: 16px;">© ${currentYear} Idea Engine</div>
+    <div style="color: #94a3b8; font-size: 12px;">
+      ${FOOTER_TEXT}
+    </div>
   </div>
 </div>`
 
-  const text = `Idea Engine\n\n${input.bodyText}\n\n---\n${FOOTER_TEXT}`
+  // Text version with simple equivalent
+  const text = `Idea Engine\n\n${input.bodyText}\n\n— The Idea Engine team\n${siteUrl} · © ${currentYear}\n\n${FOOTER_TEXT}`
 
   return { html, text }
 }

@@ -14,6 +14,36 @@ describe('buildEmail', () => {
     expect(html).toContain('<p>hello</p>')
   })
 
+  it('includes the wordmark as a link to the site URL', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://example.com'
+    const { html } = buildEmail({ bodyHtml: '<p>test</p>', bodyText: 'test' })
+    expect(html).toContain('<a href="https://example.com"')
+    expect(html).toContain('Idea Engine</a>')
+    delete process.env.NEXT_PUBLIC_SITE_URL
+  })
+
+  it('includes footer links to site, contact, and privacy', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://example.com'
+    const { html } = buildEmail({ bodyHtml: '<p>test</p>', bodyText: 'test' })
+    expect(html).toContain('https://example.com')
+    expect(html).toContain('https://example.com/contact')
+    expect(html).toContain('https://example.com/privacy')
+    delete process.env.NEXT_PUBLIC_SITE_URL
+  })
+
+  it('includes the team signature line in the footer', () => {
+    const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
+    expect(html).toContain('— The Idea Engine team')
+    expect(text).toContain('— The Idea Engine team')
+  })
+
+  it('includes the current year in the copyright line', () => {
+    const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
+    const currentYear = new Date().getFullYear()
+    expect(html).toContain(`© ${currentYear} Idea Engine`)
+    expect(text).toContain(`© ${currentYear}`)
+  })
+
   it('includes the muted footer line in both html and text', () => {
     const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
     const footer = "You're receiving this because of activity on your Idea Engine account."
