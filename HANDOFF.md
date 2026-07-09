@@ -55,20 +55,57 @@ this session: `390eb9e` and `c658e68`. tsc/build/70 tests all clean. NOT click-t
 
 ## Still TODO from this batch
 
-### 4. Admin sample-report management + public sample gallery (NOT STARTED)
-- **Admin UI** (`/app/admin/sample-reports` or under Content group): create and select sample
-  reports for the homepage. Admin can pick from existing real reports (anonymised/curated) or
-  create dedicated samples. Each tagged by idea type/archetype.
-- **Selectable list**: admin sees all samples, can feature/unfeature, rotate which appear on
-  the homepage.
-- **Public sample page** (`/sample-report` updated): list of sample cards (one per idea type),
-  clicking opens full sample report **in a popup modal** (user stays on the page).
-- Needs a `sample_reports` table or a flag on `reports` — decide at build time.
+### 4. Admin sample-report management + public sample gallery — DONE 2026-07-09 (`9392f26`)
+Built per docs/plan/2026-07-09-sample-report-management.md: `sample_reports` table
+(migration 011, RUN in prod by Danny, samples added and verified working), admin CRUD at
+`/app/admin/samples` (clone from real report, sanitized `_meta`, active toggle, sort, confirm-
+delete), public `/sample-report` card gallery + modal viewer, coffee-van sample kept as fallback.
 
-### 5. Mobile-responsive layout review (code-wide, NOT STARTED)
-- Full audit of every page/component for mobile breakpoints. Systematic pass, not a single fix.
-- Covers: homepage, report pages, wizard, account, admin dashboard, admin lists, modals, the
-  new sample gallery.
+### 5. Mobile-responsive layout review — DONE 2026-07-09 (`0fa5ea1`)
+Code-wide pass; 10 files fixed (header wrap, admin tables scroll containment, defensive
+flex-wrap). Verified code-level only — preview viewport wouldn't shrink to 375px; Danny should
+spot-check on a real phone.
+
+---
+
+# NEXT UP — Promo mode (3rd app mode: live / demo / promo) — SPEC ONLY, 2026-07-09
+
+Danny's request, for the launch trial ("first N reports free to the first N registered users").
+
+1. **Three modes**: live (charge users), demo (existing fixture mode, no API spend), **promo**
+   (real generation, payment requirement OFF — users generate full reports free).
+2. **Admin promo setup page** (Settings or its own page): configure a promo with **limits** —
+   admin sets an **AI spend cap (USD)** and/or a **generation count cap** (e.g. 100 or 1000
+   reports — Danny undecided, make it a number field, not hardcoded).
+3. **Auto-revert**: when a cap is reached, the app switches itself back to **live mode** and
+   resumes charging. Must be enforced server-side at generation time (check caps before
+   starting a run, atomically count/accumulate after), not just UI.
+4. **Optional per-user limit** during promo (e.g. 1 free report per user) — admin-settable,
+   nullable = unlimited.
+5. Needs: a table for promo config + counters (spend so far, reports so far, per-user counts
+   derivable from reports), admin UI, gate checks in the report-request path, and a public-
+   facing "free during launch" treatment on the generate/unlock buttons while promo is active.
+6. Note: current `demo_mode` is a per-profile boolean (admin's own account only). Promo mode
+   is APP-WIDE state — different mechanism; don't conflate. Migration number: next free is
+   013 (011 samples, 012 contact — the bug-report spec's claim of 011 below is stale).
+
+# NEXT UP — Report-end surveys — SPEC ONLY, 2026-07-09
+
+Danny's request; primary tool for gathering real feedback during the promo trial.
+
+1. **Survey attached to the end of reports** (full report page, probably initial too — confirm
+   at build time). Admin can turn the survey **on/off** globally.
+2. **Admin question management**: add/remove/reorder questions. Question types at minimum:
+   free text + some structured type (rating or multiple-choice) — decide at build time.
+3. **Survey responses page** in admin: see what people are answering (per question and per
+   respondent view).
+4. **AI overview**: option for an AI-generated summary of responses ("general overview of what
+   users are saying") — use cheapest capable model (Haiku), on-demand button not automatic,
+   so it costs nothing until clicked.
+5. Tables: `surveys`/`survey_questions`/`survey_responses` (or single-survey simplification:
+   `survey_questions` + `survey_responses` with an app-wide on/off setting). RLS: users
+   insert-only own responses; admin reads via service role.
+6. Danny's intent: run promo → collect survey answers → real user feedback before pricing.
 
 ---
 
