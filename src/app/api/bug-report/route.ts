@@ -1,5 +1,6 @@
 import { createDbClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
+import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Signed-in users only — flags a bug from inside a report viewer (initial or
@@ -65,6 +66,28 @@ export async function POST(request: NextRequest) {
       userId: user.id,
     })
     return NextResponse.json({ error: 'Something went wrong — please try again.' }, { status: 500 })
+  }
+
+  // Fire-and-forget admin notification (see src/app/api/contact/route.ts for
+  // the same pattern) — never blocks the reporter's response.
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL
+  if (adminEmail) {
+    const bugsUrl = `${getSiteUrl()}/app/admin/bugs`
+    const { html, text } = buildEmail({
+      bodyHtml: `<p><strong>Description:</strong></p>
+<p>${description.replace(/\n/g, '<br />')}</p>
+<p><strong>Page:</strong> ${pageUrl ?? 'unknown'}</p>
+<p><strong>Browser:</strong> ${browserInfo ?? 'unknown'}</p>
+<p><strong>Screenshot attached:</strong> ${screenshotPath ? 'yes' : 'no'}</p>
+<p><a href="${bugsUrl}">View in admin</a></p>`,
+      bodyText: `Description:\n${description}\n\nPage: ${pageUrl ?? 'unknown'}\nBrowser: ${browserInfo ?? 'unknown'}\nScreenshot attached: ${screenshotPath ? 'yes' : 'no'}\n\nView in admin: ${bugsUrl}`,
+    })
+    void sendMail({
+      to: adminEmail,
+      subject: `[Bug] report on ${reportTab ?? 'report'}`,
+      html,
+      text,
+    })
   }
 
   return NextResponse.json({ ok: true })

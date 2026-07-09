@@ -625,8 +625,7 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
             'Things to consider — with how to handle each',
             'Complete prioritised next steps',
             'Download as a professional PDF — yours to keep',
-            // TODO(SMTP): when report-ready emails ship, add:
-            // 'Emailed to you the moment it completes',
+            'Emailed to you the moment it completes',
           ].map(item => (
             <li key={item} className="flex gap-2 items-start">
               <svg className="w-4 h-4 text-slate-500 light:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

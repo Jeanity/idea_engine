@@ -18,6 +18,7 @@ import {
 } from '@/lib/prompts/compliance-fallback'
 import { staticComplianceBaseline } from '@/lib/compliance-baseline'
 import { logError } from '@/lib/log-error'
+import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import {
   SYNTHESIS_SYSTEM_PROMPT,
   buildSynthesisMessage,
@@ -707,6 +708,46 @@ export const generateReport = inngest.createFunction(
             : `Report ${reportId} recovered via fallback — failed AI step(s): ${failedStepIds.join(', ')}`,
           detail: { reportId, ideaId, partial, section_status: sectionStatus, steps: stepMetas },
           path: 'generate-report',
+          userId,
+        })
+      }
+    })
+
+    // ── Step 6: Report-ready email ────────────────────────────
+    // Full reports only — the initial (teaser) report completes in seconds
+    // while the user is watching, so there's nothing to email them about.
+    // Own memoized step so a replay of this function never re-sends (Inngest
+    // re-executes the whole body on every step boundary) and so an SMTP
+    // failure can NEVER fail the report run — it's caught and logged, not
+    // rethrown.
+    await step.run('send-ready-email', async () => {
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(userId)
+        const ownerEmail = userData?.user?.email
+        if (!ownerEmail) return
+
+        const reportUrl = `${getSiteUrl()}/app/ideas/${ideaId}/report`
+        const ideaSummary = idea.restatement ?? idea.raw_text
+        const { html, text } = buildEmail({
+          bodyHtml: `<p>Your full report is ready for:</p>
+<p><strong>${ideaSummary}</strong></p>
+<p><a href="${reportUrl}">View your report</a></p>
+<p>You can download it as a PDF from that page too.</p>`,
+          bodyText: `Your full report is ready for:\n\n${ideaSummary}\n\nView your report: ${reportUrl}\n\nYou can download it as a PDF from that page too.`,
+        })
+
+        await sendMail({
+          to: ownerEmail,
+          subject: 'Your full report is ready',
+          html,
+          text,
+        })
+      } catch (err) {
+        await logError({
+          source: 'mailer',
+          message: `Failed to send report-ready email for report ${reportId}`,
+          detail: err,
+          path: 'generate-report:send-ready-email',
           userId,
         })
       }

@@ -1,4 +1,5 @@
 import { createDbClient } from '@/lib/db'
+import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Owner-gated upsert of the signed-in user's own feedback for their report.
@@ -64,6 +65,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (error) {
     console.error('Error saving report feedback:', error)
     return NextResponse.json({ error: 'Failed to save feedback' }, { status: 500 })
+  }
+
+  // Fire-and-forget admin notification — never blocks the submitter's response.
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL
+  if (adminEmail) {
+    const feedbackUrl = `${getSiteUrl()}/app/admin/feedback`
+    const stars = '★'.repeat(rating)
+    const { html, text } = buildEmail({
+      bodyHtml: `<p><strong>Rating:</strong> ${stars} (${rating}/5)</p>
+<p><strong>Comment:</strong></p>
+<p>${trimmedComment ? trimmedComment.replace(/\n/g, '<br />') : '(no comment)'}</p>
+<p><a href="${feedbackUrl}">View in admin</a></p>`,
+      bodyText: `Rating: ${stars} (${rating}/5)\n\nComment:\n${trimmedComment ?? '(no comment)'}\n\nView in admin: ${feedbackUrl}`,
+    })
+    void sendMail({
+      to: adminEmail,
+      subject: `[Feedback] ${rating}★`,
+      html,
+      text,
+    })
   }
 
   return NextResponse.json({ ok: true })

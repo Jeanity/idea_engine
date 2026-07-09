@@ -1,5 +1,6 @@
 import { createDbClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
+import { buildEmail, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { ContactCategory } from '@/lib/database.types'
 
@@ -76,6 +77,30 @@ export async function POST(request: NextRequest) {
       userId: user?.id ?? null,
     })
     return NextResponse.json({ error: 'Something went wrong — please try again.' }, { status: 500 })
+  }
+
+  // Fire-and-forget admin notification — never blocks the submitter's response
+  // and never throws (sendMail swallows its own failures, logging via
+  // logError source 'mailer').
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL
+  if (adminEmail) {
+    const isPartnership = category === 'partnership'
+    const subjectPrefix = isPartnership ? '[Contact — PARTNERSHIP]' : '[Contact]'
+    const { html, text } = buildEmail({
+      bodyHtml: `<p><strong>Category:</strong> ${category}</p>
+<p><strong>Name:</strong> ${name}</p>
+<p><strong>Email:</strong> ${email}</p>
+<p><strong>Message:</strong></p>
+<p>${message.replace(/\n/g, '<br />')}</p>`,
+      bodyText: `Category: ${category}\nName: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+    })
+    void sendMail({
+      to: adminEmail,
+      subject: `${subjectPrefix} ${category}: ${name}`,
+      html,
+      text,
+      replyTo: email,
+    })
   }
 
   return NextResponse.json({ ok: true })

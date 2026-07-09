@@ -1,6 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
+import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Postgres 42P01 = undefined_table, PostgREST PGRST205 = "table not found in
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
   // Only used AFTER the isAdminEmail check above, per project ground rules.
   const { data: feedbackRow } = await service
     .from('report_feedback')
-    .select('id')
+    .select('id, report_id, user_id')
     .eq('id', feedback_id)
     .single()
 
@@ -66,6 +67,61 @@ export async function POST(request: NextRequest) {
     console.error('Error creating feedback reply:', error)
     await logError({ source: 'api:admin/feedback/replies', message: `Create feedback reply failed: ${error.message}`, detail: error, path: 'POST /api/admin/feedback/replies' })
     return NextResponse.json({ error: 'Failed to save reply' }, { status: 500 })
+  }
+
+  // Notify the feedback author by email — best-effort, never blocks the
+  // admin's response. On success, stamp emailed_at; on any failure (missing
+  // auth user, unconfigured SMTP, transport error) it stays null and the
+  // reply still succeeds, per the design in HANDOFF.
+  try {
+    const { data: authorData } = await service.auth.admin.getUserById(feedbackRow.user_id)
+    const authorEmail = authorData?.user?.email
+    if (authorEmail) {
+      const { data: reportRow } = await service
+        .from('reports')
+        .select('idea_id')
+        .eq('id', feedbackRow.report_id)
+        .single()
+      const reportUrl = reportRow?.idea_id
+        ? `${getSiteUrl()}/app/ideas/${reportRow.idea_id}/report`
+        : `${getSiteUrl()}/app/account`
+
+      const publicNote = is_public === true
+        ? '<p style="color:#64748b;font-size:13px;">This reply was posted publicly on the Idea Engine homepage.</p>'
+        : ''
+      const publicNoteText = is_public === true
+        ? '\n(This reply was posted publicly on the Idea Engine homepage.)'
+        : ''
+
+      const { html, text } = buildEmail({
+        bodyHtml: `<p>You have a reply on your Idea Engine feedback:</p>
+<p>${trimmed.replace(/\n/g, '<br />')}</p>
+${publicNote}
+<p><a href="${reportUrl}">View your report</a></p>`,
+        bodyText: `You have a reply on your Idea Engine feedback:\n\n${trimmed}${publicNoteText}\n\nView your report: ${reportUrl}`,
+      })
+
+      const result = await sendMail({
+        to: authorEmail,
+        subject: 'You have a reply on your Idea Engine feedback',
+        html,
+        text,
+      })
+
+      if (result.sent) {
+        await service
+          .from('feedback_replies')
+          .update({ emailed_at: new Date().toISOString() })
+          .eq('id', reply.id)
+      }
+    }
+  } catch (err) {
+    await logError({
+      source: 'mailer',
+      message: 'Failed to send feedback-reply notification email',
+      detail: err,
+      path: 'POST /api/admin/feedback/replies',
+    })
   }
 
   return NextResponse.json({ ok: true, reply })
