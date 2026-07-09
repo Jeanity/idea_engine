@@ -46,6 +46,25 @@ async function captureAcquisition(userId: string, visitorId: string | undefined)
   }
 }
 
+// First-login redirect: a user with no profiles.username set hasn't finished
+// onboarding, so send them to Settings to add it instead of wherever `next`
+// points. Best-effort — any query failure falls back to `next` rather than
+// blocking sign-in.
+async function needsUsername(userId: string): Promise<boolean> {
+  try {
+    const service = createServiceClient()
+    const { data: profile, error } = await service
+      .from('profiles')
+      .select('username')
+      .eq('id', userId)
+      .single()
+    if (error) return false
+    return !profile?.username
+  } catch {
+    return false
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -74,6 +93,9 @@ export async function GET(request: NextRequest) {
     if (!error) {
       if (data.user) {
         await captureAcquisition(data.user.id, cookieStore.get('ie_vid')?.value)
+        if (await needsUsername(data.user.id)) {
+          return NextResponse.redirect(`${origin}/app/account/settings?welcome=1`)
+        }
       }
       return NextResponse.redirect(`${origin}${next}`)
     }

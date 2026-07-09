@@ -69,7 +69,7 @@ export default async function AdminFeedbackPage({
     return {
       ...fb,
       archetypeLabel: archetype ? (ARCHETYPE_LABELS[archetype] ?? archetype) : null,
-      displayName: profile?.display_name ?? profile?.username ?? 'Unknown user',
+      displayName: profile?.username ?? profile?.display_name ?? 'Unknown user',
     }
   })
 

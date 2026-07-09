@@ -231,7 +231,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
 
   const [{ data: reports }, { data: profiles }] = await Promise.all([
     service.from('reports').select('id, idea_id').in('id', reportIds),
-    service.from('profiles').select('id, display_name').in('id', userIds),
+    service.from('profiles').select('id, username, display_name').in('id', userIds),
   ])
 
   const ideaIds = [...new Set((reports ?? []).map(r => r.idea_id))]
@@ -251,7 +251,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
       id: r.id,
       rating: r.rating,
       comment: r.comment,
-      displayName: toPublicDisplayName(profile?.display_name),
+      displayName: toPublicDisplayName(profile?.username, profile?.display_name),
       archetypeLabel: archetype ? (ARCHETYPE_LABELS[archetype] ?? archetype) : null,
     }
   })

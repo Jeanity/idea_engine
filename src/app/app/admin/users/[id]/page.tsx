@@ -84,7 +84,7 @@ export default async function AdminUserDetailPage({
             )}
           </h1>
           <p className="text-sm text-slate-400 light:text-gray-500">
-            {profile?.display_name ?? profile?.username ?? 'No profile name'} · id {authUser.id}
+            {profile?.username ?? profile?.display_name ?? 'No profile name'} · id {authUser.id}
           </p>
         </div>
         <DeleteUserButton userId={id} email={authUser.email ?? null} isAdmin={isAdmin} redirectTo="/app/admin/users" />

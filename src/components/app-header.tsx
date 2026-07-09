@@ -38,7 +38,7 @@ export async function AppHeader({ email }: { email: string }) {
         </Link>
         <nav className="flex items-center gap-4">
           {hasIdeas && (
-            <Link href="/app/account#your-ideas" className="text-sm text-slate-300 light:text-gray-600 hover:text-white light:hover:text-gray-900 font-medium transition-colors">
+            <Link href="/app/account" className="text-sm text-slate-300 light:text-gray-600 hover:text-white light:hover:text-gray-900 font-medium transition-colors">
               My ideas
             </Link>
           )}

@@ -1,17 +1,13 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
-import { AppHeader } from '@/components/app-header'
 import { ScoreRing } from '@/components/score-ring'
 import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
-import { isAdminEmail } from '@/lib/admin'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { isNewUser } from '@/lib/offers'
-import AccountForm from './account-form'
-import DemoModeToggle from './demo-mode-toggle'
 
-export const metadata = { title: 'Account — Idea Engine' }
+export const metadata = { title: 'My ideas — Idea Engine' }
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Classifying',
@@ -27,10 +23,13 @@ const STATUS_COLOURS: Record<string, string> = {
   ready: 'bg-emerald-500/15 text-emerald-300 light:bg-emerald-100 light:text-emerald-700',
 }
 
+// Non-ready statuses stay outside the account shell (the confirm/questions
+// flow) — only a finished report reads in-place, via the account-scoped
+// report route.
 function ideaHref(id: string, status: string) {
   if (status === 'draft') return `/app/ideas/${id}/confirm`
   if (status === 'questioning') return `/app/ideas/${id}/questions`
-  return `/app/ideas/${id}/report`
+  return `/app/account/ideas/${id}/report`
 }
 
 function isUnavailable(v: unknown): boolean {
@@ -93,166 +92,131 @@ async function getAccountOffers(
   )
 }
 
-export default async function AccountPage() {
+export default async function MyIdeasPage() {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, display_name, default_country, default_region, marketing_opt_in, demo_mode, created_at')
+    .select('username, display_name, created_at')
     .eq('id', user.id)
     .single()
 
   const offers = await getAccountOffers(supabase, profile?.created_at ?? user.created_at)
-
-  const isAdmin = isAdminEmail(user.email)
 
   const { data: ideas } = await supabase
     .from('ideas')
     .select('id, raw_text, archetype, status, created_at, reports(status, sections, preview_sections)')
     .order('created_at', { ascending: false })
 
-  const initialSource = profile?.display_name ?? profile?.username ?? user.email!
-  const initial = initialSource.trim().charAt(0).toUpperCase()
-  const identityName = profile?.display_name ?? profile?.username ?? user.email!
+  // Username-first public identity (src/lib/public-name.ts precedence).
+  const identityName = profile?.username ?? profile?.display_name ?? user.email!
+  const initial = identityName.trim().charAt(0).toUpperCase()
 
   return (
-    <main className="min-h-screen bg-slate-950 light:bg-gray-50">
-      <AppHeader email={user.email!} />
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <Link href="/app" className="inline-flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 font-medium mb-6">
-          ← New idea
-        </Link>
-        <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Account</h1>
-        <p className="text-sm text-slate-400 light:text-gray-500 mb-8">Manage your profile and preferences.</p>
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">My ideas</h1>
+      <p className="text-sm text-slate-400 light:text-gray-500 mb-8">Your submitted ideas and their reports.</p>
 
-        {offers.length > 0 && (
-          <div className="mb-8">
-            <OfferBanners offers={offers} />
-          </div>
-        )}
-
-        <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 mb-10 flex items-center gap-4">
-          <div className="flex-shrink-0 h-14 w-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl font-semibold text-white">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <p className="text-white font-semibold truncate">{identityName}</p>
-            <p className="text-indigo-200 text-sm truncate">{user.email}</p>
-          </div>
+      {offers.length > 0 && (
+        <div className="mb-8">
+          <OfferBanners offers={offers} />
         </div>
+      )}
 
-        <div id="your-ideas" className="scroll-mt-6 mb-10">
-          <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-4">Your ideas</h2>
-
-          {!ideas?.length ? (
-            <p className="text-sm text-slate-400 light:text-gray-500">
-              No ideas yet — <Link href="/app" className="text-indigo-400 hover:underline">start one</Link>.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {ideas.map((idea) => {
-                // Supabase returns the to-one embed as an object, but its
-                // inferred type is loose here — narrow it defensively.
-                const report = (Array.isArray(idea.reports) ? idea.reports[0] : idea.reports) as ReportRow | null
-                const { isGenerating, isFailed, canDownload, kindLabel, headlineScore } = reportDisplayState(report)
-
-                return (
-                  <li key={idea.id} className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-5 py-4">
-                    <div className="flex items-center gap-4">
-                      {headlineScore !== null ? (
-                        <ScoreRing score={headlineScore} label="" size={44} />
-                      ) : (
-                        <div className="shrink-0 h-11 w-11 rounded-full border-2 border-dashed border-white/15 light:border-gray-300" aria-hidden="true" />
-                      )}
-
-                      <Link href={ideaHref(idea.id, idea.status)} className="min-w-0 flex-1 group">
-                        <p className="text-sm font-medium text-white light:text-gray-900 truncate group-hover:text-indigo-300 light:group-hover:text-indigo-600 transition-colors">
-                          {idea.raw_text}
-                        </p>
-                        <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
-                          {ARCHETYPE_LABELS[idea.archetype] ?? idea.archetype}
-                          {kindLabel && <span className="mx-1.5">·</span>}
-                          {kindLabel}
-                        </p>
-                      </Link>
-
-                      <div className="shrink-0 flex flex-col items-end gap-1.5">
-                        {/* A finished report gets an action button, not a status badge —
-                            ideas.status never advances past 'researching' when a report
-                            completes, so canDownload (a finished report existing) is the
-                            trustworthy signal. */}
-                        {canDownload && !isGenerating && !isFailed ? (
-                          <Link
-                            href={`/app/ideas/${idea.id}/report`}
-                            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm
-                                       hover:bg-emerald-400 transition-colors"
-                          >
-                            Read Report →
-                          </Link>
-                        ) : (
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            isFailed ? 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
-                            : isGenerating ? 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700'
-                            : STATUS_COLOURS[idea.status] ?? 'bg-slate-500/15 text-slate-300'
-                          }`}>
-                            {isFailed ? 'Failed' : isGenerating ? 'Generating…' : STATUS_LABELS[idea.status] ?? idea.status}
-                          </span>
-                        )}
-                        {canDownload && (
-                          <a
-                            href={`/api/ideas/${idea.id}/report/pdf`}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-medium"
-                          >
-                            Download PDF
-                          </a>
-                        )}
-                        {canDownload && kindLabel === 'Initial report' && (
-                          // TODO(Phase 5): wire to Stripe checkout once the account is
-                          // activated — inert on purpose until then, matching the report
-                          // page's "Unlock full report — coming soon" button.
-                          <button
-                            type="button"
-                            disabled
-                            title="Coming soon"
-                            className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
-                          >
-                            Purchase full report · coming soon
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+      <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 mb-8 flex items-center gap-4">
+        <div className="flex-shrink-0 h-14 w-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl font-semibold text-white">
+          {initial}
         </div>
-
-        {isAdmin && (
-          <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-6 mb-6">
-            <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-1">AI usage — admin</h2>
-            <p className="text-sm text-slate-400 light:text-gray-500 mb-4">
-              Demo Mode answers report runs from canned fixtures — no API spend. Applies to your account only.
-            </p>
-            <DemoModeToggle demoMode={profile?.demo_mode ?? false} />
-          </div>
-        )}
-
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-6">
-          <AccountForm
-            email={user.email!}
-            profile={{
-              username: profile?.username ?? null,
-              display_name: profile?.display_name ?? null,
-              default_country: profile?.default_country ?? null,
-              default_region: profile?.default_region ?? null,
-              marketing_opt_in: profile?.marketing_opt_in ?? false,
-            }}
-          />
+        <div className="min-w-0">
+          <p className="text-white font-semibold truncate">{identityName}</p>
+          <p className="text-indigo-200 text-sm truncate">{user.email}</p>
         </div>
       </div>
-    </main>
+
+      {!ideas?.length ? (
+        <p className="text-sm text-slate-400 light:text-gray-500">
+          No ideas yet — <Link href="/app" className="text-indigo-400 hover:underline">start one</Link>.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {ideas.map((idea) => {
+            // Supabase returns the to-one embed as an object, but its
+            // inferred type is loose here — narrow it defensively.
+            const report = (Array.isArray(idea.reports) ? idea.reports[0] : idea.reports) as ReportRow | null
+            const { isGenerating, isFailed, canDownload, kindLabel, headlineScore } = reportDisplayState(report)
+
+            return (
+              <li key={idea.id} className="rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm px-5 py-4">
+                <div className="flex items-center gap-4">
+                  {headlineScore !== null ? (
+                    <ScoreRing score={headlineScore} label="" size={44} />
+                  ) : (
+                    <div className="shrink-0 h-11 w-11 rounded-full border-2 border-dashed border-white/15 light:border-gray-300" aria-hidden="true" />
+                  )}
+
+                  <Link href={ideaHref(idea.id, idea.status)} className="min-w-0 flex-1 group">
+                    <p className="text-sm font-medium text-white light:text-gray-900 truncate group-hover:text-indigo-300 light:group-hover:text-indigo-600 transition-colors">
+                      {idea.raw_text}
+                    </p>
+                    <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
+                      {ARCHETYPE_LABELS[idea.archetype] ?? idea.archetype}
+                      {kindLabel && <span className="mx-1.5">·</span>}
+                      {kindLabel}
+                    </p>
+                  </Link>
+
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                    {/* A finished report gets an action button, not a status badge —
+                        ideas.status never advances past 'researching' when a report
+                        completes, so canDownload (a finished report existing) is the
+                        trustworthy signal. */}
+                    {canDownload && !isGenerating && !isFailed ? (
+                      <Link
+                        href={`/app/account/ideas/${idea.id}/report`}
+                        className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm
+                                   hover:bg-emerald-400 transition-colors"
+                      >
+                        Read Report →
+                      </Link>
+                    ) : (
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        isFailed ? 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
+                        : isGenerating ? 'bg-blue-500/15 text-blue-300 light:bg-blue-100 light:text-blue-700'
+                        : STATUS_COLOURS[idea.status] ?? 'bg-slate-500/15 text-slate-300'
+                      }`}>
+                        {isFailed ? 'Failed' : isGenerating ? 'Generating…' : STATUS_LABELS[idea.status] ?? idea.status}
+                      </span>
+                    )}
+                    {canDownload && (
+                      <a
+                        href={`/api/ideas/${idea.id}/report/pdf`}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-medium"
+                      >
+                        Download PDF
+                      </a>
+                    )}
+                    {canDownload && kindLabel === 'Initial report' && (
+                      // TODO(Phase 5): wire to Stripe checkout once the account is
+                      // activated — inert on purpose until then, matching the report
+                      // page's "Unlock full report — coming soon" button.
+                      <button
+                        type="button"
+                        disabled
+                        title="Coming soon"
+                        className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
+                      >
+                        Purchase full report · coming soon
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }

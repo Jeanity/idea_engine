@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
       .in('id', userIds)
     if (profilesErr) console.error('Admin dashboard: profiles query failed:', profilesErr)
     for (const p of profiles ?? []) {
-      nameById.set(p.id, p.display_name ?? p.username ?? 'Unknown user')
+      nameById.set(p.id, p.username ?? p.display_name ?? 'Unknown user')
     }
   }
   const feedback = feedbackRows.map(f => ({
