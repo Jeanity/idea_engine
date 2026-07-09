@@ -1,5 +1,7 @@
 import { createDbClient } from '@/lib/db'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isQuestionVisible } from '@/lib/question-visibility'
+import type { Question } from '@/lib/validate-question'
 
 // Kept in sync with COUNTRY_QUESTION in the questions route — that question
 // is injected at request time (not part of the static JSON banks), so its
@@ -7,11 +9,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 const COUNTRY_QUESTION_KEY = 'founder_location_country'
 const REGION_QUESTION_KEY = 'founder_location_region'
 
-function loadRequiredKeys(archetype: string): string[] {
+// Required-but-hidden (unmet show_if) questions are excluded here — they were
+// never shown to the founder, so they can't be required for completion.
+function loadRequiredKeys(archetype: string, answers: Array<{ question_key: string; answer_text: string }>): string[] {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const bank = require(`@/lib/questions/${archetype}.json`) as Array<{ key: string; required: boolean }>
-    return [...bank.filter(q => q.required).map(q => q.key), COUNTRY_QUESTION_KEY]
+    const bank = require(`@/lib/questions/${archetype}.json`) as Question[]
+    const requiredVisible = bank
+      .filter(q => q.required && isQuestionVisible(q, answers))
+      .map(q => q.key)
+    return [...requiredVisible, COUNTRY_QUESTION_KEY]
   } catch {
     return [COUNTRY_QUESTION_KEY]
   }
@@ -37,7 +44,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     .eq('idea_id', id)
 
   const answeredKeys = new Set((answers ?? []).map(a => a.question_key))
-  const requiredKeys = loadRequiredKeys(idea.archetype)
+  const requiredKeys = loadRequiredKeys(idea.archetype, answers ?? [])
   const missing = requiredKeys.filter(k => !answeredKeys.has(k))
 
   if (missing.length > 0) {

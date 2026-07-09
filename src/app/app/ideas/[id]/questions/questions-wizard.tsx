@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { COUNTRIES, symbolForCountry } from '@/lib/countries'
+import { isQuestionVisible } from '@/lib/question-visibility'
 
 interface Question {
   key: string
@@ -12,6 +13,17 @@ interface Question {
   options?: string[]
   required: boolean
   maps_to?: string
+  show_if?: { key: string; in: string[] }
+}
+
+// Absolute indices (into the full `questions` array) of questions currently
+// visible given `answers` — hidden questions (unmet show_if) are skipped
+// entirely: not shown, not counted in progress, never block submission.
+function visibleIndices(qs: Question[], answers: Map<string, string>): number[] {
+  return qs.reduce<number[]>((acc, qq, i) => {
+    if (isQuestionVisible(qq, answers)) acc.push(i)
+    return acc
+  }, [])
 }
 
 const COUNTRY_QUESTION_KEY = 'founder_location_country'
@@ -198,12 +210,15 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         setAnswers(answerMap)
 
         // Jump straight to the question being edited (from the review page),
-        // otherwise resume from the first unanswered question
+        // otherwise resume from the first unanswered *visible* question
         const editIdx = editKey ? qs.findIndex(q => q.key === editKey) : -1
-        const firstUnanswered = qs.findIndex(q => !answerMap.has(q.key))
+        const visIdx = visibleIndices(qs, answerMap)
+        const firstUnansweredVisible = visIdx.find(i => !answerMap.has(qs[i].key))
         const resumeIdx = editIdx !== -1
           ? editIdx
-          : firstUnanswered === -1 ? Math.max(0, qs.length - 1) : firstUnanswered
+          : firstUnansweredVisible !== undefined
+            ? firstUnansweredVisible
+            : visIdx.length > 0 ? visIdx[visIdx.length - 1] : Math.max(0, qs.length - 1)
         setCurrentIndex(resumeIdx)
         setLoading(false)
       })
@@ -274,10 +289,11 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         return
       }
 
-      // After answering last required static question, fetch to pick up dynamic questions
+      // After answering last required *visible* static question, fetch to pick
+      // up dynamic questions — required-but-hidden questions never gate this.
       if (!hasFetchedDynamic) {
         const allRequiredAnswered = questions
-          .filter(qq => qq.required)
+          .filter(qq => qq.required && isQuestionVisible(qq, newAnswers))
           .every(qq => newAnswers.has(qq.key))
 
         if (allRequiredAnswered) {
@@ -288,8 +304,14 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         }
       }
 
-      if (currentIndex < updatedQuestions.length - 1) {
-        setCurrentIndex(currentIndex + 1)
+      // Advance to the next visible question, re-evaluated against the answer
+      // we just saved (a changed answer can hide or reveal later questions).
+      const visIdx = visibleIndices(updatedQuestions, newAnswers)
+      const pos = visIdx.indexOf(currentIndex)
+      const nextIdx = pos !== -1 ? visIdx[pos + 1] : visIdx.find(i => i > currentIndex)
+
+      if (nextIdx !== undefined) {
+        setCurrentIndex(nextIdx)
       } else {
         await completeWizard()
       }
@@ -309,8 +331,11 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
     setValidationError(null)
     setSaving(true)
     try {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(currentIndex + 1)
+      const visIdx = visibleIndices(questions, answers)
+      const pos = visIdx.indexOf(currentIndex)
+      const nextIdx = pos !== -1 ? visIdx[pos + 1] : visIdx.find(i => i > currentIndex)
+      if (nextIdx !== undefined) {
+        setCurrentIndex(nextIdx)
       } else {
         await completeWizard()
       }
@@ -324,8 +349,11 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
       router.push(`/app/ideas/${ideaId}/summary`)
       return
     }
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
+    const visIdx = visibleIndices(questions, answers)
+    const pos = visIdx.indexOf(currentIndex)
+    const prevIdx = pos > 0 ? visIdx[pos - 1] : undefined
+    if (prevIdx !== undefined) {
+      setCurrentIndex(prevIdx)
       setValidationError(null)
     }
   }
@@ -360,9 +388,14 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
     setValidationError(null)
   }
 
-  const isLast = currentIndex === questions.length - 1
-  const answeredCount = questions.filter(qq => answers.has(qq.key)).length
-  const progressPct = Math.round((answeredCount / questions.length) * 100)
+  // Progress/navigation are computed over *visible* questions only — hidden
+  // (unmet show_if) questions never appear in the count or step numbering.
+  const visIdx = visibleIndices(questions, answers)
+  const posInVisible = visIdx.indexOf(currentIndex)
+  const visibleTotal = visIdx.length || 1
+  const isLast = posInVisible === -1 || posInVisible === visIdx.length - 1
+  const answeredCount = visIdx.filter(i => answers.has(questions[i].key)).length
+  const progressPct = Math.round((answeredCount / visibleTotal) * 100)
 
   // Country is the first question, so money questions after it can render in
   // the founder's own currency symbol.
@@ -380,7 +413,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
         <div>
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs text-slate-500 light:text-gray-400 font-medium">
-              Question {currentIndex + 1} of {questions.length}
+              Question {(posInVisible === -1 ? 0 : posInVisible) + 1} of {visibleTotal}
             </span>
             <span className="text-xs text-slate-500 light:text-gray-400">{progressPct}%</span>
           </div>
@@ -462,7 +495,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
       <div className="flex items-center justify-between">
         <button
           onClick={handleBack}
-          disabled={(currentIndex === 0 && !isEditing) || saving}
+          disabled={(posInVisible <= 0 && !isEditing) || saving}
           className="text-sm text-slate-300 hover:text-white light:text-gray-700 light:hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {isEditing ? '← Back to review' : '← Back'}

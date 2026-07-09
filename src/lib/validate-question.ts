@@ -26,6 +26,10 @@ export interface Question {
   options?: string[]
   required: boolean
   maps_to: string
+  // Static-bank-only conditional visibility: the question is only shown/
+  // required when the answer to `key` is one of `in`. Dynamic (AI-generated)
+  // questions never carry this — validateQuestion strips it.
+  show_if?: { key: string; in: string[] }
 }
 
 export function validateQuestion(
@@ -45,7 +49,9 @@ export function validateQuestion(
   if (typeof obj.maps_to !== 'string') return null
   if (!(ALL_MAPS_TO_KEYS as readonly string[]).includes(obj.maps_to)) return null
   if (usedMapsto.includes(obj.maps_to)) return null
-  return { ...(obj as unknown as Question), required: false }
+  // show_if is a static-bank-only feature; dynamic questions never carry it.
+  const { show_if: _show_if, ...rest } = obj as unknown as Question
+  return { ...rest, required: false }
 }
 
 export function firstUnansweredIndex(questions: Question[], answeredKeys: Set<string>): number {

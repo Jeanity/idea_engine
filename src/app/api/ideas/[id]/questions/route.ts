@@ -3,6 +3,7 @@ import { callAI } from '@/lib/ai'
 import { DYNAMIC_QUESTIONS_SYSTEM_PROMPT, buildDynamicQuestionsMessage } from '@/lib/prompts/dynamic-questions'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ALL_MAPS_TO_KEYS, validateQuestion, type Question } from '@/lib/validate-question'
+import { isQuestionVisible } from '@/lib/question-visibility'
 
 // Asked for every idea regardless of archetype — the report's "upside" framing
 // is calibrated against the founder's own definition of success, not a generic
@@ -156,7 +157,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const staticBank = loadBank(idea.archetype)
 
   const answeredKeys = new Set((existingAnswers ?? []).map(a => a.question_key))
-  const allRequiredAnswered = staticBank.filter(q => q.required).every(q => answeredKeys.has(q.key))
+  const allRequiredAnswered = staticBank
+    .filter(q => q.required && isQuestionVisible(q, existingAnswers ?? []))
+    .every(q => answeredKeys.has(q.key))
 
   let dynamicQuestions: Question[] = []
   if (allRequiredAnswered && staticBank.length > 0) {

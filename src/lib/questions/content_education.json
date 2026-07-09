@@ -8,17 +8,14 @@
     "maps_to": "market.target_customer"
   },
   {
-    "key": "content_primary_channel",
-    "text": "Which channel is primary?",
+    "key": "content_delivery_format",
+    "text": "How will people get your teaching or content?",
     "input_type": "select",
     "options": [
-      "YouTube",
-      "TikTok / short-form video",
-      "Podcast",
-      "Newsletter / blog",
-      "Online course platform",
-      "Paid community",
-      "Coaching / consulting"
+      "Published content (videos, podcast, newsletter, blog)",
+      "Online course or paid community",
+      "Live sessions I deliver (one-on-one or small group)",
+      "A mix of content and live sessions"
     ],
     "required": true,
     "maps_to": "idea.sales_channel"
@@ -67,7 +64,15 @@
       "Regular cadence, growing"
     ],
     "required": true,
-    "maps_to": "resource.existing_content"
+    "maps_to": "resource.existing_content",
+    "show_if": {
+      "key": "content_delivery_format",
+      "in": [
+        "Published content (videos, podcast, newsletter, blog)",
+        "Online course or paid community",
+        "A mix of content and live sessions"
+      ]
+    }
   },
   {
     "key": "content_audience_size",
@@ -76,7 +81,45 @@
     "input_type": "select",
     "options": ["None yet", "Under 1k", "1k–10k", "10k–100k", "100k+"],
     "required": true,
-    "maps_to": "resource.audience_size"
+    "maps_to": "resource.audience_size",
+    "show_if": {
+      "key": "content_delivery_format",
+      "in": [
+        "Published content (videos, podcast, newsletter, blog)",
+        "Online course or paid community",
+        "A mix of content and live sessions"
+      ]
+    }
+  },
+  {
+    "key": "content_session_format",
+    "text": "How will you run your sessions?",
+    "input_type": "select",
+    "options": ["Online (video calls)", "In person", "Both online and in person"],
+    "required": true,
+    "maps_to": "cost.fulfilment_model",
+    "show_if": {
+      "key": "content_delivery_format",
+      "in": [
+        "Live sessions I deliver (one-on-one or small group)",
+        "A mix of content and live sessions"
+      ]
+    }
+  },
+  {
+    "key": "content_session_pricing",
+    "text": "How will you charge for sessions?",
+    "input_type": "select",
+    "options": ["Per single session", "Session packages", "Monthly subscription/retainer", "Not sure yet"],
+    "required": true,
+    "maps_to": "price.model",
+    "show_if": {
+      "key": "content_delivery_format",
+      "in": [
+        "Live sessions I deliver (one-on-one or small group)",
+        "A mix of content and live sessions"
+      ]
+    }
   },
   {
     "key": "content_time_commitment",
