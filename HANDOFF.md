@@ -69,11 +69,46 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
   revisiting then.
 
 ## Next-up queue (nothing in flight)
-1. SMTP wiring (when Danny's domain hosting exists) — unblocks the 6 dangling email hooks above.
+1. ~~SMTP wiring~~ DONE later this session (`b95fa62` — IONOS live, all email hooks wired).
 2. Multi-day admin charts still bucket UTC days (needs RPC migration for local-day grouping —
    single-day/hourly is already local).
 3. Standing backlog: security/privacy workstream, 4B.3 cost/quality matrix, real stats for
-   demo-stats.ts, viability-score calibration, fixtures re-capture.
+   demo-stats.ts, viability-score calibration, fixtures re-capture, multi-admin roles
+   (ADMIN_EMAIL is a single env var — needs an is_admin mechanism before admin #2 joins).
+
+---
+
+# NEXT UP — Survey system v2: multi-survey + groups + targeting (SPEC ONLY, 2026-07-09)
+
+Danny's request. NOT started — he flagged it as a whole system / large task, deliberately
+deferred. Current state for context: ONE global survey (migration 014 — survey_questions /
+survey_responses, app-wide on/off in app_settings, shown once per user at the end of reports).
+
+## Requirements (Danny's words, mapped)
+1. **Admin nav gets a dropdown under "Surveys"** with subsections: **Create survey** and
+   **Analytics / Responses**. (The admin sidebar currently has no expandable/nested nav items —
+   AdminShell's NavItem type needs a `children` concept; keep collapse behaviour + active-pill
+   logic working.)
+2. **Multiple surveys, groupable**: create a survey GROUP, add surveys to it — e.g. one survey
+   for first-time users, another for first-time purchasers, "another for whatever".
+3. **Targeting**: per survey (or group), Danny selects **who / when / where** it is shown.
+
+## Design sketch (settle at build time)
+- Tables: `surveys` (id, name, group_id, active, placement, audience, created_at),
+  `survey_groups` (id, name), `survey_questions` gains `survey_id` fk (migrate the existing
+  global questions into a default "Launch survey"), `survey_responses` gains `survey_id`.
+- Targeting dimensions to support first: **audience** (all users / first report just completed /
+  first purchase just completed / promo users / repeat users) and **placement** (end of full
+  report / end of initial report / account page / post-purchase). "When" (date windows or
+  after-N-days) can be v2.1.
+- Eligibility resolution: one helper `pickSurveyFor(user, placement)` — first active survey
+  matching placement + audience that the user hasn't answered; a user answers a given survey once.
+- Response analytics per survey + per group rollup; keep the on-demand Haiku AI summary,
+  scoped to a survey.
+- Migration renumber note: check supabase/migrations/ max at build time (022 contact_replies
+  was next as of this writing).
+- Purchase-based audiences depend on the purchases table having real rows — fine to build the
+  enum now; those audiences just match nobody until payments ship.
 
 ---
 
