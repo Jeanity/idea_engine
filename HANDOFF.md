@@ -104,9 +104,12 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
 - **Payments LAST**, multi-processor (Stripe + PayPal + Afterpay — Danny researching). Don't
   suggest Stripe signup as a next action. Facts gathered 2026-07-10: Danny is ALREADY a
   PayPal + Afterpay merchant via Jeanity — PayPal likely reusable (same-ABN account, new API
-  app, check buyer-facing display name isn't "Jeanity"); Afterpay status is probably
-  Shopify-bound so the path for hadidea is Afterpay-through-Stripe-Checkout (bundled for AU,
-  no separate Afterpay onboarding). Shopify Buy Button evaluated and REJECTED (checkout
+  app, check buyer-facing display name isn't "Jeanity"); Afterpay is a DIRECT full
+  merchant relationship (NOT Shopify-bound — corrected by Danny 2026-07-10), so hadidea has
+  two Afterpay paths to weigh at build time: (a) add hadidea.com as an additional brand/site
+  under the existing Afterpay merchant account (approval step, keeps his negotiated rate,
+  direct API = redirect checkout flow) vs (b) Afterpay-through-Stripe (zero onboarding, one
+  integration, Stripe's ~6%+30¢ AU rate). Cost-vs-effort call, not a default. Shopify Buy Button evaluated and REJECTED (checkout
   disconnected from app auth → fragile order→user matching, wrong brand, monthly cost).
   Paddle / Lemon Squeezy flagged as merchant-of-record alternatives (handle global GST/VAT —
   worth weighing as solo operator). Refund policy is now LIVE in /terms §5 (2026-07-10,
