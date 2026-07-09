@@ -1,6 +1,86 @@
-# Handoff — 2026-07-09 (Dashboard polish, feedback cards, scrolling testimonials, local time)
+# Handoff — 2026-07-09 (marathon session — launch-trial infrastructure)
 
-**Committed on branch `feat/report-appendix-editlimit-demo-mode`, NOT pushed.** Two commits
+Everything below is BUILT, PUSHED to main, and (per Danny) migrations 011–020 are RUN in prod.
+Workflow: plan-file → Sonnet/Haiku subagent → Fable review+push per task; plans in
+docs/plan/2026-07-09-*.md. Supersedes the section after it (same date, earlier session).
+
+## Shipped today (commit order, all on main)
+1. `82767a8`/`32bb4e4`/`b05d894` — admin dashboard: AI-cost donut split initial vs full,
+   period-scoped donuts, local-midnight hourly charts (tz param), 4-decimal cost display.
+2. `6e25e14`/`3023c37` — **account area rebuild**: sidebar shell (`/app/account` = My ideas,
+   `/app/account/settings`, in-shell report route), first-login redirect to settings when
+   username unset, username-first public identity, self-service delete-account (typed
+   confirm, cascade, no undelete), admin↔account cross-links.
+3. `0fa5ea1` — mobile responsive pass (10 files).
+4. `9392f26` — **sample-report management** (migration 011): admin clone-from-report CRUD at
+   /app/admin/samples, public gallery + modal. Danny has added real samples.
+5. `0c768ab` — **public site batch** (migration 012): footer, /terms /privacy /about (draft
+   banner), /faq, /contact + admin queue (partnership rows highlighted), account-icon
+   dropdown in app header.
+6. `e251e1f` — **promo mode** (migration 013): app-wide free-full-report mode, admin caps
+   (spend/count/per-user), auto-revert to live, evaluatePromoGate pure+tested. Header pill
+   shows Promo Mode (violet) when active (`ae8a5e4`).
+7. `68f9460` — **surveys** (migration 014): report-end survey, admin question manager
+   (delete only when zero responses), responses view, on-demand Haiku AI summary. Danny has
+   a drafted 10-question launch survey (chat 2026-07-09 — ratings 1-5 usefulness/trust/
+   recommend, most/least valuable section, next-action, willingness-to-pay bands, PMF
+   disappointment q, 2 open texts).
+8. `596072b` — **report counting fix** (migration 015): teaser_completed_at column; initial
+   and full reports count as separate events (upgrade no longer erases the initial from stats).
+9. `bdd9e4c` — **classifier fix**: 1:1 session coaching/tutoring → local_service (verified
+   live by Danny — his seniors-app-coaching idea now classifies correctly).
+10. `fcc7c7e` — **conditional questions** (`show_if` on Question): content_education bank
+    branches on delivery format (published/course vs live sessions).
+11. `741b03c` — **essential-services block** (migration 016): render-time, affiliate-aware
+    (country match → global → Google-search fallback), /go/ click tracking, disclosure line.
+12. `1af8508` — **"Getting set up" tab**: block moved out of compliance into its own tab
+    (after compliance), 5 groups, archetype-aware category filtering, socials card, own PDF page.
+13. `f5e741c` — **multi-country affiliates** (migration 017): countries text[] (Hnry = AU+NZ).
+14. `91fbb67` — **bug widget** (migration 018): in-report modal + screenshot (private bucket
+    created IN the migration), admin /app/admin/bugs triage queue.
+15. `ee612ea` — **feedback replies + moderation** (migration 019): admin replies public/private,
+    hide toggle, admin_public approval (homepage rule = admin_public AND allow_public AND NOT
+    hidden AND featured; featured rows backfilled). emailed_at ships null until SMTP.
+16. `2863243` — initial-report upsell list refreshed (13 items incl. Getting set up, funding,
+    PDF; email line is a TODO comment until SMTP) + "See a full sample report" link with
+    validated-path back button on /sample-report.
+17. `de2bec4`/`d87a9dd`/`8a788a8` — **cookie consent**: accept/decline/manage, decline fires
+    ONE anonymous session ping (10-min sessionStorage throttle, no vid) then silence,
+    footer "Cookie preferences" reopens, GA-ready hasAnalyticsConsent() hook. Final copy is
+    the cheeky "not the creepy kind… we'll ask first" version (Danny-approved).
+18. `ee612ea`-adjacent — **promo abuse guard** (migration 020): normalized-email/+tag/
+    gmail-dot dedupe, disposable-domain blocklist, ie_ab browser cookie (strictly-necessary,
+    consent-independent), IP velocity (≥3/day denies), all denials reuse the positive
+    per-user-limit message, suspiciousClusters count on the admin promo card.
+
+## Danny's launch sequence (admin UI, no code)
+Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → Start.
+
+## Decisions made today (bind future work)
+- **Payments LAST**, multi-processor (Stripe + PayPal + Afterpay — Danny researching). Don't
+  suggest Stripe signup as a next action.
+- **Blog/Articles on the back burner** with payments.
+- **SMTP**: Danny will use his own business-domain email accounts once hosting is set up;
+  the wiring task then covers: contact/bug/feedback-reply notifications, report-ready email,
+  the upsell email-line TODO, Users invite action, feedback_replies.emailed_at.
+- Cookie banner promise "if that ever changes, we'll ask first" = adding marketing/affiliate
+  cookie categories later requires a new Manage toggle + re-prompt (consent versioning).
+- GA when added must load ONLY behind hasAnalyticsConsent(); the "creepy" copy line needs
+  revisiting then.
+
+## Next-up queue (nothing in flight)
+1. SMTP wiring (when Danny's domain hosting exists) — unblocks the 6 dangling email hooks above.
+2. Multi-day admin charts still bucket UTC days (needs RPC migration for local-day grouping —
+   single-day/hourly is already local).
+3. Standing backlog: security/privacy workstream, 4B.3 cost/quality matrix, real stats for
+   demo-stats.ts, viability-score calibration, fixtures re-capture.
+
+---
+
+# Handoff — 2026-07-09 EARLIER SESSION (Dashboard polish, feedback cards, scrolling testimonials, local time)
+
+**Committed on branch `feat/report-appendix-editlimit-demo-mode`, NOT pushed.** [Since merged
+to main and pushed — see the session above.] Two commits
 this session: `390eb9e` and `c658e68`. tsc/build/70 tests all clean. NOT click-tested (auth).
 
 ## What shipped — commit `390eb9e`
