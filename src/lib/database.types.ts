@@ -20,6 +20,7 @@ export type OfferAudience = 'new_users' | 'account_holders' | 'everyone'
 export type ContactCategory = 'feedback' | 'complaint' | 'question' | 'partnership'
 export type ContactStatus = 'open' | 'replied' | 'closed'
 export type SurveyQuestionType = 'text' | 'rating' | 'multiple_choice'
+export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
 
 export type Database = {
   public: {
@@ -660,6 +661,46 @@ export type Database = {
             referencedColumns: ['id']
           }
         ]
+      }
+      bug_reports: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          idea_id: string | null
+          report_id: string | null
+          report_tab: string | null
+          description: string
+          screenshot_path: string | null
+          browser_info: string | null
+          page_url: string | null
+          status: BugReportStatus
+          admin_notes: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          idea_id?: string | null
+          report_id?: string | null
+          report_tab?: string | null
+          description: string
+          screenshot_path?: string | null
+          browser_info?: string | null
+          page_url?: string | null
+          status?: BugReportStatus
+          admin_notes?: string | null
+        }
+        Update: {
+          report_tab?: string | null
+          description?: string
+          screenshot_path?: string | null
+          browser_info?: string | null
+          page_url?: string | null
+          status?: BugReportStatus
+          admin_notes?: string | null
+        }
+        Relationships: []
       }
     }
     Views: Record<string, never>

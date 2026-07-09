@@ -15,6 +15,7 @@ import {
   ClipboardList,
   DollarSign,
   AlertTriangle,
+  Bug,
   Settings,
   UserCircle,
   PanelLeftClose,
@@ -71,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'System',
     items: [
       { href: '/app/admin/errors', label: 'Errors', icon: AlertTriangle },
+      { href: '/app/admin/bugs', label: 'Bugs', icon: Bug },
       { href: '/app/admin/settings', label: 'Settings', icon: Settings },
       { href: '/app/account', label: 'My account', icon: UserCircle, noActive: true },
     ],

@@ -9,6 +9,7 @@ import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
 import { SectionLabel } from '@/components/admin/section-label'
 import { SurveyCard, type SurveyData } from './survey-card'
+import { BugReportWidget } from '@/components/bug-report-widget'
 
 interface ReportData {
   id: string
@@ -821,9 +822,16 @@ const REPORT_TABS = [
 
 type ReportTabKey = typeof REPORT_TABS[number]['key']
 
-export function FullReportViewer({ report, essentialServices = [] }: { report: ReportData; essentialServices?: ResolvedEssentialService[] }) {
+export function FullReportViewer({ report, essentialServices = [], onActiveTabChange }: { report: ReportData; essentialServices?: ResolvedEssentialService[]; onActiveTabChange?: (tab: ReportTabKey) => void }) {
   const s = report.sections
   const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
+
+  // Lets the parent (ReportClient) know which tab is showing, so the "Report
+  // a bug" widget in its link stack can auto-capture report_tab context.
+  useEffect(() => {
+    onActiveTabChange?.(activeTab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
   const meta = s._meta as { partial?: boolean; section_status?: Record<string, string> } | undefined
   const competitorsInferred = meta?.section_status?.competitors === 'fallback_inferred'
@@ -1718,6 +1726,7 @@ function AffiliateDisclosure() {
 export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus, surveyData, essentialServices }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
+  const [fullReportTab, setFullReportTab] = useState<string | undefined>(undefined)
 
   const hasFullSections = report?.status === 'complete' && Object.keys(report.sections).length > 0
   const reportMeta = report?.sections?._meta as { cost_usd?: number; model?: string } | undefined
@@ -1727,7 +1736,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   if (hasFullSections && !regenerating) {
     return (
       <div>
-        <FullReportViewer report={report!} essentialServices={essentialServices} />
+        <FullReportViewer report={report!} essentialServices={essentialServices} onActiveTabChange={setFullReportTab} />
         <div className="mb-8">
           <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} />
         </div>
@@ -1746,6 +1755,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
           >
             Review / edit answers
           </Link>
+          <BugReportWidget ideaId={ideaId} reportId={report!.id} reportTab={fullReportTab} />
           <AffiliateDisclosure />
         </div>
         <div className="mb-8">
@@ -1773,6 +1783,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
           >
             Review / edit answers
           </Link>
+          <BugReportWidget ideaId={ideaId} reportId={report.id} reportTab={null} />
           <AffiliateDisclosure />
         </div>
         <div className="mb-8">
