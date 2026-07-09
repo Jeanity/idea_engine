@@ -26,7 +26,7 @@ export interface CostsData {
   last30d: CostBucket
   average: { avgPerReportUsd: number; count: number }
   custom: (CostBucket & { from: string; to: string }) | null
-  costsByModel?: ModelCostEntry[]
+  costsByModel?: { initial: ModelCostEntry[]; full: ModelCostEntry[] }
 }
 
 type Mode = 'average' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'

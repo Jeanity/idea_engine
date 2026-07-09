@@ -119,39 +119,61 @@ function shortModelName(model: string): string {
     .replace(/-\d{8}$/, '')
 }
 
-function AiCostByModelDonut({ entries }: { entries: ModelCostEntry[] | null }) {
-  const total = entries?.reduce((sum, e) => sum + e.totalUsd, 0) ?? 0
+function MiniDonut({ label, entries, colors }: { label: string; entries: ModelCostEntry[]; colors: string[] }) {
+  const total = entries.reduce((sum, e) => sum + e.totalUsd, 0)
+  if (total === 0) {
+    return (
+      <div className="flex-1">
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-500 light:text-gray-400">{label}</p>
+        <p className="text-xs text-slate-500 light:text-gray-400">No data yet.</p>
+      </div>
+    )
+  }
   return (
-    <WidgetCard title="AI cost by model" subtitle="All-time spend per model">
-      {!entries || total === 0 ? (
+    <div className="flex-1 min-w-0">
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-500 light:text-gray-400">{label}</p>
+      <div className="flex items-center gap-3">
+        <div style={{ width: 80, height: 80 }} className="shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={entries} dataKey="totalUsd" innerRadius={26} outerRadius={38} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                {entries.map((_, i) => (
+                  <Cell key={i} fill={colors[i % colors.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="min-w-0 space-y-1">
+          {entries.map((d, i) => (
+            <div key={d.model} className="flex items-center gap-1.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: colors[i % colors.length] }} aria-hidden="true" />
+              <span className="truncate text-[11px] text-slate-300 light:text-gray-700">{shortModelName(d.model)}</span>
+              <span className="ml-auto text-[11px] font-semibold text-white light:text-gray-900">{fmtUsd(d.totalUsd)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const INITIAL_DONUT_COLORS = ['#818cf8', '#34d399', '#f472b6', '#22d3ee']
+const FULL_DONUT_COLORS = ['#fbbf24', '#818cf8', '#34d399', '#f472b6', '#22d3ee', '#fb923c']
+
+function AiCostByModelDonut({ data }: { data: { initial: ModelCostEntry[]; full: ModelCostEntry[] } | null }) {
+  const hasAny = data && ([...data.initial, ...data.full].some(e => e.totalUsd > 0))
+  return (
+    <WidgetCard title="AI cost by model" subtitle="Initial vs. full report spend">
+      {!data || !hasAny ? (
         <div className="flex h-[180px] items-center justify-center text-xs text-slate-500 light:text-gray-400">
           No AI cost data yet.
         </div>
       ) : (
-        <div className="flex items-center gap-4">
-          <div style={{ width: 128, height: 128 }} className="shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={entries} dataKey="totalUsd" innerRadius={40} outerRadius={60} paddingAngle={2} stroke="none" isAnimationActive={false}>
-                  {entries.map((_, i) => (
-                    <Cell key={i} fill={MODEL_DONUT_COLORS[i % MODEL_DONUT_COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="min-w-0 space-y-1.5">
-            {entries.map((d, i) => (
-              <div key={d.model} className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: MODEL_DONUT_COLORS[i % MODEL_DONUT_COLORS.length] }} aria-hidden="true" />
-                <span className="truncate text-xs text-slate-300 light:text-gray-700">{shortModelName(d.model)}</span>
-                <span className="ml-auto text-xs font-semibold text-white light:text-gray-900">{fmtUsd(d.totalUsd)}</span>
-                <span className="w-10 text-right text-[11px] text-slate-500 light:text-gray-400">
-                  {Math.round((d.totalUsd / total) * 100)}%
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="flex gap-4">
+          <MiniDonut label="Initial" entries={data.initial} colors={INITIAL_DONUT_COLORS} />
+          <div className="w-px self-stretch bg-white/10 light:bg-gray-200" />
+          <MiniDonut label="Full" entries={data.full} colors={FULL_DONUT_COLORS} />
         </div>
       )}
     </WidgetCard>
@@ -398,7 +420,7 @@ export function DashboardClient({ adminId }: { adminId: string }) {
         ),
       },
       { id: 'report-costs', defaultSpan: 1, defaultHeight: 'half', node: <ReportCostsWidget presets={dash?.costs ?? null} /> },
-      { id: 'ai-cost-by-model', defaultSpan: 1, defaultHeight: 'half', node: <AiCostByModelDonut entries={dash?.costs?.costsByModel ?? null} /> },
+      { id: 'ai-cost-by-model', defaultSpan: 1, defaultHeight: 'half', node: <AiCostByModelDonut data={dash?.costs?.costsByModel ?? null} /> },
       { id: 'todays-sales', defaultSpan: 1, defaultHeight: 'full', node: <TodaysSalesWidget /> },
       { id: 'latest-affiliates', defaultSpan: 1, defaultHeight: 'half', node: <LatestAffiliates rows={dash?.affiliates ?? null} /> },
       { id: 'latest-feedback', defaultSpan: 1, defaultHeight: 'half', node: <LatestFeedback rows={dash?.feedback ?? null} /> },

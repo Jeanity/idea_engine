@@ -193,30 +193,47 @@ export async function GET(request: NextRequest) {
     displayName: nameById.get(f.user_id) ?? 'Unknown user',
   }))
 
-  // --- Per-model cost breakdown (from _meta.steps in sections JSONB). ---
+  // --- Per-model cost breakdown, split by report phase. ---
+  // Full reports store per-step costs in sections._meta.steps.
+  // Initial reports (teasers) don't write _meta — their cost is the difference
+  // between the row's cost_usd and _meta.cost_usd (or the full cost_usd when
+  // no _meta exists, i.e. teaser-only reports). Teasers always use Haiku.
   const { data: metaRows, error: metaErr } = await service
     .from('reports')
-    .select('sections')
+    .select('cost_usd, sections')
     .not('cost_usd', 'is', null)
     .not('generation_completed_at', 'is', null)
 
   if (metaErr) console.error('Admin dashboard: meta query failed:', metaErr)
 
-  const costByModel: Record<string, number> = {}
+  const fullByModel: Record<string, number> = {}
+  const initialByModel: Record<string, number> = {}
+  const TEASER_MODEL = 'claude-haiku-4-5-20251001'
+
   for (const row of metaRows ?? []) {
+    const rowCost = row.cost_usd ?? 0
     const meta = (row.sections as Record<string, unknown>)?._meta as
-      | { steps?: Record<string, { model?: string; cost_usd?: number }> }
+      | { cost_usd?: number; steps?: Record<string, { model?: string; cost_usd?: number }> }
       | undefined
-    if (!meta?.steps) continue
-    for (const step of Object.values(meta.steps)) {
-      const model = step.model ?? 'unknown'
-      costByModel[model] = (costByModel[model] ?? 0) + (step.cost_usd ?? 0)
+
+    if (meta?.steps) {
+      for (const step of Object.values(meta.steps)) {
+        const model = step.model ?? 'unknown'
+        fullByModel[model] = (fullByModel[model] ?? 0) + (step.cost_usd ?? 0)
+      }
+      const teaserCost = rowCost - (meta.cost_usd ?? 0)
+      if (teaserCost > 0.0001) {
+        initialByModel[TEASER_MODEL] = (initialByModel[TEASER_MODEL] ?? 0) + teaserCost
+      }
+    } else {
+      initialByModel[TEASER_MODEL] = (initialByModel[TEASER_MODEL] ?? 0) + rowCost
     }
   }
 
-  const costsByModel = Object.entries(costByModel)
-    .map(([model, totalUsd]) => ({ model, totalUsd: round4(totalUsd) }))
-    .sort((a, b) => b.totalUsd - a.totalUsd)
+  const toSorted = (map: Record<string, number>) =>
+    Object.entries(map)
+      .map(([model, totalUsd]) => ({ model, totalUsd: round4(totalUsd) }))
+      .sort((a, b) => b.totalUsd - a.totalUsd)
 
   return NextResponse.json({
     costs: {
@@ -226,7 +243,7 @@ export async function GET(request: NextRequest) {
       last30d: { totalUsd: round4(last30d.totalUsd), count: last30d.count },
       average: { avgPerReportUsd: round4(avgPerReportUsd), count: allTimeCount },
       custom,
-      costsByModel,
+      costsByModel: { initial: toSorted(initialByModel), full: toSorted(fullByModel) },
     },
     affiliates,
     feedback,
