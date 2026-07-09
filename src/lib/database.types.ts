@@ -202,6 +202,7 @@ export type Database = {
           generation_completed_at: string | null
           model_version: string | null
           cost_usd: number | null
+          is_promo: boolean
           created_at: string
           updated_at: string
         }
@@ -217,6 +218,7 @@ export type Database = {
           generation_completed_at?: string | null
           model_version?: string | null
           cost_usd?: number | null
+          is_promo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -229,6 +231,7 @@ export type Database = {
           generation_completed_at?: string | null
           model_version?: string | null
           cost_usd?: number | null
+          is_promo?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -560,6 +563,23 @@ export type Database = {
           email?: string
           message?: string
           status?: ContactStatus
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string
+        }
+        Update: {
+          value?: Json
+          updated_at?: string
         }
         Relationships: []
       }

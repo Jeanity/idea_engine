@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
 import { ScoreRing } from '@/components/score-ring'
 import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { isNewUser } from '@/lib/offers'
+import { getPromoPublicStatus } from '@/lib/promo'
 
 export const metadata = { title: 'My ideas — Idea Engine' }
 
@@ -104,6 +105,7 @@ export default async function MyIdeasPage() {
     .single()
 
   const offers = await getAccountOffers(supabase, profile?.created_at ?? user.created_at)
+  const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
 
   const { data: ideas } = await supabase
     .from('ideas')
@@ -198,17 +200,38 @@ export default async function MyIdeasPage() {
                       </a>
                     )}
                     {canDownload && kindLabel === 'Initial report' && (
-                      // TODO(Phase 5): wire to Stripe checkout once the account is
-                      // activated — inert on purpose until then, matching the report
-                      // page's "Unlock full report — coming soon" button.
-                      <button
-                        type="button"
-                        disabled
-                        title="Coming soon"
-                        className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
-                      >
-                        Purchase full report · coming soon
-                      </button>
+                      promoStatus.active && promoStatus.perUserRemaining !== 0 ? (
+                        // Promo mode is on and this user hasn't used their free
+                        // report yet — send them to the report page, which has
+                        // the real unlock button and the generation-progress flow.
+                        <Link
+                          href={`/app/account/ideas/${idea.id}/report`}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline font-medium"
+                        >
+                          Generate full report · free
+                        </Link>
+                      ) : promoStatus.active ? (
+                        <button
+                          type="button"
+                          disabled
+                          title="Free launch limit reached"
+                          className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
+                        >
+                          Free limit reached
+                        </button>
+                      ) : (
+                        // TODO(Phase 5): wire to Stripe checkout once the account is
+                        // activated — inert on purpose until then, matching the report
+                        // page's "Unlock full report — coming soon" button.
+                        <button
+                          type="button"
+                          disabled
+                          title="Coming soon"
+                          className="text-xs text-slate-500 light:text-gray-400 font-medium cursor-not-allowed"
+                        >
+                          Purchase full report · coming soon
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

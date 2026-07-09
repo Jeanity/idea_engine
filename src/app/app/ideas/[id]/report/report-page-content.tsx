@@ -1,8 +1,9 @@
 import { redirect, notFound } from 'next/navigation'
 import { headers } from 'next/headers'
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
+import { getPromoPublicStatus } from '@/lib/promo'
 import ReportClient from './report-client'
 
 // Shared data-fetch + render for a report — used by both the standalone
@@ -44,6 +45,13 @@ export async function ReportPageContent({ id }: { id: string }) {
     : { data: null }
 
   const isAdmin = isAdminEmail(user.email)
+
+  // app_settings has no RLS policies at all (service-role only, see migration
+  // 013), so this is the one place on this user page that reaches for the
+  // service client — scoped to app-global config plus this user's own report
+  // count, never another user's data. See getPromoPublicStatus for the
+  // narrow, user-safe shape it returns.
+  const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
 
   // Affiliate rewrite at DELIVERY time (never at generation): swap any report
   // URL on a partner's match_domain for a /go/<slug> tracking link. Active
@@ -88,6 +96,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       initialReport={deliveredReport ? (deliveredReport as any) : null}
       initialFeedback={feedback ?? null}
       isAdmin={isAdmin}
+      promoStatus={promoStatus}
     />
   )
 }

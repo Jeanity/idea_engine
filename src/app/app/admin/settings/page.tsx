@@ -1,6 +1,7 @@
 import { createDbClient } from '@/lib/db'
 import { REPORT_MODEL_OPTIONS } from '@/lib/ai'
 import { ReportModelPicker } from './model-picker'
+import { PromoCard } from './promo-card'
 
 export const metadata = { title: 'Settings — Admin — Idea Engine' }
 
@@ -22,6 +23,10 @@ export default async function AdminSettingsPage() {
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8">
         Admin experiment controls.
       </p>
+
+      <div className="mb-8">
+        <PromoCard />
+      </div>
 
       <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
         <h2 className="font-semibold text-white light:text-gray-900 mb-1">Report model</h2>

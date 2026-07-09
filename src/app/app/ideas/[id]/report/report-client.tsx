@@ -21,6 +21,11 @@ interface FeedbackData {
   allow_public: boolean
 }
 
+interface PromoStatus {
+  active: boolean
+  perUserRemaining: number | null
+}
+
 interface Props {
   ideaId: string
   restatement: string | null
@@ -28,6 +33,7 @@ interface Props {
   initialReport: ReportData | null
   initialFeedback: FeedbackData | null
   isAdmin: boolean
+  promoStatus: PromoStatus
 }
 
 // ── Progress screen ───────────────────────────────────────────
@@ -499,10 +505,55 @@ function ViabilitySnapshot({ vs }: {
 
 // ── Teaser viewer ─────────────────────────────────────────────
 
-function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
+// Free-during-launch unlock button for regular users when promo mode is
+// active. Reuses the exact same generation-progress flow as the admin test
+// button (POST /api/reports/full → onGenerateFull, which flips the parent
+// into the ProgressScreen/poll flow) — no separate progress UI to maintain.
+function PromoUnlockButton({ ideaId, onStart }: { ideaId: string; onStart: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleClick() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/reports/full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea_id: ideaId }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        setError(d.error ?? 'Could not start your full report. Please try again.')
+        return
+      }
+      onStart()
+    } catch {
+      setError('Could not start your full report. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="mt-5 w-full rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 disabled:opacity-50 transition-colors"
+      >
+        {loading ? 'Starting…' : 'Generate full report — free during launch'}
+      </button>
+      {error && <p className="mt-2 text-xs text-red-300 light:text-red-600 text-center">{error}</p>}
+    </div>
+  )
+}
+
+function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: {
   report: ReportData
   ideaId: string
   isAdmin: boolean
+  promoStatus: { active: boolean; perUserRemaining: number | null }
   onGenerateFull: () => void
 }) {
   const p = report.preview_sections
@@ -563,9 +614,24 @@ function TeaserViewer({ report, ideaId, isAdmin, onGenerateFull }: {
             </li>
           ))}
         </ul>
-        <button className="mt-5 w-full rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 transition-colors">
-          Unlock full report — coming soon
-        </button>
+        {promoStatus.active && promoStatus.perUserRemaining !== 0 ? (
+          <PromoUnlockButton ideaId={ideaId} onStart={onGenerateFull} />
+        ) : promoStatus.active ? (
+          <button
+            disabled
+            title="Free launch limit reached"
+            className="mt-5 w-full rounded-lg bg-white/10 light:bg-gray-100 px-6 py-2.5 text-sm font-medium text-slate-400 light:text-gray-500 cursor-not-allowed"
+          >
+            Free launch limit reached — paid reports coming soon
+          </button>
+        ) : (
+          <button
+            disabled
+            className="mt-5 w-full rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 transition-colors"
+          >
+            Unlock full report — coming soon
+          </button>
+        )}
       </div>
 
       {isAdmin && (
@@ -1525,7 +1591,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -1569,6 +1635,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
           report={report}
           ideaId={ideaId}
           isAdmin={isAdmin}
+          promoStatus={promoStatus}
           onGenerateFull={() => { setRegenerating(true); setReport(null) }}
         />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
