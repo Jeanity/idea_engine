@@ -16,6 +16,7 @@ import {
 } from './components'
 import { symbolForCurrency } from '@/lib/countries'
 import { deriveHeadlineScore } from '@/lib/viability-score'
+import type { ResolvedEssentialService } from '@/lib/essential-services'
 
 // Duplicated from the three other copies in the app (confirm/summary/my-ideas
 // pages) — no shared module for this yet, matching existing pattern.
@@ -53,6 +54,7 @@ export interface ReportPdfInput {
   sections: Record<string, unknown>
   answers: { question: string; answer: string }[]
   editAnswersUrl: string
+  essentialServices: ResolvedEssentialService[]
 }
 
 export function ReportDocument({ data }: { data: ReportPdfInput }) {
@@ -391,6 +393,33 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               any item listed here.
             </Text>
           </Callout>
+
+          {/* "Your support team" — render-time only, never stored in report
+              sections (see src/lib/essential-services.ts). Mirrors the web
+              report page's block at the bottom of this same tab. */}
+          {data.essentialServices.length > 0 && (
+            <Card>
+              <Text style={[styles.h3, { marginBottom: 2 }]}>Your support team</Text>
+              <Text style={[styles.caption, { marginBottom: 10 }]}>
+                Every business ends up needing most of these — a head start on where to look.
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {data.essentialServices.map(service => (
+                  <View key={service.id} style={{ width: '46%', marginBottom: 10 }} wrap={false}>
+                    <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: COLORS.ink }}>{service.heading}</Text>
+                    <Text style={[styles.caption, { marginTop: 1, marginBottom: 3 }]}>{service.blurb}</Text>
+                    <ExternalLink href={service.href} iconSize={7.5}>
+                      <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9, color: COLORS.accent, textDecoration: 'underline' }}>{service.name}</Text>
+                    </ExternalLink>
+                    {service.note && <Text style={[styles.caption, { marginTop: 2, fontStyle: 'italic' }]}>{service.note}</Text>}
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.caption, { marginTop: 6 }]}>
+                Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
+              </Text>
+            </Card>
+          )}
           <PageFooter reportTitle={data.reportTitle} />
         </Page>
       )}

@@ -40,7 +40,7 @@ export default async function AdminAffiliatesPage({
 
   const { data: links, count } = await service
     .from('affiliate_links')
-    .select('id, slug, name, target_url, match_domains, match_terms, active, notes, created_at, updated_at', {
+    .select('id, slug, name, target_url, match_domains, match_terms, active, notes, category, country, note, created_at, updated_at', {
       count: 'exact',
     })
     .order('created_at', { ascending: false })

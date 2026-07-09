@@ -2,6 +2,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createDbClient } from '@/lib/db'
 import { ReportDocument, type ReportPdfInput } from '@/lib/pdf/ReportDocument'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
+import { resolveEssentialServices, absolutizeEssentialServices } from '@/lib/essential-services'
 import { deepStripCites } from '@/lib/cite'
 import { formatAnswer } from '@/lib/format-answer'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -76,6 +77,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .eq('idea_id', id)
     .order('position')
 
+  // Render-time "Your support team" block, mirroring the web report page.
+  // PDF hrefs must be absolute — the affiliate /go/ hop only works against
+  // this request's origin, so absolutize after resolving.
+  const essentialServices = absolutizeEssentialServices(
+    await resolveEssentialServices(supabase, idea.location_country),
+    request.nextUrl.origin
+  )
+
   const reportTitle = `Idea Engine — ${idea.restatement ?? 'Business Viability Report'}`
 
   const data: ReportPdfInput = {
@@ -90,6 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     sections,
     answers: (answers ?? []).map(a => ({ question: a.question_text, answer: formatAnswer(a.answer_text, a.question_key) })),
     editAnswersUrl: `${request.nextUrl.origin}/app/ideas/${id}/summary`,
+    essentialServices,
   }
 
   const buffer = await renderToBuffer(<ReportDocument data={data} />)

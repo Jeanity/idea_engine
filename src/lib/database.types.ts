@@ -389,6 +389,9 @@ export type Database = {
           match_terms: string[]
           active: boolean
           notes: string | null
+          category: string | null
+          country: string | null
+          note: string | null
           created_at: string
           updated_at: string
         }
@@ -401,6 +404,9 @@ export type Database = {
           match_terms?: string[]
           active?: boolean
           notes?: string | null
+          category?: string | null
+          country?: string | null
+          note?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -412,6 +418,9 @@ export type Database = {
           match_terms?: string[]
           active?: boolean
           notes?: string | null
+          category?: string | null
+          country?: string | null
+          note?: string | null
           updated_at?: string
         }
         Relationships: []

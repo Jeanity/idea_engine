@@ -2,6 +2,8 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
 import type { Database } from '@/lib/database.types'
+import { ESSENTIAL_SERVICE_CATEGORIES } from '@/lib/essential-services'
+import { COUNTRIES } from '@/lib/countries'
 import { NextResponse, type NextRequest } from 'next/server'
 
 type AffiliateLinkUpdate = Database['public']['Tables']['affiliate_links']['Update']
@@ -41,6 +43,38 @@ function validateUrl(v: unknown): string | null {
   }
 }
 
+const KNOWN_CATEGORY_IDS = new Set(ESSENTIAL_SERVICE_CATEGORIES.map(c => c.id))
+const KNOWN_COUNTRY_CODES = new Set(COUNTRIES.map(c => c.code).filter(Boolean))
+
+// category: "None (content link)" → null, or a known essential-services
+// registry id. Anything else is rejected rather than silently dropped, so a
+// typo in admin doesn't silently fall through to a search-link default.
+type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
+
+function validateCategory(v: unknown): ValidationResult<string | null> {
+  if (v === null || v === undefined || v === '') return { ok: true, value: null }
+  if (typeof v === 'string' && KNOWN_CATEGORY_IDS.has(v)) return { ok: true, value: v }
+  return { ok: false, error: 'Unknown category.' }
+}
+
+function validateCountry(v: unknown): ValidationResult<string | null> {
+  if (v === null || v === undefined || v === '') return { ok: true, value: null }
+  if (typeof v !== 'string') return { ok: false, error: 'Country must be a 2-letter code.' }
+  const code = v.trim().toUpperCase()
+  if (!/^[A-Z]{2}$/.test(code) || !KNOWN_COUNTRY_CODES.has(code)) {
+    return { ok: false, error: 'Country must be a known 2-letter code.' }
+  }
+  return { ok: true, value: code }
+}
+
+function validateNote(v: unknown): ValidationResult<string | null> {
+  if (v === null || v === undefined || v === '') return { ok: true, value: null }
+  if (typeof v !== 'string') return { ok: false, error: 'Note must be text.' }
+  const note = v.trim()
+  if (note.length > 120) return { ok: false, error: 'Note must be 120 characters or fewer.' }
+  return { ok: true, value: note || null }
+}
+
 // ── Create ──────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   const denied = await requireAdmin()
@@ -57,6 +91,13 @@ export async function POST(request: NextRequest) {
   if (!name) return NextResponse.json({ error: 'Name is required.' }, { status: 400 })
   if (!targetUrl) return NextResponse.json({ error: 'Target URL must be a valid http(s) URL.' }, { status: 400 })
 
+  const category = validateCategory(body.category)
+  if (!category.ok) return NextResponse.json({ error: category.error }, { status: 400 })
+  const country = validateCountry(body.country)
+  if (!country.ok) return NextResponse.json({ error: country.error }, { status: 400 })
+  const note = validateNote(body.note)
+  if (!note.ok) return NextResponse.json({ error: note.error }, { status: 400 })
+
   const service = createServiceClient()
   const { data, error } = await service
     .from('affiliate_links')
@@ -68,6 +109,9 @@ export async function POST(request: NextRequest) {
       match_terms: cleanStringArray(body.match_terms),
       active: body.active === false ? false : true,
       notes: typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null,
+      category: category.value,
+      country: country.value,
+      note: note.value,
     })
     .select('id')
     .single()
@@ -123,6 +167,21 @@ export async function PATCH(request: NextRequest) {
   if ('match_terms' in body) update.match_terms = cleanStringArray(body.match_terms)
   if ('notes' in body) {
     update.notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null
+  }
+  if ('category' in body) {
+    const category = validateCategory(body.category)
+    if (!category.ok) return NextResponse.json({ error: category.error }, { status: 400 })
+    update.category = category.value
+  }
+  if ('country' in body) {
+    const country = validateCountry(body.country)
+    if (!country.ok) return NextResponse.json({ error: country.error }, { status: 400 })
+    update.country = country.value
+  }
+  if ('note' in body) {
+    const note = validateNote(body.note)
+    if (!note.ok) return NextResponse.json({ error: note.error }, { status: 400 })
+    update.note = note.value
   }
 
   const service = createServiceClient()

@@ -6,6 +6,7 @@ import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
+import type { ResolvedEssentialService } from '@/lib/essential-services'
 import { SurveyCard, type SurveyData } from './survey-card'
 
 interface ReportData {
@@ -36,6 +37,7 @@ interface Props {
   isAdmin: boolean
   promoStatus: PromoStatus
   surveyData: SurveyData
+  essentialServices: ResolvedEssentialService[]
 }
 
 // ── Progress screen ───────────────────────────────────────────
@@ -658,6 +660,65 @@ function ExternalLinkIcon({ className = 'w-3 h-3' }: { className?: string }) {
   )
 }
 
+// "Your support team" — render-time essential-services block, bottom of the
+// Legal & Compliance tab. Never stored in report sections, never touched by
+// the AI pipeline (see src/lib/essential-services.ts) — links reflect the
+// current affiliate table on every view, retroactively, on every report.
+function EssentialServicesBlock({ services }: { services: ResolvedEssentialService[] }) {
+  if (services.length === 0) return null
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
+        <h2 className="font-semibold text-white light:text-gray-900">Your support team</h2>
+        <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
+          Every business ends up needing most of these — a head start on where to look.
+        </p>
+      </div>
+      <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {services.map(service => (
+          <div key={service.id}>
+            <h3 className="text-sm font-medium text-slate-200 light:text-gray-800">{service.heading}</h3>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5 mb-1.5">{service.blurb}</p>
+            <a
+              href={service.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-indigo-300 underline underline-offset-2 break-words"
+            >
+              {service.name}
+              <ExternalLinkIcon />
+            </a>
+            {service.note && (
+              <p className="text-xs text-slate-500 light:text-gray-400 mt-1 italic">{service.note}</p>
+            )}
+            {service.extraSearches.length > 0 && (
+              <p className="text-xs text-slate-500 light:text-gray-400 mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                {service.extraSearches.map(extra => (
+                  <a
+                    key={extra.label}
+                    href={extra.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-slate-300 light:hover:text-gray-600"
+                  >
+                    {extra.label}
+                    <ExternalLinkIcon className="w-2.5 h-2.5" />
+                  </a>
+                ))}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="px-5 py-4 bg-white/[0.02] border-t border-white/10 light:bg-gray-50 light:border-gray-200">
+        <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">
+          Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function SeverityBadge({ severity }: { severity: string }) {
   const styles: Record<string, string> = {
     required: 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700',
@@ -704,7 +765,7 @@ const REPORT_TABS = [
 
 type ReportTabKey = typeof REPORT_TABS[number]['key']
 
-export function FullReportViewer({ report }: { report: ReportData }) {
+export function FullReportViewer({ report, essentialServices = [] }: { report: ReportData; essentialServices?: ResolvedEssentialService[] }) {
   const s = report.sections
   const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
 
@@ -1110,6 +1171,7 @@ export function FullReportViewer({ report }: { report: ReportData }) {
               </div>
             )
             : <UnavailableSection title="Legal & Compliance" />}
+        <EssentialServicesBlock services={essentialServices} />
       </div>
 
       {/* Panel 5: Getting the Word Out (marketing playbook) */}
@@ -1593,7 +1655,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus, surveyData }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus, surveyData, essentialServices }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -1605,7 +1667,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   if (hasFullSections && !regenerating) {
     return (
       <div>
-        <FullReportViewer report={report!} />
+        <FullReportViewer report={report!} essentialServices={essentialServices} />
         <div className="mb-8">
           <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} />
         </div>

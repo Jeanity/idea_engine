@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
+import { resolveEssentialServices } from '@/lib/essential-services'
 import { getPromoPublicStatus } from '@/lib/promo'
 import { getSurveyCardData } from '@/lib/survey'
 import ReportClient from './report-client'
@@ -19,7 +20,7 @@ export async function ReportPageContent({ id }: { id: string }) {
 
   const { data: idea } = await supabase
     .from('ideas')
-    .select('id, restatement, archetype, status')
+    .select('id, restatement, archetype, status, location_country')
     .eq('id', id)
     .single()
 
@@ -54,6 +55,12 @@ export async function ReportPageContent({ id }: { id: string }) {
   // narrow, user-safe shape it returns.
   const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
   const surveyData = await getSurveyCardData(createServiceClient(), supabase, user.id)
+
+  // Render-time "Your support team" block (Legal & Compliance tab) — never
+  // stored in report sections, never touched by the AI pipeline. Reads active
+  // links via the same public RLS policy as the rewrite engine above, so this
+  // is retroactive: a link added/removed in admin applies on next view.
+  const essentialServices = await resolveEssentialServices(supabase, idea.location_country)
 
   // Affiliate rewrite at DELIVERY time (never at generation): swap any report
   // URL on a partner's match_domain for a /go/<slug> tracking link. Active
@@ -100,6 +107,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       isAdmin={isAdmin}
       promoStatus={promoStatus}
       surveyData={surveyData}
+      essentialServices={essentialServices}
     />
   )
 }

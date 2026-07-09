@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ESSENTIAL_SERVICE_CATEGORIES } from '@/lib/essential-services'
+import { COUNTRIES } from '@/lib/countries'
 
 export interface AffiliateLinkRow {
   id: string
@@ -12,6 +14,9 @@ export interface AffiliateLinkRow {
   match_terms: string[]
   active: boolean
   notes: string | null
+  category: string | null
+  country: string | null
+  note: string | null
   created_at: string
   updated_at: string
   clicks: { d7: number; d30: number; all: number }
@@ -24,9 +29,19 @@ interface FormState {
   match_domains: string
   match_terms: string
   notes: string
+  category: string
+  country: string
+  note: string
 }
 
-const EMPTY_FORM: FormState = { slug: '', name: '', target_url: '', match_domains: '', match_terms: '', notes: '' }
+const EMPTY_FORM: FormState = {
+  slug: '', name: '', target_url: '', match_domains: '', match_terms: '', notes: '',
+  category: '', country: '', note: '',
+}
+
+const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  ESSENTIAL_SERVICE_CATEGORIES.map(c => [c.id, c.heading])
+)
 
 // Split a comma/newline-separated textarea into a trimmed, lowercased array.
 function splitList(v: string): string[] {
@@ -65,6 +80,9 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
       match_domains: link.match_domains.join('\n'),
       match_terms: link.match_terms.join('\n'),
       notes: link.notes ?? '',
+      category: link.category ?? '',
+      country: link.country ?? '',
+      note: link.note ?? '',
     })
     setError('')
   }
@@ -85,6 +103,9 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
       match_domains: splitList(form.match_domains),
       match_terms: splitList(form.match_terms),
       notes: form.notes.trim() || null,
+      category: form.category || null,
+      country: form.country || null,
+      note: form.note.trim() || null,
     }
     try {
       const isNew = editing === 'new'
@@ -168,6 +189,33 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
           <label className={labelCls}>Notes (optional)</label>
           <input className={inputCls} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Awin network — approved 2026" />
         </div>
+        <div className="sm:col-span-2 border-t border-white/10 light:border-gray-200 pt-4 mt-1">
+          <p className="text-xs font-medium text-slate-400 light:text-gray-500 mb-3">
+            Essential services block (optional) — powers the &ldquo;Your support team&rdquo; section on the report&rsquo;s Legal &amp; Compliance tab.
+          </p>
+        </div>
+        <div>
+          <label className={labelCls}>Category</label>
+          <select className={inputCls} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+            <option value="">None (content link)</option>
+            {ESSENTIAL_SERVICE_CATEGORIES.map(c => (
+              <option key={c.id} value={c.id}>{c.heading}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Country (blank = global)</label>
+          <select className={inputCls} value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}>
+            <option value="">Global (all countries)</option>
+            {COUNTRIES.filter(c => c.code).map(c => (
+              <option key={c.code} value={c.code}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Support-team note (optional, shown under the link — max 120 chars)</label>
+          <input className={inputCls} maxLength={120} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Best for sole traders and freelancers" />
+        </div>
       </div>
       {error && <p className="text-sm text-red-300 light:text-red-600 mt-3">{error}</p>}
       <div className="flex items-center gap-3 mt-4">
@@ -220,12 +268,21 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
                       ) : (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-400 light:bg-gray-100 light:text-gray-500">Inactive</span>
                       )}
+                      {link.category && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 light:bg-indigo-50 light:text-indigo-700">
+                          {CATEGORY_LABELS[link.category] ?? link.category}
+                        </span>
+                      )}
+                      {link.country && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600">{link.country}</span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 light:text-gray-500 truncate max-w-xl">→ {link.target_url}</p>
                     {link.match_domains.length > 0 && (
                       <p className="text-xs text-slate-500 light:text-gray-400 mt-1">Matches: {link.match_domains.join(', ')}</p>
                     )}
                     {link.notes && <p className="text-xs text-slate-600 light:text-gray-400 mt-1 italic">{link.notes}</p>}
+                    {link.note && <p className="text-xs text-slate-600 light:text-gray-400 mt-1 italic">Support-team note: {link.note}</p>}
                   </div>
                   <div className="flex items-center gap-4 text-right">
                     <div className="text-xs text-slate-400 light:text-gray-500">
