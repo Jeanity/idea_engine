@@ -80,10 +80,10 @@ export function CookieConsentBanner() {
         {visibility === 'banner' && (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-300 light:text-gray-600">
-              We use a few cookies to run the site and, if you allow it, to understand how it&apos;s
-              used. Read more in our{' '}
+              Some cookies are essential — they keep you signed in. The only optional one counts
+              visits so we know what&apos;s working. Nothing here follows you around the web.{' '}
               <Link href="/privacy" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
-                privacy policy
+                The details
               </Link>
               .
             </p>
