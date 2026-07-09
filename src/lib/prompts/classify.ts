@@ -13,10 +13,10 @@ Output schema (all four keys required, in this order):
 Archetype definitions (memorize these — they are the only allowed values):
 
 - physical_product: Making and selling a tangible item, typically produced by the operator (food, crafts, manufactured goods, packaged consumables). Usually sold through local channels, markets, wholesale, or a mix of local + online. If sales are online-only AND the operator does not manufacture, prefer ecommerce_brand.
-- local_service: A service delivered in person or bounded to a geographic area (gardening, cleaning, tutoring, mobile mechanic, dog walking, personal training in a city). The operator's time and location is the product.
+- local_service: A service delivered personally to individual clients (gardening, cleaning, tutoring, mobile mechanic, dog walking, personal training, one-on-one coaching). The operator's time is the product. This INCLUDES 1:1 or small-group sessions delivered remotely (online tutoring, video-call coaching) — session-based delivery makes it a service even without a fixed location.
 - software_app: A web, mobile, or desktop software product, including SaaS, single-purpose tools, and internal-workflow apps sold as software. The deliverable is code the customer uses.
 - ecommerce_brand: An online-only product brand — dropship, print-on-demand, white-label, DTC. The operator sources or designs but does not personally manufacture at scale, and there is no local/in-person delivery. Store-first, not maker-first.
-- content_education: A content or teaching business — YouTube channel, newsletter, podcast, online course, coaching program, paid community. Revenue comes from audience, ads, sponsorships, subscriptions, or course sales.
+- content_education: A one-to-many content or teaching business — YouTube channel, newsletter, podcast, online course, scaled coaching program, paid community. Revenue comes from audience reach: ads, sponsorships, subscriptions, or course sales. If the teaching is delivered mainly as personal sessions the operator runs (one-on-one or small group, in person or remote), that is local_service, not content_education — the tell is selling the operator's session time vs selling reach/content.
 - marketplace: A platform connecting two or more distinct sides (buyers + sellers, hosts + guests, freelancers + clients, walkers + owners). The operator does not deliver the underlying service themselves — they broker it. Two-sided or multi-sided by design.
 - invention: A novel, potentially patentable device, process, or technology that is not yet a shipping product or service. Signal words: "patented", "novel mechanism", "prototype", "new kind of". If the same idea is already a normal product category, prefer physical_product or software_app.
 - other: Explicit fallback. Use ONLY when no archetype above fits at all, or when the input is empty, nonsense, or non-idea text. It is NOT a catch-all for uncertainty. If you are torn between two real archetypes, pick the better fit and set confidence accordingly.
@@ -24,7 +24,7 @@ Archetype definitions (memorize these — they are the only allowed values):
 Signal keywords (use these as tells, not as rules):
 
 - physical_product: "homemade", "baked", "handmade", "craft", "brew", "at a market", "wholesale to shops", tangible noun the operator produces.
-- local_service: "in <city>", "mobile", "on-site", "at customers' homes", "in-person", service verb + geography.
+- local_service: "in <city>", "mobile", "on-site", "at customers' homes", "in-person", "one-on-one", "1:1 sessions", "personalized coaching", "clients", service verb + geography OR session-based delivery.
 - software_app: "app", "web app", "SaaS", "platform for X to do Y" (single-sided workflow), "dashboard", "tool for".
 - ecommerce_brand: "online store", "Shopify", "dropship", "print on demand", "DTC", "sell X online", no manufacturing signal, no location-bound delivery.
 - content_education: "YouTube", "newsletter", "podcast", "course", "coaching", "community", "teach", "audience".
@@ -38,11 +38,12 @@ Classification rules (apply in order):
 2. If it names a novel device/mechanism with patent language → invention.
 3. If it explicitly connects two distinct user sides → marketplace.
 4. If the deliverable is software the customer uses → software_app.
-5. If it is content, audience, teaching, or coaching → content_education.
-6. If it is a service delivered in person or in a geographic area → local_service (even if there is also a booking app; the core product is the in-person service).
-7. If it is a tangible good the operator makes → physical_product.
-8. If it is a tangible good sold online with no manufacturing and no local delivery → ecommerce_brand.
-9. If none of the above cleanly apply → other with honest confidence.
+5. If teaching/coaching/tutoring is delivered as personal sessions (one-on-one or small group — in person, remote, or both) → local_service. The words "teach" or "coaching" do NOT make it content_education; what matters is whether the operator sells their session time.
+6. If it is published content, an audience business, or scaled courses/community (one-to-many) → content_education.
+7. If it is a service delivered in person or in a geographic area → local_service (even if there is also a booking app; the core product is the in-person service).
+8. If it is a tangible good the operator makes → physical_product.
+9. If it is a tangible good sold online with no manufacturing and no local delivery → ecommerce_brand.
+10. If none of the above cleanly apply → other with honest confidence.
 
 Confidence guide:
 - 0.90–1.00: unambiguous, multiple strong signals.
@@ -98,11 +99,15 @@ Output: {"archetype":"other","confidence":0.05,"one_line_restatement":"Create so
 
 Example 9
 Input: idea="fitness coaching", location="Denver, Colorado, USA"
-Output: {"archetype":"content_education","confidence":0.62,"one_line_restatement":"Offer online fitness coaching programs teaching clients through video lessons, plans, and one-to-one support.","detected_signals":["coaching keyword — teaching business","ambiguous between local PT and online coaching","chose content_education as broader modern default","local_service possible if in-person only"]}
+Output: {"archetype":"local_service","confidence":0.62,"one_line_restatement":"Offer personal fitness coaching sessions to individual clients in Denver, in person or online.","detected_signals":["coaching — operator sells session time","no audience/content/course signal","ambiguous but session-based delivery is the default read","content_education possible if they mean courses or an audience"]}
 
 Example 10
 Input: idea="a subscription box of small-batch hot sauces from independent makers, mailed monthly", location="Portland, Oregon, USA"
 Output: {"archetype":"ecommerce_brand","confidence":0.86,"one_line_restatement":"Sell a monthly subscription box featuring small-batch hot sauces sourced from independent makers nationwide.","detected_signals":["online subscription commerce","operator curates, does not manufacture","mailed nationally — no local delivery","DTC subscription pattern"]}
+
+Example 11
+Input: idea="teach seniors to use essential apps safely through personalized one-on-one remote or in-person coaching sessions", location="Sydney, Australia"
+Output: {"archetype":"local_service","confidence":0.90,"one_line_restatement":"Offer one-on-one coaching sessions teaching Sydney seniors to use essential apps safely and confidently.","detected_signals":["one-on-one sessions — operator's time is the product","personalized coaching, not published content","remote or in-person delivery both named","'teach' present but delivery is per-client sessions"]}
 
 Remember: output STRICT JSON only, no other characters before or after the closing brace.`
 
