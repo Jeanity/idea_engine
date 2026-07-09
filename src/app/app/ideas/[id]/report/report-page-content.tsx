@@ -41,10 +41,23 @@ export async function ReportPageContent({ id }: { id: string }) {
   const { data: feedback } = report
     ? await supabase
         .from('report_feedback')
-        .select('rating, comment, allow_public')
+        .select('id, rating, comment, allow_public')
         .eq('report_id', report.id)
         .maybeSingle()
     : { data: null }
+
+  // Replies (migration 019) — the owner always sees replies to their own
+  // feedback (public or private), via RLS ("feedback_replies: select own via
+  // feedback"). The table may not exist yet, so this fails gracefully.
+  let feedbackReplies: { id: string; body: string; is_public: boolean; created_at: string; created_by: string }[] = []
+  if (feedback) {
+    const { data: replies, error: repliesError } = await supabase
+      .from('feedback_replies')
+      .select('id, body, is_public, created_at, created_by')
+      .eq('feedback_id', feedback.id)
+      .order('created_at', { ascending: true })
+    if (!repliesError) feedbackReplies = replies ?? []
+  }
 
   const isAdmin = isAdminEmail(user.email)
 
@@ -104,6 +117,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       initialReport={deliveredReport ? (deliveredReport as any) : null}
       initialFeedback={feedback ?? null}
+      feedbackReplies={feedbackReplies}
       isAdmin={isAdmin}
       promoStatus={promoStatus}
       surveyData={surveyData}

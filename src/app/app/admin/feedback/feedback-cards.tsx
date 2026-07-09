@@ -2,6 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import { FeatureToggle } from './feature-toggle'
+import { HideToggle, AdminPublicToggle, ReplySection } from './moderation'
+
+interface FeedbackReply {
+  id: string
+  body: string
+  is_public: boolean
+  created_at: string
+  created_by: string
+}
 
 interface FeedbackEntry {
   id: string
@@ -9,9 +18,12 @@ interface FeedbackEntry {
   comment: string | null
   allow_public: boolean
   featured: boolean
+  hidden: boolean
+  admin_public: boolean
   created_at: string
   archetypeLabel: string | null
   displayName: string
+  replies: FeedbackReply[]
 }
 
 type SortKey = 'date' | 'rating' | 'type'
@@ -45,7 +57,7 @@ const pillClass = (active: boolean) =>
       : 'bg-white/5 text-slate-400 border-white/10 hover:text-white light:bg-gray-50 light:text-gray-500 light:border-gray-200 light:hover:text-gray-900'
   }`
 
-export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
+export function FeedbackCards({ entries, moderationEnabled }: { entries: FeedbackEntry[]; moderationEnabled: boolean }) {
   const [sortBy, setSortBy] = useState<SortKey>('date')
 
   const sorted = useMemo(() => {
@@ -88,7 +100,9 @@ export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
             <div
               key={fb.id}
               className={`rounded-lg border bg-slate-900/80 light:bg-white light:shadow-sm p-5 flex flex-col gap-3 ${
-                fb.featured
+                fb.hidden
+                  ? 'border-red-500/30 light:border-red-200 opacity-60'
+                  : fb.featured
                   ? 'border-emerald-500/30 light:border-emerald-200'
                   : 'border-white/10 light:border-gray-200'
               }`}
@@ -109,6 +123,11 @@ export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
                     {fb.archetypeLabel}
                   </span>
                 )}
+                {fb.hidden && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 light:bg-red-50 light:text-red-700">
+                    Hidden
+                  </span>
+                )}
               </div>
 
               {fb.comment && (
@@ -117,7 +136,7 @@ export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
                 </p>
               )}
 
-              <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+              <div className="flex items-center justify-between gap-2 pt-1">
                 <div className="flex items-center gap-1.5">
                   {fb.allow_public && (
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 light:bg-emerald-50 light:text-emerald-700">
@@ -127,6 +146,16 @@ export function FeedbackCards({ entries }: { entries: FeedbackEntry[] }) {
                 </div>
                 <FeatureToggle feedbackId={fb.id} allowPublic={fb.allow_public} initialFeatured={fb.featured} />
               </div>
+
+              {moderationEnabled && (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <AdminPublicToggle feedbackId={fb.id} initialAdminPublic={fb.admin_public} />
+                    <HideToggle feedbackId={fb.id} initialHidden={fb.hidden} />
+                  </div>
+                  <ReplySection feedbackId={fb.id} initialReplies={fb.replies} />
+                </>
+              )}
             </div>
           ))}
         </div>

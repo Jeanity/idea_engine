@@ -25,6 +25,14 @@ interface FeedbackData {
   allow_public: boolean
 }
 
+interface FeedbackReply {
+  id: string
+  body: string
+  is_public: boolean
+  created_at: string
+  created_by: string
+}
+
 interface PromoStatus {
   active: boolean
   perUserRemaining: number | null
@@ -36,6 +44,7 @@ interface Props {
   archetype: string
   initialReport: ReportData | null
   initialFeedback: FeedbackData | null
+  feedbackReplies: FeedbackReply[]
   isAdmin: boolean
   promoStatus: PromoStatus
   surveyData: SurveyData
@@ -1483,7 +1492,31 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
   )
 }
 
-function ReportFeedbackCard({ ideaId, initialFeedback }: { ideaId: string; initialFeedback: FeedbackData | null }) {
+// Replies are shown to their owner regardless of public/private status —
+// only the homepage cares about is_public. A small badge distinguishes them
+// so the user understands a private reply won't appear anywhere else.
+function FeedbackReplies({ replies }: { replies: FeedbackReply[] }) {
+  if (replies.length === 0) return null
+  return (
+    <div className="mt-4 pt-4 border-t border-white/10 light:border-gray-200 flex flex-col gap-2">
+      {replies.map(reply => (
+        <div key={reply.id} className="rounded-lg bg-white/5 light:bg-gray-50 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-xs font-medium text-slate-300 light:text-gray-600">Reply from the team</span>
+            {!reply.is_public && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-slate-400 light:bg-gray-100 light:text-gray-500">
+                Private
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-300 light:text-gray-700 leading-relaxed whitespace-pre-wrap">{reply.body}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ReportFeedbackCard({ ideaId, initialFeedback, feedbackReplies }: { ideaId: string; initialFeedback: FeedbackData | null; feedbackReplies: FeedbackReply[] }) {
   const [rating, setRating] = useState(initialFeedback?.rating ?? 0)
   const [comment, setComment] = useState(initialFeedback?.comment ?? '')
   const [allowPublic, setAllowPublic] = useState(initialFeedback?.allow_public ?? false)
@@ -1534,6 +1567,7 @@ function ReportFeedbackCard({ ideaId, initialFeedback }: { ideaId: string; initi
             Edit
           </button>
         </div>
+        <FeedbackReplies replies={feedbackReplies} />
       </div>
     )
   }
@@ -1583,6 +1617,7 @@ function ReportFeedbackCard({ ideaId, initialFeedback }: { ideaId: string; initi
             </button>
           )}
         </div>
+        <FeedbackReplies replies={feedbackReplies} />
       </div>
     </div>
   )
@@ -1723,7 +1758,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus, surveyData, essentialServices }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, essentialServices }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
   const [fullReportTab, setFullReportTab] = useState<string | undefined>(undefined)
@@ -1738,7 +1773,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
       <div>
         <FullReportViewer report={report!} essentialServices={essentialServices} onActiveTabChange={setFullReportTab} />
         <div className="mb-8">
-          <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} />
+          <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} feedbackReplies={feedbackReplies} />
         </div>
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-3 print:hidden">
           <DownloadPdfButton ideaId={ideaId} />

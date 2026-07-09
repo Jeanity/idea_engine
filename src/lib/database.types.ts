@@ -318,6 +318,8 @@ export type Database = {
           comment: string | null
           allow_public: boolean
           featured: boolean
+          hidden: boolean
+          admin_public: boolean
           created_at: string
         }
         Insert: {
@@ -328,6 +330,8 @@ export type Database = {
           comment?: string | null
           allow_public?: boolean
           featured?: boolean
+          hidden?: boolean
+          admin_public?: boolean
           created_at?: string
         }
         Update: {
@@ -335,6 +339,8 @@ export type Database = {
           comment?: string | null
           allow_public?: boolean
           featured?: boolean
+          hidden?: boolean
+          admin_public?: boolean
         }
         Relationships: [
           {
@@ -349,6 +355,40 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      feedback_replies: {
+        Row: {
+          id: string
+          feedback_id: string
+          body: string
+          is_public: boolean
+          created_at: string
+          created_by: string
+          emailed_at: string | null
+        }
+        Insert: {
+          id?: string
+          feedback_id: string
+          body: string
+          is_public?: boolean
+          created_at?: string
+          created_by: string
+          emailed_at?: string | null
+        }
+        Update: {
+          body?: string
+          is_public?: boolean
+          emailed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'feedback_replies_feedback_id_fkey'
+            columns: ['feedback_id']
+            isOneToOne: false
+            referencedRelation: 'report_feedback'
             referencedColumns: ['id']
           }
         ]

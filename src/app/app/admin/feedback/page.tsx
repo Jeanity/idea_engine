@@ -7,6 +7,17 @@ import { FeedbackCards } from './feedback-cards'
 
 export const metadata = { title: 'Feedback — Admin — Idea Engine' }
 
+// Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
+// in schema cache" (migration 019 not run yet — `hidden`/`admin_public`
+// don't exist). Postgres 42P01 = undefined_table, PGRST205 = "table not
+// found in schema cache" (the `feedback_replies` table not created yet).
+function isMissingColumn(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703' || error?.code === 'PGRST204'
+}
+function isMissingTable(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42P01' || error?.code === 'PGRST205'
+}
+
 // This page lives under src/app/app/admin/, whose layout.tsx already gates
 // on isAdminEmail (redirects non-admins to /app before this ever renders).
 // Reading other users' data via createServiceClient here is safe BECAUSE
@@ -15,10 +26,11 @@ export const metadata = { title: 'Feedback — Admin — Idea Engine' }
 export default async function AdminFeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rating?: string; page?: string }>
+  searchParams: Promise<{ rating?: string; page?: string; showHidden?: string }>
 }) {
-  const { rating: ratingParam, page: pageParam } = await searchParams
+  const { rating: ratingParam, page: pageParam, showHidden: showHiddenParam } = await searchParams
   const ratingFilter = ratingParam ? Number(ratingParam) : null
+  const showHidden = showHiddenParam === '1'
   const page = parsePage(pageParam)
   const { from, to } = pageRange(page)
 
@@ -30,16 +42,63 @@ export default async function AdminFeedbackPage({
   const { data: allRatings } = await service.from('report_feedback').select('rating')
   const ratingRows = allRatings ?? []
 
+  // `hidden`/`admin_public` (migration 019) may not exist yet — try the full
+  // select first, and fall back to the pre-019 column list so this page
+  // never crashes before Danny runs the migration.
+  let hasModerationColumns = true
   let listQuery = service
     .from('report_feedback')
-    .select('id, report_id, user_id, rating, comment, allow_public, featured, created_at', { count: 'exact' })
+    .select('id, report_id, user_id, rating, comment, allow_public, featured, hidden, admin_public, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
   if (ratingFilter) listQuery = listQuery.eq('rating', ratingFilter)
-  const { data: feedback, count } = await listQuery.range(from, to)
+  if (!showHidden) listQuery = listQuery.eq('hidden', false)
+  let { data: feedback, count, error: listError } = await listQuery.range(from, to)
 
-  const rows = feedback ?? []
+  if (listError && isMissingColumn(listError)) {
+    hasModerationColumns = false
+    let fallbackQuery = service
+      .from('report_feedback')
+      .select('id, report_id, user_id, rating, comment, allow_public, featured, created_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+    if (ratingFilter) fallbackQuery = fallbackQuery.eq('rating', ratingFilter)
+    const fallback = await fallbackQuery.range(from, to)
+    feedback = (fallback.data ?? []).map(fb => ({ ...fb, hidden: false, admin_public: false }))
+    count = fallback.count
+  }
+
+  const rows = (feedback ?? []) as {
+    id: string
+    report_id: string
+    user_id: string
+    rating: number
+    comment: string | null
+    allow_public: boolean
+    featured: boolean
+    hidden: boolean
+    admin_public: boolean
+    created_at: string
+  }[]
   const totalCount = count ?? 0
   const pages = totalPageCount(totalCount)
+
+  // Replies (migration 019) — feedback_replies may not exist yet either.
+  const feedbackIds = rows.map(r => r.id)
+  const { data: replyRows, error: repliesError } = feedbackIds.length
+    ? await service
+        .from('feedback_replies')
+        .select('id, feedback_id, body, is_public, created_at, created_by')
+        .in('feedback_id', feedbackIds)
+        .order('created_at', { ascending: true })
+    : { data: [] as { id: string; feedback_id: string; body: string; is_public: boolean; created_at: string; created_by: string }[], error: null }
+
+  const repliesByFeedbackId = new Map<string, { id: string; body: string; is_public: boolean; created_at: string; created_by: string }[]>()
+  if (!repliesError || !isMissingTable(repliesError)) {
+    for (const reply of replyRows ?? []) {
+      const list = repliesByFeedbackId.get(reply.feedback_id) ?? []
+      list.push(reply)
+      repliesByFeedbackId.set(reply.feedback_id, list)
+    }
+  }
 
   const reportIds = [...new Set(rows.map(r => r.report_id))]
   const userIds = [...new Set(rows.map(r => r.user_id))]
@@ -70,6 +129,7 @@ export default async function AdminFeedbackPage({
       ...fb,
       archetypeLabel: archetype ? (ARCHETYPE_LABELS[archetype] ?? archetype) : null,
       displayName: profile?.username ?? profile?.display_name ?? 'Unknown user',
+      replies: repliesByFeedbackId.get(fb.id) ?? [],
     }
   })
 
@@ -145,10 +205,25 @@ export default async function AdminFeedbackPage({
             {star}★
           </Link>
         ))}
+        {hasModerationColumns && (
+          <>
+            <span className="w-px h-4 bg-white/10 light:bg-gray-200 mx-1" />
+            <Link
+              href={showHidden ? '/app/admin/feedback' : '/app/admin/feedback?showHidden=1'}
+              className={`text-xs px-2.5 py-1 rounded-full border ${
+                showHidden
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 light:bg-amber-100 light:text-amber-700 light:border-amber-200'
+                  : 'bg-white/5 text-slate-400 border-white/10 light:bg-gray-50 light:text-gray-500 light:border-gray-200'
+              }`}
+            >
+              {showHidden ? 'Showing hidden feedback ✓' : 'Show hidden feedback'}
+            </Link>
+          </>
+        )}
       </div>
 
       {/* Cards */}
-      <FeedbackCards entries={enriched} />
+      <FeedbackCards entries={enriched} moderationEnabled={hasModerationColumns} />
 
       {totalCount > ADMIN_PAGE_SIZE && (
         <div className="mt-6">
