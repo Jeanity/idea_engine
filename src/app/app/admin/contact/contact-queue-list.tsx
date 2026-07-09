@@ -26,6 +26,79 @@ export interface ContactRow {
 
 const STATUS_OPTIONS: ContactRow['status'][] = ['open', 'replied', 'closed']
 
+// Hard delete requires a two-step confirmation: first click shows the confirm
+// prompt, second click (after clicking Confirm) actually deletes.
+function DeleteButton({ submissionId, onDeleted }: { submissionId: string; onDeleted: () => void }) {
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function doDelete() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/contact/${submissionId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to delete')
+        return
+      }
+      onDeleted()
+      router.refresh()
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <p className="text-xs text-red-300 light:text-red-600 mb-1">
+          Delete this submission? Its stored replies go with it.
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setConfirming(false)
+              setError('')
+            }}
+            disabled={loading}
+            className="text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={doDelete}
+            disabled={loading}
+            className="text-xs font-medium px-2.5 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/15 light:border-red-200 light:bg-red-50 light:text-red-700 light:hover:bg-red-100 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Deleting…' : 'Confirm'}
+          </button>
+        </div>
+        {error && <p className="text-[11px] text-red-300 light:text-red-600 mt-1">{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={() => setConfirming(true)}
+        disabled={loading}
+        className="text-xs font-medium px-2.5 py-1 rounded-full border border-red-500/20 text-red-300 hover:border-red-500/30 light:border-red-200 light:text-red-600 light:hover:border-red-300 transition-colors disabled:opacity-50"
+      >
+        Delete
+      </button>
+    </div>
+  )
+}
+
 function categoryTone(category: ContactRow['category']): string {
   if (category === 'partnership') return 'bg-amber-500/15 text-amber-300 light:bg-amber-100 light:text-amber-700'
   if (category === 'complaint') return 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
@@ -222,11 +295,12 @@ function ReplyHistory({ replies }: { replies: ContactReplyRow[] }) {
   )
 }
 
-function ContactItem({ row }: { row: ContactRow }) {
+function ContactItem({ row, onDeleted }: { row: ContactRow; onDeleted?: () => void }) {
   const router = useRouter()
   const [status, setStatus] = useState(row.status)
   const [saving, setSaving] = useState(false)
   const [replyOpen, setReplyOpen] = useState(false)
+  const [isDeleted, setIsDeleted] = useState(false)
 
   async function updateStatus(next: ContactRow['status']) {
     setStatus(next)
@@ -251,6 +325,8 @@ function ContactItem({ row }: { row: ContactRow }) {
 
   const isPartnership = row.category === 'partnership'
 
+  if (isDeleted) return null
+
   return (
     <div
       className={`px-5 py-4 ${
@@ -273,28 +349,37 @@ function ContactItem({ row }: { row: ContactRow }) {
           <ReplyHistory replies={row.replies} />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${statusTone(status)}`}>
-            {status}
-          </span>
-          <button
-            onClick={() => setReplyOpen(true)}
-            className="text-xs font-medium px-2.5 py-1 rounded-lg border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300"
-          >
-            Reply
-          </button>
-          <select
-            value={status}
-            disabled={saving}
-            onChange={e => updateStatus(e.target.value as ContactRow['status'])}
-            className="text-xs rounded-lg border border-white/10 bg-white/5 light:bg-white light:border-gray-200 px-2 py-1 text-slate-200 light:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
-          >
-            {STATUS_OPTIONS.map(opt => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-start gap-2 shrink-0 flex-col">
+          <div className="flex items-center gap-2">
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${statusTone(status)}`}>
+              {status}
+            </span>
+            <button
+              onClick={() => setReplyOpen(true)}
+              className="text-xs font-medium px-2.5 py-1 rounded-lg border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300"
+            >
+              Reply
+            </button>
+            <select
+              value={status}
+              disabled={saving}
+              onChange={e => updateStatus(e.target.value as ContactRow['status'])}
+              className="text-xs rounded-lg border border-white/10 bg-white/5 light:bg-white light:border-gray-200 px-2 py-1 text-slate-200 light:text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+            >
+              {STATUS_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DeleteButton
+            submissionId={row.id}
+            onDeleted={() => {
+              setIsDeleted(true)
+              onDeleted?.()
+            }}
+          />
         </div>
       </div>
 
@@ -313,13 +398,19 @@ function ContactItem({ row }: { row: ContactRow }) {
 }
 
 export function ContactQueueList({ rows }: { rows: ContactRow[] }) {
-  if (rows.length === 0) {
+  const [visibleRows, setVisibleRows] = useState(rows)
+
+  useEffect(() => {
+    setVisibleRows(rows)
+  }, [rows])
+
+  if (visibleRows.length === 0) {
     return <p className="text-sm text-slate-500 light:text-gray-400 py-10 text-center">No messages yet.</p>
   }
 
   return (
     <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
-      {rows.map(row => (
+      {visibleRows.map(row => (
         <ContactItem key={row.id} row={row} />
       ))}
     </div>
