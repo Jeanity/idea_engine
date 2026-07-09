@@ -101,6 +101,7 @@ export const generateTeaser = inngest.createFunction(
       sections: {},
       status: 'complete',
       generation_completed_at: new Date().toISOString(),
+      teaser_completed_at: new Date().toISOString(),
       model_version: 'claude-haiku-4-5-20251001',
       cost_usd: Math.round(((existingReport?.cost_usd ?? 0) + costUsd) * 10000) / 10000,
     }).eq('id', reportId)

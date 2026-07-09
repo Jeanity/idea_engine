@@ -201,6 +201,7 @@ export type Database = {
           error: string | null
           generation_started_at: string | null
           generation_completed_at: string | null
+          teaser_completed_at: string | null
           model_version: string | null
           cost_usd: number | null
           is_promo: boolean
@@ -217,6 +218,7 @@ export type Database = {
           error?: string | null
           generation_started_at?: string | null
           generation_completed_at?: string | null
+          teaser_completed_at?: string | null
           model_version?: string | null
           cost_usd?: number | null
           is_promo?: boolean
@@ -230,6 +232,7 @@ export type Database = {
           error?: string | null
           generation_started_at?: string | null
           generation_completed_at?: string | null
+          teaser_completed_at?: string | null
           model_version?: string | null
           cost_usd?: number | null
           is_promo?: boolean

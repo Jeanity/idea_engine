@@ -55,6 +55,21 @@ function isFullReport(sections: unknown): boolean {
   )
 }
 
+// Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
+// in schema cache" — both mean migration 015 (teaser_completed_at) hasn't
+// been run in this environment yet.
+function isMissingColumn(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703' || error?.code === 'PGRST204'
+}
+
+interface ReportRow {
+  owner_id: string | null
+  sections: unknown
+  generation_completed_at: string | null
+  teaser_completed_at: string | null
+  cost_usd: number | null
+}
+
 interface Acquisition {
   referrer?: string | null
   utm?: { source?: string; campaign?: string } | null
@@ -132,13 +147,44 @@ export async function GET(request: NextRequest) {
   const emptyDaily = () =>
     Promise.resolve({ data: [] as { day: string; count: number }[] | null, error: null })
 
+  // Broadened to EITHER timestamp landing in range: an upgraded row's
+  // generation_completed_at moves to the full-report completion date, which
+  // can fall outside the period being queried for its teaser event (see
+  // migration 015). Falls back to the pre-migration query/shape when
+  // teaser_completed_at doesn't exist yet so this route never breaks.
+  async function fetchReportRows(): Promise<{ rows: ReportRow[]; hasTeaserColumn: boolean }> {
+    const res = await service
+      .from('reports')
+      .select('owner_id, sections, teaser_completed_at, generation_completed_at, cost_usd')
+      .or(
+        `and(teaser_completed_at.gte.${rangeStart},teaser_completed_at.lt.${rangeEndExclusive}),` +
+        `and(generation_completed_at.gte.${rangeStart},generation_completed_at.lt.${rangeEndExclusive})`
+      )
+
+    if (isMissingColumn(res.error)) {
+      const fallback = await service
+        .from('reports')
+        .select('owner_id, sections, generation_completed_at, cost_usd')
+        .gte('generation_completed_at', rangeStart)
+        .lt('generation_completed_at', rangeEndExclusive)
+      if (fallback.error) console.error('Admin graphs: reports fallback query failed:', fallback.error)
+      return {
+        rows: (fallback.data ?? []).map(r => ({ ...r, teaser_completed_at: null })),
+        hasTeaserColumn: false,
+      }
+    }
+
+    if (res.error) console.error('Admin graphs: reports query failed:', res.error)
+    return { rows: res.data ?? [], hasTeaserColumn: true }
+  }
+
   const [
     sessionsRes,
     uniqueVisitorsRes,
     returningVisitorsRes,
     topReferrersRes,
     topCampaignsRes,
-    reportsRes,
+    reportsFetch,
     signupsRes,
     purchasesRes,
   ] = await Promise.all([
@@ -147,11 +193,7 @@ export async function GET(request: NextRequest) {
     hourly ? emptyDaily() : service.rpc('analytics_returning_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
     service.rpc('analytics_top_referrers', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
     service.rpc('analytics_top_utm_campaigns', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
-    service
-      .from('reports')
-      .select('owner_id, sections, generation_completed_at, cost_usd')
-      .gte('generation_completed_at', rangeStart)
-      .lt('generation_completed_at', rangeEndExclusive),
+    fetchReportRows(),
     service
       .from('profiles')
       .select('id, created_at, acquisition')
@@ -171,7 +213,6 @@ export async function GET(request: NextRequest) {
     ['returningVisitors', returningVisitorsRes],
     ['topReferrers', topReferrersRes],
     ['topCampaigns', topCampaignsRes],
-    ['reports', reportsRes],
     ['signups', signupsRes],
     ['purchases', purchasesRes],
   ] as const) {
@@ -258,15 +299,29 @@ export async function GET(request: NextRequest) {
     uniqueVisitors: uniqueVisitorsSeries[i]?.count ?? 0,
   }))
 
-  const reportRows = reportsRes.data ?? []
+  const reportRows = reportsFetch.rows
+  // A single row can contribute BOTH an initial and a full event, possibly to
+  // different buckets: initial is keyed on teaser_completed_at (the initial
+  // report's own completion), full is keyed on generation_completed_at (only
+  // meaningful for rows that are actually full reports). See migration 015 —
+  // before it exists, hasTeaserColumn is false and teaser_completed_at is
+  // null on every row, so this collapses to the old row-state-based split.
+  const inGenerationRange = (iso: string | null) => !!iso && iso >= rangeStart && iso < rangeEndExclusive
   const initialByDay = new Map<string, number>()
   const fullByDay = new Map<string, number>()
   for (const row of reportRows) {
-    if (!row.generation_completed_at) continue
-    const day = bucketOf(new Date(row.generation_completed_at))
+    if (reportsFetch.hasTeaserColumn && row.teaser_completed_at && inGenerationRange(row.teaser_completed_at)) {
+      const day = bucketOf(new Date(row.teaser_completed_at))
+      initialByDay.set(day, (initialByDay.get(day) ?? 0) + 1)
+    }
+    if (!inGenerationRange(row.generation_completed_at)) continue
     if (isFullReport(row.sections)) {
+      const day = bucketOf(new Date(row.generation_completed_at as string))
       fullByDay.set(day, (fullByDay.get(day) ?? 0) + 1)
-    } else {
+    } else if (!reportsFetch.hasTeaserColumn) {
+      // Pre-migration fallback only — post-migration, teaser-only rows are
+      // already counted above via teaser_completed_at.
+      const day = bucketOf(new Date(row.generation_completed_at as string))
       initialByDay.set(day, (initialByDay.get(day) ?? 0) + 1)
     }
   }
@@ -300,10 +355,14 @@ export async function GET(request: NextRequest) {
     const day = bucketOf(new Date(row.completed_at))
     revenueByDay.set(day, (revenueByDay.get(day) ?? 0) + row.amount_cents)
   }
+  // Cost stays keyed on generation_completed_at (semantically unchanged) —
+  // the fetch above is broadened to also match on teaser_completed_at, so an
+  // explicit in-range check is needed here to exclude rows that matched only
+  // via their teaser event.
   const costByDay = new Map<string, number>()
   for (const row of reportRows) {
-    if (!row.generation_completed_at || !row.cost_usd) continue
-    const day = bucketOf(new Date(row.generation_completed_at))
+    if (!row.cost_usd || !inGenerationRange(row.generation_completed_at)) continue
+    const day = bucketOf(new Date(row.generation_completed_at as string))
     costByDay.set(day, (costByDay.get(day) ?? 0) + row.cost_usd)
   }
   const sales = bucketKeys.map(day => {
@@ -381,7 +440,10 @@ export async function GET(request: NextRequest) {
 
   for (const row of signupRows) addSignupOrDownstream(parseAcquisition(row.acquisition), 'signups')
   for (const row of reportRows) {
-    if (!row.owner_id) continue
+    // Funnel attribution stays on generation_completed_at (semantically
+    // unchanged) — exclude rows that only matched the broadened fetch via
+    // their teaser event.
+    if (!row.owner_id || !inGenerationRange(row.generation_completed_at)) continue
     addSignupOrDownstream(acquisitionById.get(row.owner_id) ?? null, 'reports')
   }
   for (const row of purchaseRows) {

@@ -32,6 +32,13 @@ function isFullReport(sections: unknown): boolean {
   )
 }
 
+// Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
+// in schema cache" — both mean migration 015 (teaser_completed_at) hasn't
+// been run in this environment yet.
+function isMissingColumn(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703' || error?.code === 'PGRST204'
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -53,14 +60,9 @@ export async function GET(request: NextRequest) {
   // Only used AFTER the isAdminEmail check above, per project ground rules.
   const service = createServiceClient()
 
-  const [usersOnlineRes, reportsLiveRes, completedReportsRes, ideasCreatedRes, signupsRes] = await Promise.all([
+  const [usersOnlineRes, reportsLiveRes, ideasCreatedRes, signupsRes] = await Promise.all([
     service.from('profiles').select('id', { count: 'exact', head: true }).gt('last_seen_at', fiveMinAgo),
     service.from('reports').select('id', { count: 'exact', head: true }).in('status', ['queued', 'running']),
-    service
-      .from('reports')
-      .select('sections, preview_sections')
-      .gte('generation_completed_at', rangeStart)
-      .lt('generation_completed_at', rangeEndExclusive),
     service
       .from('ideas')
       .select('id', { count: 'exact', head: true })
@@ -76,19 +78,53 @@ export async function GET(request: NextRequest) {
   for (const [label, res] of [
     ['usersOnline', usersOnlineRes],
     ['reportsLive', reportsLiveRes],
-    ['completedReports', completedReportsRes],
     ['ideasCreated', ideasCreatedRes],
     ['signups', signupsRes],
   ] as const) {
     if (res.error) console.error(`Admin stats: ${label} query failed:`, res.error)
   }
 
-  // Empty/zero states render gracefully — every count below defaults to 0
-  // rather than throwing if a query errors (e.g. analytics columns not yet
-  // migrated in some environment).
-  const completedRows = completedReportsRes.data ?? []
-  const full = completedRows.filter(r => isFullReport(r.sections)).length
-  const initial = completedRows.length - full
+  // reportsCompleted is event-based: initial = teaser_completed_at events in
+  // range, full = generation_completed_at events (on full reports) in range.
+  // One row can contribute to both (an upgraded idea) — see migration 015.
+  // The fetch is broadened to EITHER timestamp landing in range, since an
+  // upgraded row's generation_completed_at moves to the full-report date,
+  // which can fall outside the period being queried for the teaser event.
+  let initial = 0
+  let full = 0
+  {
+    const res = await service
+      .from('reports')
+      .select('sections, teaser_completed_at, generation_completed_at')
+      .or(
+        `and(teaser_completed_at.gte.${rangeStart},teaser_completed_at.lt.${rangeEndExclusive}),` +
+        `and(generation_completed_at.gte.${rangeStart},generation_completed_at.lt.${rangeEndExclusive})`
+      )
+
+    if (isMissingColumn(res.error)) {
+      // Pre-migration fallback: old row-state-based counting, keyed only on
+      // generation_completed_at (matches pre-015 behaviour exactly).
+      const fallback = await service
+        .from('reports')
+        .select('sections')
+        .gte('generation_completed_at', rangeStart)
+        .lt('generation_completed_at', rangeEndExclusive)
+      if (fallback.error) console.error('Admin stats: completedReports fallback query failed:', fallback.error)
+      const rows = fallback.data ?? []
+      full = rows.filter(r => isFullReport(r.sections)).length
+      initial = rows.length - full
+    } else {
+      if (res.error) console.error('Admin stats: completedReports query failed:', res.error)
+      const rows = res.data ?? []
+      initial = rows.filter(
+        r => r.teaser_completed_at && r.teaser_completed_at >= rangeStart && r.teaser_completed_at < rangeEndExclusive
+      ).length
+      full = rows.filter(
+        r => isFullReport(r.sections) && r.generation_completed_at &&
+          r.generation_completed_at >= rangeStart && r.generation_completed_at < rangeEndExclusive
+      ).length
+    }
+  }
 
   return NextResponse.json({
     usersOnline: usersOnlineRes.count ?? 0,
