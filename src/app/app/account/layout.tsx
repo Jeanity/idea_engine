@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createDbClient } from '@/lib/db'
+import { isAdminEmail } from '@/lib/admin'
 import { AccountShell } from './account-shell'
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
@@ -17,10 +18,13 @@ export default async function AccountLayout({ children }: { children: React.Reac
   // Username-first public identity (src/lib/public-name.ts precedence).
   const identityName = profile?.username ?? profile?.display_name ?? user.email!
 
+  // Check if user is an admin
+  const isAdmin = isAdminEmail(user.email)
+
   // Server component keeps the auth gate; the sidebar/topbar chrome is a
   // client shell rendered inside it. Account pages render as `children`.
   return (
-    <AccountShell email={user.email!} identityName={identityName}>
+    <AccountShell email={user.email!} identityName={identityName} isAdmin={isAdmin}>
       {children}
     </AccountShell>
   )

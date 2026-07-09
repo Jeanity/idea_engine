@@ -10,6 +10,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
+  ShieldCheck,
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
@@ -37,7 +38,7 @@ type NavGroup =
   | { label: string; items: NavItem[]; comingSoon?: undefined }
   | { label: string; comingSoon: ComingSoonItem[]; items?: undefined }
 
-const NAV_GROUPS: NavGroup[] = [
+const BASE_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Ideas',
     items: [
@@ -59,6 +60,17 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
+function getNavGroups(isAdmin: boolean): NavGroup[] {
+  const groups = [...BASE_NAV_GROUPS]
+  if (isAdmin) {
+    groups.push({
+      label: 'Admin',
+      items: [{ href: '/app/admin', label: 'Admin panel', icon: ShieldCheck }],
+    })
+  }
+  return groups
+}
+
 function isItemActive(item: NavItem, pathname: string): boolean {
   if (item.exact) return pathname === item.href
   return pathname === item.href || pathname.startsWith(item.href + '/')
@@ -78,10 +90,12 @@ const STORAGE_KEY = 'account.sidebar.collapsed'
 export function AccountShell({
   email,
   identityName,
+  isAdmin,
   children,
 }: {
   email: string
   identityName: string
+  isAdmin: boolean
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -130,6 +144,7 @@ export function AccountShell({
         mobileOpen={mobileOpen}
         email={email}
         identityName={identityName}
+        isAdmin={isAdmin}
         onCloseMobile={() => setMobileOpen(false)}
       />
 
@@ -156,6 +171,7 @@ function Sidebar({
   mobileOpen,
   email,
   identityName,
+  isAdmin,
   onCloseMobile,
 }: {
   pathname: string
@@ -163,6 +179,7 @@ function Sidebar({
   mobileOpen: boolean
   email: string
   identityName: string
+  isAdmin: boolean
   onCloseMobile: () => void
 }) {
   return (
@@ -196,7 +213,7 @@ function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5">
-        {NAV_GROUPS.map((group) => (
+        {getNavGroups(isAdmin).map((group) => (
           <div key={group.label}>
             <SectionLabel className={`px-2 pb-2 ${collapsed ? 'lg:sr-only' : ''}`}>{group.label}</SectionLabel>
             <ul className="space-y-1">
