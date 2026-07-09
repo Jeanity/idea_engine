@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { FeatureToggle } from './feature-toggle'
-import { HideToggle, AdminPublicToggle, ReplySection } from './moderation'
+import { HideToggle, AdminPublicToggle, ReplySection, DeleteButton } from './moderation'
 
 interface FeedbackReply {
   id: string
@@ -59,9 +59,10 @@ const pillClass = (active: boolean) =>
 
 export function FeedbackCards({ entries, moderationEnabled }: { entries: FeedbackEntry[]; moderationEnabled: boolean }) {
   const [sortBy, setSortBy] = useState<SortKey>('date')
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
 
   const sorted = useMemo(() => {
-    const copy = [...entries]
+    const copy = [...entries].filter(entry => !deletedIds.has(entry.id))
     switch (sortBy) {
       case 'date':
         copy.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -74,7 +75,7 @@ export function FeedbackCards({ entries, moderationEnabled }: { entries: Feedbac
         break
     }
     return copy
-  }, [entries, sortBy])
+  }, [entries, sortBy, deletedIds])
 
   return (
     <div>
@@ -151,7 +152,10 @@ export function FeedbackCards({ entries, moderationEnabled }: { entries: Feedbac
                 <>
                   <div className="flex items-center justify-between gap-2">
                     <AdminPublicToggle feedbackId={fb.id} initialAdminPublic={fb.admin_public} />
-                    <HideToggle feedbackId={fb.id} initialHidden={fb.hidden} />
+                    <div className="flex items-center gap-2">
+                      <HideToggle feedbackId={fb.id} initialHidden={fb.hidden} />
+                      <DeleteButton feedbackId={fb.id} onDeleted={() => setDeletedIds(prev => new Set([...prev, fb.id]))} />
+                    </div>
                   </div>
                   <ReplySection feedbackId={fb.id} initialReplies={fb.replies} />
                 </>
