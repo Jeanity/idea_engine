@@ -32,6 +32,27 @@ All pushed to main; migrations through **023** RUN in prod (Danny confirmed).
    (MarkSeen POST + window-event refetch); collapsed sidebar + mobile hamburger carry
    severity dots (red > amber > emerald). Per-admin timestamps.
 
+## Shipped later on 2026-07-10 (evening — admin ops + messaging suite)
+6. `f56f7f8` / `ff83cac` — **error-log and bug-report deletes** (two-step confirm; bug delete
+   also removes the screenshot from storage; errors page already had a typed-confirm Clear all).
+7. `8eb1fea` — **invite modal with editable message**: invite email now sent via OUR mailer
+   (generateLink for the action link — account still created instantly, that's Supabase
+   semantics); created-but-email-failed is surfaced honestly (delete user + retry).
+8. `51ea40a` — **universal email header/footer** in buildEmail (text wordmark → hadidea.com,
+   indigo accent line, team signature, site/contact/privacy links, © year; plain-text version
+   too). Email-client-safe: inline styles, no images/SVG/webfonts; single-column divs — worst
+   case in desktop Outlook is a wider column, cosmetic only. Templates stay pure message text.
+9. `3bf4431` — **message templates** (migration 024, RUN): /app/admin/templates CRUD page
+   (modals), one default per kind (invite / contact_reply / feedback_reply, DB-enforced),
+   TemplatePicker wired into all three compose modals (+ "Save as template"); feedback's
+   inline reply composer converted to a modal in the process.
+10. `5f731fd` — **refund policy live** in /terms §5 (pre-generation full refund; defective →
+    regenerate or refund; no change-of-mind post-delivery; ACL preserved). Verified rendering.
+11. Payments intel updated in "Decisions" above (direct Afterpay merchant, PayPal reusable,
+    Shopify rejected, Paddle/LS flagged).
+
+**Migrations current through 024 — ALL RUN in prod (Danny confirmed each).**
+
 ## Notes for next session
 - Cookie banner final copy is the cheeky "not the creepy kind… we'll ask first" (Danny-approved).
 - A separate chip session fixed samples-admin PGRST205 detection (was uncommitted in this
