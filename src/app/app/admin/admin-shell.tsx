@@ -85,6 +85,74 @@ function isItemActive(item: NavItem, pathname: string): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
+// ---------------------------------------------------------------------------
+// Live nav status (GET /api/admin/nav-status) — survey-active dot on Surveys,
+// open-count badge on Contact, 24h-new-count badge on Feedback. Fetched on
+// mount, on every route change (so the queues feel live as Danny works through
+// them), and on a 60s poll. Any fetch failure is silent — no badges, no error UI.
+// ---------------------------------------------------------------------------
+
+interface NavStatus {
+  surveyActive: boolean
+  openContacts: number
+  recentFeedback24h: number
+}
+
+const EMPTY_NAV_STATUS: NavStatus = { surveyActive: false, openContacts: 0, recentFeedback24h: 0 }
+const NAV_STATUS_POLL_MS = 60_000
+
+/** Badge state for a single nav item — at most one of dot/count applies per item. */
+function getNavBadge(href: string, status: NavStatus): { dot: boolean; count: number } {
+  if (href === '/app/admin/surveys') return { dot: status.surveyActive, count: 0 }
+  if (href === '/app/admin/contact') return { dot: false, count: status.openContacts }
+  if (href === '/app/admin/feedback') return { dot: false, count: status.recentFeedback24h }
+  return { dot: false, count: 0 }
+}
+
+/** Human-readable suffix appended to the link's title/aria-label — keeps the badge non-colour-only. */
+function badgeDescription(href: string, status: NavStatus): string {
+  if (href === '/app/admin/surveys' && status.surveyActive) return ' — survey active'
+  if (href === '/app/admin/contact' && status.openContacts > 0) return ` — ${status.openContacts} open`
+  if (href === '/app/admin/feedback' && status.recentFeedback24h > 0) return ` — ${status.recentFeedback24h} new`
+  return ''
+}
+
+function useNavStatus(pathname: string): NavStatus {
+  const [status, setStatus] = useState<NavStatus>(EMPTY_NAV_STATUS)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const res = await fetch('/api/admin/nav-status')
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setStatus({
+          surveyActive: !!data.surveyActive,
+          openContacts: Number.isFinite(data.openContacts) ? data.openContacts : 0,
+          recentFeedback24h: Number.isFinite(data.recentFeedback24h) ? data.recentFeedback24h : 0,
+        })
+      } catch {
+        /* silent — no badges on failure */
+      }
+    }
+
+    load()
+    const interval = setInterval(load, NAV_STATUS_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+    // Refetch whenever the route changes, in addition to the mount fetch + poll above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
+  return status
+}
+
 /** Human page title for the top bar, derived from the route. */
 function pageTitle(pathname: string): string {
   for (const group of NAV_GROUPS) {
@@ -110,6 +178,7 @@ export function AdminShell({ email, children }: { email: string; children: React
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const navStatus = useNavStatus(pathname)
 
   // Restore persisted collapse preference post-mount (SSR renders expanded).
   useEffect(() => {
@@ -152,6 +221,7 @@ export function AdminShell({ email, children }: { email: string; children: React
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         email={email}
+        navStatus={navStatus}
         onCloseMobile={() => setMobileOpen(false)}
       />
 
@@ -177,12 +247,14 @@ function Sidebar({
   collapsed,
   mobileOpen,
   email,
+  navStatus,
   onCloseMobile,
 }: {
   pathname: string
   collapsed: boolean
   mobileOpen: boolean
   email: string
+  navStatus: NavStatus
   onCloseMobile: () => void
 }) {
   return (
@@ -223,11 +295,16 @@ function Sidebar({
               {group.items.map((item) => {
                 const active = isItemActive(item, pathname)
                 const Icon = item.icon
+                const badge = getNavBadge(item.href, navStatus)
+                const hasIndicator = badge.dot || badge.count > 0
+                const desc = badgeDescription(item.href, navStatus)
+                const linkLabel = desc ? `${item.label}${desc}` : undefined
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      title={collapsed ? item.label : undefined}
+                      title={linkLabel ?? (collapsed ? item.label : undefined)}
+                      aria-label={linkLabel}
                       aria-current={active ? 'page' : undefined}
                       className={`group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
                         collapsed ? 'lg:justify-center' : ''
@@ -237,8 +314,36 @@ function Sidebar({
                           : 'text-slate-400 hover:bg-white/5 hover:text-white light:text-gray-600 light:hover:bg-gray-100 light:hover:text-gray-900'
                       }`}
                     >
-                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                      <span className="relative shrink-0">
+                        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                        {/* Collapsed (icon-only) mode: counts don't fit, so a corner dot
+                            stands in for "there's something to see" — dot itself carries
+                            no meaning beyond that, but the link's title/aria-label above
+                            always spells out what changed. */}
+                        {collapsed && hasIndicator && (
+                          <span
+                            className={`absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-slate-900 light:ring-white ${
+                              badge.dot ? 'bg-emerald-400 light:bg-emerald-500' : 'bg-amber-400 light:bg-amber-500'
+                            }`}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </span>
                       <span className={collapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                      {!collapsed && badge.dot && (
+                        <span
+                          className="animate-pulse-dot ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-400 light:bg-emerald-500"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {!collapsed && badge.count > 0 && (
+                        <span
+                          className="ml-auto inline-flex min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-300 light:bg-amber-100 light:text-amber-700"
+                          aria-hidden="true"
+                        >
+                          {badge.count > 99 ? '99+' : badge.count}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 )
