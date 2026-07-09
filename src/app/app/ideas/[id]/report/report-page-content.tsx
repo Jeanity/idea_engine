@@ -60,7 +60,7 @@ export async function ReportPageContent({ id }: { id: string }) {
   // stored in report sections, never touched by the AI pipeline. Reads active
   // links via the same public RLS policy as the rewrite engine above, so this
   // is retroactive: a link added/removed in admin applies on next view.
-  const essentialServices = await resolveEssentialServices(supabase, idea.location_country)
+  const essentialServices = await resolveEssentialServices(supabase, idea.location_country, idea.archetype)
 
   // Affiliate rewrite at DELIVERY time (never at generation): swap any report
   // URL on a partner's match_domain for a /go/<slug> tracking link. Active

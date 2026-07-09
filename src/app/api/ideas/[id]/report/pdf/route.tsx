@@ -81,7 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // PDF hrefs must be absolute — the affiliate /go/ hop only works against
   // this request's origin, so absolutize after resolving.
   const essentialServices = absolutizeEssentialServices(
-    await resolveEssentialServices(supabase, idea.location_country),
+    await resolveEssentialServices(supabase, idea.location_country, idea.archetype),
     request.nextUrl.origin
   )
 

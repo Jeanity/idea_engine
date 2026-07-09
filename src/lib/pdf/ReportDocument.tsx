@@ -16,7 +16,7 @@ import {
 } from './components'
 import { symbolForCurrency } from '@/lib/countries'
 import { deriveHeadlineScore } from '@/lib/viability-score'
-import type { ResolvedEssentialService } from '@/lib/essential-services'
+import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
 
 // Duplicated from the three other copies in the app (confirm/summary/my-ideas
 // pages) — no shared module for this yet, matching existing pattern.
@@ -30,6 +30,17 @@ const ARCHETYPE_LABELS: Record<string, string> = {
   invention: 'Invention',
   other: 'Other',
 }
+
+// Five official platform business-signup pages — mirrors the web report's
+// SOCIAL_SIGNUP_LINKS (src/app/app/ideas/[id]/report/report-client.tsx).
+// Hardcoded per the no-fabricated-URLs rule (top-level platform pages).
+const SOCIAL_SIGNUP_LINKS = [
+  { label: 'Facebook', href: 'https://www.facebook.com/business' },
+  { label: 'Instagram', href: 'https://business.instagram.com' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/setup/new/' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/business' },
+  { label: 'X', href: 'https://business.x.com' },
+]
 
 function isUnavailable(v: unknown): v is { status: 'unavailable'; reason: string } {
   return typeof v === 'object' && v !== null && (v as Record<string, unknown>).status === 'unavailable'
@@ -106,6 +117,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
     { id: 'competitors', label: 'Competitive Landscape', show: competitorList.length > 0 },
     { id: 'costs', label: 'Costs & Pricing', show: !!hasCosts },
     { id: 'legal', label: 'Legal & Compliance', show: complianceList.length > 0 },
+    { id: 'setup', label: 'Getting Set Up', show: data.essentialServices.length > 0 },
     { id: 'marketing', label: 'Getting the Word Out', show: !!hasMarketing },
     { id: 'next-steps', label: 'Considerations & Next Steps', show: !!hasNextSteps },
   ].filter(t => t.show)
@@ -393,33 +405,66 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               any item listed here.
             </Text>
           </Callout>
+          <PageFooter reportTitle={data.reportTitle} />
+        </Page>
+      )}
 
-          {/* "Your support team" — render-time only, never stored in report
-              sections (see src/lib/essential-services.ts). Mirrors the web
-              report page's block at the bottom of this same tab. */}
-          {data.essentialServices.length > 0 && (
-            <Card>
-              <Text style={[styles.h3, { marginBottom: 2 }]}>Your support team</Text>
-              <Text style={[styles.caption, { marginBottom: 10 }]}>
-                Every business ends up needing most of these — a head start on where to look.
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {data.essentialServices.map(service => (
-                  <View key={service.id} style={{ width: '46%', marginBottom: 10 }} wrap={false}>
-                    <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: COLORS.ink }}>{service.heading}</Text>
-                    <Text style={[styles.caption, { marginTop: 1, marginBottom: 3 }]}>{service.blurb}</Text>
-                    <ExternalLink href={service.href} iconSize={7.5}>
-                      <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9, color: COLORS.accent, textDecoration: 'underline' }}>{service.name}</Text>
-                    </ExternalLink>
-                    {service.note && <Text style={[styles.caption, { marginTop: 2, fontStyle: 'italic' }]}>{service.note}</Text>}
+      {/* ── Getting Set Up ───────────────────────────────────────── */}
+      {data.essentialServices.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <SectionHeading eyebrow="05 — GETTING SET UP" title="Getting Set Up" id="setup" />
+          <Text style={[styles.body, { marginBottom: 14 }]}>
+            The practical pieces every business needs — in roughly the order you&apos;ll need them.
+          </Text>
+
+          {ESSENTIAL_SERVICE_GROUPS.map(group => {
+            const groupServices = data.essentialServices.filter(s => s.group === group.id)
+            const isOnline = group.id === 'get_online'
+            if (groupServices.length === 0 && !isOnline) return null
+            return (
+              <View key={group.id} wrap={false}>
+                <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 8.5, color: COLORS.muted, letterSpacing: 0.8, marginBottom: 6 }}>
+                  {group.label.toUpperCase()}
+                </Text>
+                <Card>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    {groupServices.map(service => (
+                      <View key={service.id} style={{ width: '46%', marginBottom: 10 }} wrap={false}>
+                        <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: COLORS.ink }}>{service.heading}</Text>
+                        <Text style={[styles.caption, { marginTop: 1, marginBottom: 3 }]}>{service.blurb}</Text>
+                        <ExternalLink href={service.href} iconSize={7.5}>
+                          <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9, color: COLORS.accent, textDecoration: 'underline' }}>{service.name}</Text>
+                        </ExternalLink>
+                        {service.note && <Text style={[styles.caption, { marginTop: 2, fontStyle: 'italic' }]}>{service.note}</Text>}
+                      </View>
+                    ))}
+                    {isOnline && (
+                      <View style={{ width: '46%', marginBottom: 10 }} wrap={false}>
+                        <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: COLORS.ink }}>Set up your socials</Text>
+                        <Text style={[styles.caption, { marginTop: 1, marginBottom: 3 }]}>
+                          Official business sign-up pages for the platforms your customers use.
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                          {SOCIAL_SIGNUP_LINKS.map(link => (
+                            <ExternalLink key={link.label} href={link.href} iconSize={7.5}>
+                              <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 9, color: COLORS.accent, textDecoration: 'underline' }}>{link.label}</Text>
+                            </ExternalLink>
+                          ))}
+                        </View>
+                        <Text style={[styles.caption, { marginTop: 3, fontStyle: 'italic' }]}>
+                          Secure the same handle on every platform early — even the ones you won&apos;t use yet.
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                ))}
+                </Card>
               </View>
-              <Text style={[styles.caption, { marginTop: 6 }]}>
-                Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
-              </Text>
-            </Card>
-          )}
+            )
+          })}
+
+          <Text style={[styles.caption, { marginTop: 4 }]}>
+            Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
+          </Text>
           <PageFooter reportTitle={data.reportTitle} />
         </Page>
       )}
@@ -427,7 +472,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
       {/* ── Marketing ────────────────────────────────────────────── */}
       {hasMarketing && marketing && (
         <Page size="A4" style={styles.page}>
-          <SectionHeading eyebrow="05 — GO TO MARKET" title="Getting the Word Out" id="marketing" />
+          <SectionHeading eyebrow="06 — GO TO MARKET" title="Getting the Word Out" id="marketing" />
 
           <Card>
             <Text style={styles.body}>{marketing.strategy_summary}</Text>
@@ -497,7 +542,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
       {/* ── Considerations & Next Steps ─────────────────────────── */}
       {hasNextSteps && (
         <Page size="A4" style={styles.page}>
-          <SectionHeading eyebrow="06 — ACTION PLAN" title="Considerations & Next Steps" id="next-steps" />
+          <SectionHeading eyebrow="07 — ACTION PLAN" title="Considerations & Next Steps" id="next-steps" />
 
           {riskList.length > 0 && (
             <Card>

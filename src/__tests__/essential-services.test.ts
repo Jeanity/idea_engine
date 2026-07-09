@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ESSENTIAL_SERVICE_CATEGORIES,
+  ESSENTIAL_SERVICE_GROUPS,
   selectEssentialServices,
   resolveEssentialServices,
   absolutizeEssentialServices,
@@ -99,6 +100,77 @@ describe('selectEssentialServices — pure selection logic', () => {
   it('returns one entry per registry category, in registry order', () => {
     const out = selectEssentialServices([], 'US')
     expect(out.map(s => s.id)).toEqual(ESSENTIAL_SERVICE_CATEGORIES.map(c => c.id))
+  })
+})
+
+describe('selectEssentialServices — grouping', () => {
+  it('assigns every category a group that exists in ESSENTIAL_SERVICE_GROUPS', () => {
+    const groupIds = new Set(ESSENTIAL_SERVICE_GROUPS.map(g => g.id))
+    for (const cat of ESSENTIAL_SERVICE_CATEGORIES) {
+      expect(groupIds.has(cat.group)).toBe(true)
+    }
+  })
+
+  it('carries the category group through to resolved services', () => {
+    const out = selectEssentialServices([], 'US')
+    for (const service of out) {
+      const cat = ESSENTIAL_SERVICE_CATEGORIES.find(c => c.id === service.id)!
+      expect(service.group).toBe(cat.group)
+    }
+  })
+})
+
+describe('selectEssentialServices — legacy website category mapping', () => {
+  it('maps an affiliate row still tagged category=\'website\' onto website_diy', () => {
+    const rows: EssentialServiceAffiliateRow[] = [
+      { slug: 'old-website-partner', name: 'Old Website Partner', category: 'website', country: null, note: null },
+    ]
+    const out = selectEssentialServices(rows, 'US')
+    const websiteDiy = out.find(s => s.id === 'website_diy')!
+    expect(websiteDiy.kind).toBe('affiliate')
+    expect(websiteDiy.name).toBe('Old Website Partner')
+    // Doesn't leak into website_hire.
+    expect(out.find(s => s.id === 'website_hire')!.kind).toBe('search')
+  })
+})
+
+describe('selectEssentialServices — archetype filtering', () => {
+  it('hides an archetype-restricted category for a non-matching archetype', () => {
+    const out = selectEssentialServices([], 'US', 'content_education')
+    expect(out.find(s => s.id === 'app_development')).toBeUndefined()
+    expect(out.find(s => s.id === 'promotional_material')).toBeUndefined()
+    expect(out.find(s => s.id === 'payments')).toBeUndefined()
+  })
+
+  it('shows an archetype-restricted category for a matching archetype', () => {
+    const out = selectEssentialServices([], 'US', 'software_app')
+    expect(out.find(s => s.id === 'app_development')).toBeDefined()
+  })
+
+  it('shows payments for a matching archetype and hides it for a non-matching one', () => {
+    expect(selectEssentialServices([], 'US', 'physical_product').find(s => s.id === 'payments')).toBeDefined()
+    expect(selectEssentialServices([], 'US', 'content_education').find(s => s.id === 'payments')).toBeUndefined()
+  })
+
+  it('shows promotional_material for most archetypes but hides it for software_app and content_education', () => {
+    expect(selectEssentialServices([], 'US', 'physical_product').find(s => s.id === 'promotional_material')).toBeDefined()
+    expect(selectEssentialServices([], 'US', 'local_service').find(s => s.id === 'promotional_material')).toBeDefined()
+    expect(selectEssentialServices([], 'US', 'software_app').find(s => s.id === 'promotional_material')).toBeUndefined()
+    expect(selectEssentialServices([], 'US', 'content_education').find(s => s.id === 'promotional_material')).toBeUndefined()
+  })
+
+  it('never hides an always-on (no archetypes list) category, regardless of archetype', () => {
+    for (const archetype of ['content_education', 'software_app', 'physical_product', undefined]) {
+      const out = selectEssentialServices([], 'US', archetype)
+      expect(out.find(s => s.id === 'registration')).toBeDefined()
+      expect(out.find(s => s.id === 'legal')).toBeDefined()
+      expect(out.find(s => s.id === 'domain')).toBeDefined()
+    }
+  })
+
+  it('does not hide archetype-restricted categories when archetype is omitted (backward compat)', () => {
+    const out = selectEssentialServices([], 'US')
+    expect(out).toHaveLength(ESSENTIAL_SERVICE_CATEGORIES.length)
   })
 })
 

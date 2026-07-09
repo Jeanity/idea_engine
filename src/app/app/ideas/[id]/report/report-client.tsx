@@ -6,7 +6,8 @@ import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
-import type { ResolvedEssentialService } from '@/lib/essential-services'
+import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
+import { SectionLabel } from '@/components/admin/section-label'
 import { SurveyCard, type SurveyData } from './survey-card'
 
 interface ReportData {
@@ -660,57 +661,111 @@ function ExternalLinkIcon({ className = 'w-3 h-3' }: { className?: string }) {
   )
 }
 
-// "Your support team" — render-time essential-services block, bottom of the
-// Legal & Compliance tab. Never stored in report sections, never touched by
-// the AI pipeline (see src/lib/essential-services.ts) — links reflect the
-// current affiliate table on every view, retroactively, on every report.
-function EssentialServicesBlock({ services }: { services: ResolvedEssentialService[] }) {
-  if (services.length === 0) return null
+// Five official platform business-signup pages — hardcoded per the
+// no-fabricated-URLs rule (top-level platform pages, not per-business
+// results). Not a registry category — this is a special always-on card
+// inside the "Get online" group.
+const SOCIAL_SIGNUP_LINKS = [
+  { label: 'Facebook', href: 'https://www.facebook.com/business' },
+  { label: 'Instagram', href: 'https://business.instagram.com' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/setup/new/' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/business' },
+  { label: 'X', href: 'https://business.x.com' },
+]
+
+function SocialsCard() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
-        <h2 className="font-semibold text-white light:text-gray-900">Your support team</h2>
-        <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
-          Every business ends up needing most of these — a head start on where to look.
-        </p>
-      </div>
-      <div className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {services.map(service => (
-          <div key={service.id}>
-            <h3 className="text-sm font-medium text-slate-200 light:text-gray-800">{service.heading}</h3>
-            <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5 mb-1.5">{service.blurb}</p>
-            <a
-              href={service.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-indigo-300 underline underline-offset-2 break-words"
-            >
-              {service.name}
-              <ExternalLinkIcon />
-            </a>
-            {service.note && (
-              <p className="text-xs text-slate-500 light:text-gray-400 mt-1 italic">{service.note}</p>
-            )}
-            {service.extraSearches.length > 0 && (
-              <p className="text-xs text-slate-500 light:text-gray-400 mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                {service.extraSearches.map(extra => (
-                  <a
-                    key={extra.label}
-                    href={extra.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-slate-300 light:hover:text-gray-600"
-                  >
-                    {extra.label}
-                    <ExternalLinkIcon className="w-2.5 h-2.5" />
-                  </a>
-                ))}
-              </p>
-            )}
-          </div>
+    <div>
+      <h3 className="text-sm font-medium text-slate-200 light:text-gray-800">Set up your socials</h3>
+      <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5 mb-1.5">
+        Official business sign-up pages for the platforms your customers use.
+      </p>
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+        {SOCIAL_SIGNUP_LINKS.map(link => (
+          <a
+            key={link.label}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-300 underline underline-offset-2"
+          >
+            {link.label}
+            <ExternalLinkIcon />
+          </a>
         ))}
       </div>
-      <div className="px-5 py-4 bg-white/[0.02] border-t border-white/10 light:bg-gray-50 light:border-gray-200">
+      <p className="text-xs text-slate-500 light:text-gray-400 mt-1.5 italic">
+        Secure the same handle on every platform early — even the ones you won&rsquo;t use yet.
+      </p>
+    </div>
+  )
+}
+
+function EssentialServiceCard({ service }: { service: ResolvedEssentialService }) {
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-slate-200 light:text-gray-800">{service.heading}</h3>
+      <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5 mb-1.5">{service.blurb}</p>
+      <a
+        href={service.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-sm font-medium text-indigo-300 underline underline-offset-2 break-words"
+      >
+        {service.name}
+        <ExternalLinkIcon />
+      </a>
+      {service.note && (
+        <p className="text-xs text-slate-500 light:text-gray-400 mt-1 italic">{service.note}</p>
+      )}
+      {service.extraSearches.length > 0 && (
+        <p className="text-xs text-slate-500 light:text-gray-400 mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+          {service.extraSearches.map(extra => (
+            <a
+              key={extra.label}
+              href={extra.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-slate-300 light:hover:text-gray-600"
+            >
+              {extra.label}
+              <ExternalLinkIcon className="w-2.5 h-2.5" />
+            </a>
+          ))}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// "Getting set up" tab — render-time essential-services block, grouped and
+// archetype-aware. Never stored in report sections, never touched by the AI
+// pipeline (see src/lib/essential-services.ts) — links reflect the current
+// affiliate table on every view, retroactively, on every report.
+function GettingSetUpBlock({ services }: { services: ResolvedEssentialService[] }) {
+  if (services.length === 0) return null
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-slate-400 light:text-gray-500">
+        The practical pieces every business needs — in roughly the order you&rsquo;ll need them.
+      </p>
+      {ESSENTIAL_SERVICE_GROUPS.map(group => {
+        const groupServices = services.filter(s => s.group === group.id)
+        const isOnline = group.id === 'get_online'
+        if (groupServices.length === 0 && !isOnline) return null
+        return (
+          <div key={group.id}>
+            <SectionLabel className="mb-3">{group.label}</SectionLabel>
+            <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {groupServices.map(service => (
+                <EssentialServiceCard key={service.id} service={service} />
+              ))}
+              {isOnline && <SocialsCard />}
+            </div>
+          </div>
+        )
+      })}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] light:bg-gray-50 light:border-gray-200 px-5 py-4">
         <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">
           Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
         </p>
@@ -759,6 +814,7 @@ const REPORT_TABS = [
   { key: 'competitors', label: 'Competitors' },
   { key: 'costs', label: 'Costs & Pricing' },
   { key: 'legal', label: 'Legal & Compliance' },
+  { key: 'setup', label: 'Getting set up' },
   { key: 'marketing', label: 'Getting the Word Out' },
   { key: 'risks', label: 'Considerations & Next Steps' },
 ] as const
@@ -1171,10 +1227,14 @@ export function FullReportViewer({ report, essentialServices = [] }: { report: R
               </div>
             )
             : <UnavailableSection title="Legal & Compliance" />}
-        <EssentialServicesBlock services={essentialServices} />
       </div>
 
-      {/* Panel 5: Getting the Word Out (marketing playbook) */}
+      {/* Panel 5: Getting set up */}
+      <div className={`${panelClass('setup')} break-inside-avoid`}>
+        <GettingSetUpBlock services={essentialServices} />
+      </div>
+
+      {/* Panel 6: Getting the Word Out (marketing playbook) */}
       <div className={`${panelClass('marketing')} space-y-6 break-inside-avoid`}>
         {isUnavailable(marketing)
           ? <UnavailableSection title="Getting the Word Out" reason={marketing.reason} />
@@ -1262,7 +1322,7 @@ export function FullReportViewer({ report, essentialServices = [] }: { report: R
             : null}
       </div>
 
-      {/* Panel 6: Risks & Next Steps */}
+      {/* Panel 7: Risks & Next Steps */}
       <div className={`${panelClass('risks')} space-y-6 break-inside-avoid`}>
         {isUnavailable(risks)
           ? <UnavailableSection title="Things to consider" reason={risks.reason} />
