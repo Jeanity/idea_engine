@@ -10,8 +10,8 @@
 // Two layers, split for testability:
 //   - ESSENTIAL_SERVICE_CATEGORIES: the static, code-defined registry.
 //   - selectEssentialServices: a PURE function over already-fetched affiliate
-//     rows — no I/O, unit-tested directly (country-specific > global > search
-//     fallback).
+//     rows — no I/O, unit-tested directly (country-match > global > search
+//     fallback). A row's `countries` array can name multiple countries.
 //   - resolveEssentialServices: the thin I/O wrapper (Supabase query) that
 //     callers (report-page-content.tsx, the PDF route) actually use. Any
 //     query error — including 42703/PGRST204 from the columns not existing
@@ -178,7 +178,7 @@ export interface EssentialServiceAffiliateRow {
   slug: string
   name: string
   category: string | null
-  country: string | null
+  countries: string[] | null
   note: string | null
 }
 
@@ -209,9 +209,9 @@ const LEGACY_CATEGORY_ALIASES: Record<string, string> = {
 
 /**
  * Pure selection logic — no I/O. Per category: prefer an affiliate row whose
- * `country` matches `countryCode`, else a global row (`country` is null),
- * else the Google search-link fallback. Rows without a `category` (ordinary
- * rewrite-style links) are ignored entirely. When `archetype` is given,
+ * `countries` array contains `countryCode`, else a global row (`countries` is
+ * null or empty), else the Google search-link fallback. Rows without a
+ * `category` (ordinary rewrite-style links) are ignored entirely. When `archetype` is given,
  * categories whose `archetypes` allowlist doesn't include it are omitted
  * entirely (rather than falling back to search) — categories with no
  * allowlist are always included. When `archetype` isn't supplied at all
@@ -230,8 +230,10 @@ export function selectEssentialServices(
     .filter(cat => !cat.archetypes || !archetype || cat.archetypes.includes(archetype))
     .map(cat => {
       const candidates = rows.filter(r => (r.category ? (LEGACY_CATEGORY_ALIASES[r.category] ?? r.category) : r.category) === cat.id)
-      const countrySpecific = cc ? candidates.find(r => (r.country ?? '').toUpperCase() === cc) : undefined
-      const global = candidates.find(r => !r.country)
+      const countrySpecific = cc
+        ? candidates.find(r => (r.countries ?? []).some(code => (code ?? '').toUpperCase() === cc))
+        : undefined
+      const global = candidates.find(r => !r.countries || r.countries.length === 0)
       const chosen = countrySpecific ?? global
 
       const extraSearches: ResolvedExtraSearch[] = (cat.extraSearches ?? []).map(e => ({
@@ -290,12 +292,22 @@ export function absolutizeEssentialServices(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AffiliateLinksQueryable = any
 
+// Postgres "column does not exist" / PostgREST "schema cache miss" — the
+// signature of migration 017 not having run yet against this database.
+const MISSING_COLUMN_ERROR_CODES = new Set(['42703', 'PGRST204'])
+
 /**
  * I/O wrapper: fetches active, categorised affiliate_links rows and runs
- * them through selectEssentialServices. Degrades to an all-search-links
- * result on ANY query error (including the columns not existing yet,
- * pre-migration — Postgres 42703 / PostgREST PGRST204) — this block must
- * never crash a report render.
+ * them through selectEssentialServices. Three-tier degradation so this block
+ * can NEVER crash a report render, and keeps working across the deploy ->
+ * migration gap:
+ *   1. Query the new `countries` column.
+ *   2. If that errors specifically because the column doesn't exist yet
+ *      (42703 / PGRST204 — migration 017 not run), fall back to querying the
+ *      old `country` column and adapt each row into the `countries` shape.
+ *   3. If THAT also errors (or throws), or step 1 errors for any other
+ *      reason, degrade to selectEssentialServices([], ...) — every category
+ *      falls back to its search link.
  */
 export async function resolveEssentialServices(
   supabase: AffiliateLinksQueryable,
@@ -305,14 +317,43 @@ export async function resolveEssentialServices(
   try {
     const { data, error } = await supabase
       .from('affiliate_links')
-      .select('slug, name, category, country, note')
+      .select('slug, name, category, countries, note')
       .eq('active', true)
       .not('category', 'is', null)
 
-    if (error) {
+    if (!error) {
+      return selectEssentialServices(data ?? [], countryCode, archetype)
+    }
+
+    if (!MISSING_COLUMN_ERROR_CODES.has(error.code)) {
       return selectEssentialServices([], countryCode, archetype)
     }
-    return selectEssentialServices(data ?? [], countryCode, archetype)
+
+    // Pre-migration fallback: old single `country` column.
+    try {
+      const { data: legacyData, error: legacyError } = await supabase
+        .from('affiliate_links')
+        .select('slug, name, category, country, note')
+        .eq('active', true)
+        .not('category', 'is', null)
+
+      if (legacyError) {
+        return selectEssentialServices([], countryCode, archetype)
+      }
+
+      const adapted: EssentialServiceAffiliateRow[] = (legacyData ?? []).map(
+        (r: { slug: string; name: string; category: string | null; country: string | null; note: string | null }) => ({
+          slug: r.slug,
+          name: r.name,
+          category: r.category,
+          countries: r.country ? [r.country] : null,
+          note: r.note,
+        })
+      )
+      return selectEssentialServices(adapted, countryCode, archetype)
+    } catch {
+      return selectEssentialServices([], countryCode, archetype)
+    }
   } catch {
     return selectEssentialServices([], countryCode, archetype)
   }

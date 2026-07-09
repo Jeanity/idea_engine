@@ -57,14 +57,28 @@ function validateCategory(v: unknown): ValidationResult<string | null> {
   return { ok: false, error: 'Unknown category.' }
 }
 
-function validateCountry(v: unknown): ValidationResult<string | null> {
-  if (v === null || v === undefined || v === '') return { ok: true, value: null }
-  if (typeof v !== 'string') return { ok: false, error: 'Country must be a 2-letter code.' }
-  const code = v.trim().toUpperCase()
-  if (!/^[A-Z]{2}$/.test(code) || !KNOWN_COUNTRY_CODES.has(code)) {
-    return { ok: false, error: 'Country must be a known 2-letter code.' }
+const MAX_COUNTRIES = 20
+
+// countries: [] or omitted/null = global. Every entry must be a known
+// 2-letter code; deduped; capped at MAX_COUNTRIES so a malformed payload
+// can't balloon the array column.
+function validateCountries(v: unknown): ValidationResult<string[] | null> {
+  if (v === null || v === undefined) return { ok: true, value: null }
+  if (!Array.isArray(v)) return { ok: false, error: 'Countries must be a list of 2-letter codes.' }
+  const codes: string[] = []
+  for (const item of v) {
+    if (typeof item !== 'string') return { ok: false, error: 'Countries must be a list of 2-letter codes.' }
+    const code = item.trim().toUpperCase()
+    if (!code) continue
+    if (!/^[A-Z]{2}$/.test(code) || !KNOWN_COUNTRY_CODES.has(code)) {
+      return { ok: false, error: 'Countries must be known 2-letter codes.' }
+    }
+    if (!codes.includes(code)) codes.push(code)
   }
-  return { ok: true, value: code }
+  if (codes.length > MAX_COUNTRIES) {
+    return { ok: false, error: `Too many countries (max ${MAX_COUNTRIES}).` }
+  }
+  return { ok: true, value: codes.length > 0 ? codes : null }
 }
 
 function validateNote(v: unknown): ValidationResult<string | null> {
@@ -93,8 +107,8 @@ export async function POST(request: NextRequest) {
 
   const category = validateCategory(body.category)
   if (!category.ok) return NextResponse.json({ error: category.error }, { status: 400 })
-  const country = validateCountry(body.country)
-  if (!country.ok) return NextResponse.json({ error: country.error }, { status: 400 })
+  const countries = validateCountries(body.countries)
+  if (!countries.ok) return NextResponse.json({ error: countries.error }, { status: 400 })
   const note = validateNote(body.note)
   if (!note.ok) return NextResponse.json({ error: note.error }, { status: 400 })
 
@@ -110,7 +124,7 @@ export async function POST(request: NextRequest) {
       active: body.active === false ? false : true,
       notes: typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null,
       category: category.value,
-      country: country.value,
+      countries: countries.value,
       note: note.value,
     })
     .select('id')
@@ -173,10 +187,10 @@ export async function PATCH(request: NextRequest) {
     if (!category.ok) return NextResponse.json({ error: category.error }, { status: 400 })
     update.category = category.value
   }
-  if ('country' in body) {
-    const country = validateCountry(body.country)
-    if (!country.ok) return NextResponse.json({ error: country.error }, { status: 400 })
-    update.country = country.value
+  if ('countries' in body) {
+    const countries = validateCountries(body.countries)
+    if (!countries.ok) return NextResponse.json({ error: countries.error }, { status: 400 })
+    update.countries = countries.value
   }
   if ('note' in body) {
     const note = validateNote(body.note)

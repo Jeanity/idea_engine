@@ -15,7 +15,7 @@ export interface AffiliateLinkRow {
   active: boolean
   notes: string | null
   category: string | null
-  country: string | null
+  countries: string[] | null
   note: string | null
   created_at: string
   updated_at: string
@@ -30,13 +30,13 @@ interface FormState {
   match_terms: string
   notes: string
   category: string
-  country: string
+  countries: string[]
   note: string
 }
 
 const EMPTY_FORM: FormState = {
   slug: '', name: '', target_url: '', match_domains: '', match_terms: '', notes: '',
-  category: '', country: '', note: '',
+  category: '', countries: [], note: '',
 }
 
 const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
@@ -64,10 +64,12 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null)
+  const [countryToAdd, setCountryToAdd] = useState('')
 
   function openNew() {
     setEditing('new')
     setForm(EMPTY_FORM)
+    setCountryToAdd('')
     setError('')
   }
 
@@ -81,15 +83,29 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
       match_terms: link.match_terms.join('\n'),
       notes: link.notes ?? '',
       category: link.category ?? '',
-      country: link.country ?? '',
+      countries: link.countries ?? [],
       note: link.note ?? '',
     })
+    setCountryToAdd('')
     setError('')
+  }
+
+  function addCountry() {
+    if (!countryToAdd) return
+    if (!form.countries.includes(countryToAdd)) {
+      setForm({ ...form, countries: [...form.countries, countryToAdd] })
+    }
+    setCountryToAdd('')
+  }
+
+  function removeCountry(code: string) {
+    setForm({ ...form, countries: form.countries.filter(c => c !== code) })
   }
 
   function closeForm() {
     setEditing(null)
     setForm(EMPTY_FORM)
+    setCountryToAdd('')
     setError('')
   }
 
@@ -104,7 +120,7 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
       match_terms: splitList(form.match_terms),
       notes: form.notes.trim() || null,
       category: form.category || null,
-      country: form.country || null,
+      countries: form.countries,
       note: form.note.trim() || null,
     }
     try {
@@ -204,13 +220,45 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
           </select>
         </div>
         <div>
-          <label className={labelCls}>Country (blank = global)</label>
-          <select className={inputCls} value={form.country} onChange={e => setForm({ ...form, country: e.target.value })}>
-            <option value="">Global (all countries)</option>
-            {COUNTRIES.filter(c => c.code).map(c => (
-              <option key={c.code} value={c.code}>{c.name}</option>
-            ))}
-          </select>
+          <label className={labelCls}>Countries (none = global)</label>
+          <div className="flex items-center gap-2">
+            <select className={inputCls} value={countryToAdd} onChange={e => setCountryToAdd(e.target.value)}>
+              <option value="">Select a country…</option>
+              {COUNTRIES.filter(c => c.code && !form.countries.includes(c.code)).map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addCountry}
+              disabled={!countryToAdd}
+              className="shrink-0 text-xs font-medium px-3 py-2 rounded-lg border border-white/10 text-slate-300 hover:border-white/20 disabled:opacity-40 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300"
+            >
+              Add
+            </button>
+          </div>
+          {form.countries.length === 0 ? (
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-2">Global — serves all countries.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {form.countries.map(code => (
+                <span
+                  key={code}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600"
+                >
+                  {code}
+                  <button
+                    type="button"
+                    onClick={() => removeCountry(code)}
+                    aria-label={`Remove ${code}`}
+                    className="text-slate-400 hover:text-white light:text-gray-400 light:hover:text-gray-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Support-team note (optional, shown under the link — max 120 chars)</label>
@@ -273,8 +321,18 @@ export function AffiliatesClient({ initialLinks }: { initialLinks: AffiliateLink
                           {CATEGORY_LABELS[link.category] ?? link.category}
                         </span>
                       )}
-                      {link.country && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600">{link.country}</span>
+                      {link.category && (
+                        link.countries && link.countries.length > 0 ? (
+                          link.countries.map(code => (
+                            <span key={code} className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600">
+                              {code}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600">
+                            Global
+                          </span>
+                        )
                       )}
                     </div>
                     <p className="text-xs text-slate-400 light:text-gray-500 truncate max-w-xl">→ {link.target_url}</p>

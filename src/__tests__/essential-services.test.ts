@@ -21,8 +21,8 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('prefers a country-specific affiliate over a global one', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', country: null, note: null },
-      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'US', note: 'Great for LLCs' },
+      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', countries: null, note: null },
+      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['US'], note: 'Great for LLCs' },
     ]
     const out = selectEssentialServices(rows, 'US')
     const accountants = out.find(s => s.id === 'accountants')!
@@ -34,7 +34,7 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('falls back to a global affiliate when no country-specific match exists', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', country: null, note: null },
+      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', countries: null, note: null },
     ]
     const out = selectEssentialServices(rows, 'NZ')
     const accountants = out.find(s => s.id === 'accountants')!
@@ -44,7 +44,7 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('falls back to search when only a different country has an affiliate', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'uk-accountant', name: 'UK Accountants Ltd', category: 'accountants', country: 'GB', note: null },
+      { slug: 'uk-accountant', name: 'UK Accountants Ltd', category: 'accountants', countries: ['GB'], note: null },
     ]
     const out = selectEssentialServices(rows, 'US')
     const accountants = out.find(s => s.id === 'accountants')!
@@ -53,15 +53,39 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('matches country case-insensitively', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'us', note: null },
+      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['us'], note: null },
     ]
     const out = selectEssentialServices(rows, 'US')
     expect(out.find(s => s.id === 'accountants')!.kind).toBe('affiliate')
   })
 
+  it('matches a link that lists multiple countries (e.g. AU and NZ)', () => {
+    const rows: EssentialServiceAffiliateRow[] = [
+      { slug: 'hnry', name: 'Hnry', category: 'accountants', countries: ['AU', 'NZ'], note: null },
+    ]
+    const outNz = selectEssentialServices(rows, 'NZ')
+    expect(outNz.find(s => s.id === 'accountants')!.kind).toBe('affiliate')
+    expect(outNz.find(s => s.id === 'accountants')!.name).toBe('Hnry')
+
+    const outAu = selectEssentialServices(rows, 'AU')
+    expect(outAu.find(s => s.id === 'accountants')!.name).toBe('Hnry')
+
+    const outUs = selectEssentialServices(rows, 'US')
+    expect(outUs.find(s => s.id === 'accountants')!.kind).toBe('search')
+  })
+
+  it('treats an empty countries array as global', () => {
+    const rows: EssentialServiceAffiliateRow[] = [
+      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', countries: [], note: null },
+    ]
+    const out = selectEssentialServices(rows, 'NZ')
+    expect(out.find(s => s.id === 'accountants')!.kind).toBe('affiliate')
+    expect(out.find(s => s.id === 'accountants')!.name).toBe('Global Accountants Inc')
+  })
+
   it('ignores rows with no category (ordinary content-rewrite links)', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'vistaprint', name: 'Vistaprint', category: null, country: null, note: null },
+      { slug: 'vistaprint', name: 'Vistaprint', category: null, countries: null, note: null },
     ]
     const out = selectEssentialServices(rows, 'US')
     for (const service of out) {
@@ -71,7 +95,7 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('ignores rows for other categories when resolving a given category', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'some-lawyer', name: 'Some Legal Co', category: 'legal', country: null, note: null },
+      { slug: 'some-lawyer', name: 'Some Legal Co', category: 'legal', countries: null, note: null },
     ]
     const out = selectEssentialServices(rows, 'US')
     expect(out.find(s => s.id === 'accountants')!.kind).toBe('search')
@@ -80,7 +104,7 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('always includes extraSearches (search fallback) for categories that define them, affiliate or not', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'some-lawyer', name: 'Some Legal Co', category: 'legal', country: null, note: null },
+      { slug: 'some-lawyer', name: 'Some Legal Co', category: 'legal', countries: null, note: null },
     ]
     const withAffiliate = selectEssentialServices(rows, 'US').find(s => s.id === 'legal')!
     const withoutAffiliate = selectEssentialServices([], 'US').find(s => s.id === 'legal')!
@@ -90,8 +114,8 @@ describe('selectEssentialServices — pure selection logic', () => {
 
   it('handles a null/undefined country code by never matching country-specific rows', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'US', note: null },
-      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', country: null, note: null },
+      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['US'], note: null },
+      { slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', countries: null, note: null },
     ]
     const out = selectEssentialServices(rows, null)
     expect(out.find(s => s.id === 'accountants')!.name).toBe('Global Accountants Inc')
@@ -123,7 +147,7 @@ describe('selectEssentialServices — grouping', () => {
 describe('selectEssentialServices — legacy website category mapping', () => {
   it('maps an affiliate row still tagged category=\'website\' onto website_diy', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'old-website-partner', name: 'Old Website Partner', category: 'website', country: null, note: null },
+      { slug: 'old-website-partner', name: 'Old Website Partner', category: 'website', countries: null, note: null },
     ]
     const out = selectEssentialServices(rows, 'US')
     const websiteDiy = out.find(s => s.id === 'website_diy')!
@@ -183,7 +207,7 @@ describe('searchUrl', () => {
 describe('absolutizeEssentialServices', () => {
   it('prefixes affiliate /go/ hrefs with the origin', () => {
     const rows: EssentialServiceAffiliateRow[] = [
-      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'US', note: null },
+      { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['US'], note: null },
     ]
     const resolved = selectEssentialServices(rows, 'US')
     const abs = absolutizeEssentialServices(resolved, 'https://ideaengine.app/')
@@ -200,35 +224,68 @@ describe('absolutizeEssentialServices', () => {
 })
 
 describe('resolveEssentialServices — I/O wrapper degradation', () => {
-  function fakeSupabase(result: { data: EssentialServiceAffiliateRow[] | null; error: { code?: string; message?: string } | null }) {
+  // Simulates a Supabase client whose `.select(columns)` call determines
+  // which of `primary` (new `countries` column) or `legacy` (old `country`
+  // column) result to hand back — mirroring the real fallback query the
+  // resolver issues when the primary query fails with a missing-column error.
+  function fakeSupabase(
+    primary: { data: unknown; error: { code?: string; message?: string } | null },
+    legacy?: { data: unknown; error: { code?: string; message?: string } | null }
+  ) {
     return {
       from: (_table: 'affiliate_links') => ({
-        select: (_columns: string) => ({
-          eq: (_col: string, _val: unknown) => ({
-            not: (_col2: string, _op: string, _val2: unknown) => Promise.resolve(result),
-          }),
-        }),
+        select: (columns: string) => {
+          const result = columns.includes('countries') ? primary : (legacy ?? primary)
+          return {
+            eq: (_col: string, _val: unknown) => ({
+              not: (_col2: string, _op: string, _val2: unknown) => Promise.resolve(result),
+            }),
+          }
+        },
       }),
     }
   }
 
   it('returns resolved rows on success', async () => {
     const supabase = fakeSupabase({
-      data: [{ slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'US', note: null }],
+      data: [{ slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['US'], note: null }],
       error: null,
     })
     const out = await resolveEssentialServices(supabase, 'US')
     expect(out.find(s => s.id === 'accountants')!.kind).toBe('affiliate')
   })
 
-  it('degrades to all search links on a query error (e.g. pre-migration missing columns)', async () => {
-    const supabase = fakeSupabase({ data: null, error: { code: '42703', message: 'column "category" does not exist' } })
+  it('falls back to the old `country` column when `countries` does not exist yet (42703)', async () => {
+    const supabase = fakeSupabase(
+      { data: null, error: { code: '42703', message: 'column "countries" does not exist' } },
+      { data: [{ slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', country: 'US', note: null }], error: null }
+    )
+    const out = await resolveEssentialServices(supabase, 'US')
+    const accountants = out.find(s => s.id === 'accountants')!
+    expect(accountants.kind).toBe('affiliate')
+    expect(accountants.name).toBe('US Tax Pros')
+  })
+
+  it('falls back to the old `country` column on a PostgREST schema-cache error (PGRST204)', async () => {
+    const supabase = fakeSupabase(
+      { data: null, error: { code: 'PGRST204' } },
+      { data: [{ slug: 'global-accountant', name: 'Global Accountants Inc', category: 'accountants', country: null, note: null }], error: null }
+    )
+    const out = await resolveEssentialServices(supabase, 'NZ')
+    expect(out.find(s => s.id === 'accountants')!.kind).toBe('affiliate')
+  })
+
+  it('degrades to all search links if both the primary and legacy fallback queries fail', async () => {
+    const supabase = fakeSupabase(
+      { data: null, error: { code: '42703', message: 'column "countries" does not exist' } },
+      { data: null, error: { code: 'some-other-error' } }
+    )
     const out = await resolveEssentialServices(supabase, 'US')
     expect(out.every(s => s.kind === 'search')).toBe(true)
   })
 
-  it('degrades to all search links on a PostgREST schema-cache error', async () => {
-    const supabase = fakeSupabase({ data: null, error: { code: 'PGRST204' } })
+  it('degrades to all search links on a non-missing-column query error (no legacy fallback attempted)', async () => {
+    const supabase = fakeSupabase({ data: null, error: { code: '42501', message: 'permission denied' } })
     const out = await resolveEssentialServices(supabase, 'US')
     expect(out.every(s => s.kind === 'search')).toBe(true)
   })
