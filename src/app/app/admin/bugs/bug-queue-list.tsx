@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 import type { BugReportStatus } from '@/lib/database.types'
 
 export interface BugRow {
@@ -24,6 +24,79 @@ export interface BugRow {
 
 const STATUS_OPTIONS: BugReportStatus[] = ['open', 'triaged', 'resolved', 'wontfix']
 
+// Hard delete requires a two-step confirmation: first click shows the confirm
+// prompt, second click (after clicking Confirm) actually deletes.
+function DeleteButton({ bugId, onDeleted }: { bugId: string; onDeleted: () => void }) {
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function doDelete() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/bugs/${bugId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to delete')
+        return
+      }
+      onDeleted()
+      router.refresh()
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <p className="text-xs text-red-300 light:text-red-600 mb-1">
+          Delete permanently? The screenshot goes with it.
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setConfirming(false)
+              setError('')
+            }}
+            disabled={loading}
+            className="text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={doDelete}
+            disabled={loading}
+            className="text-xs font-medium px-2.5 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/15 light:border-red-200 light:bg-red-50 light:text-red-700 light:hover:bg-red-100 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Deleting…' : 'Confirm'}
+          </button>
+        </div>
+        {error && <p className="text-[11px] text-red-300 light:text-red-600 mt-1">{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={() => setConfirming(true)}
+        disabled={loading}
+        className="text-xs font-medium px-2.5 py-1 rounded-full border border-red-500/20 text-red-300 hover:border-red-500/30 light:border-red-200 light:text-red-600 light:hover:border-red-300 transition-colors disabled:opacity-50"
+      >
+        Delete
+      </button>
+    </div>
+  )
+}
+
 function statusTone(status: BugReportStatus): string {
   if (status === 'open') return 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-100 light:text-indigo-700'
   if (status === 'triaged') return 'bg-amber-500/15 text-amber-300 light:bg-amber-100 light:text-amber-700'
@@ -31,7 +104,7 @@ function statusTone(status: BugReportStatus): string {
   return 'bg-white/10 text-slate-400 light:bg-gray-100 light:text-gray-500'
 }
 
-function BugItem({ row }: { row: BugRow }) {
+function BugItem({ row, onDeleted }: { row: BugRow; onDeleted: () => void }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState(row.status)
@@ -109,7 +182,7 @@ function BugItem({ row }: { row: BugRow }) {
           </span>
         </button>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col gap-2 shrink-0">
           <select
             value={status}
             disabled={savingStatus}
@@ -122,6 +195,7 @@ function BugItem({ row }: { row: BugRow }) {
               </option>
             ))}
           </select>
+          <DeleteButton bugId={row.id} onDeleted={onDeleted} />
         </div>
       </div>
 
@@ -181,7 +255,18 @@ function BugItem({ row }: { row: BugRow }) {
   )
 }
 
-export function BugQueueList({ rows }: { rows: BugRow[] }) {
+export function BugQueueList({ rows: initialRows }: { rows: BugRow[] }) {
+  const [rows, setRows] = useState(initialRows)
+
+  // Sync local state when server data changes (after router.refresh())
+  useEffect(() => {
+    setRows(initialRows)
+  }, [initialRows])
+
+  function handleBugDeleted(deletedId: string) {
+    setRows(prev => prev.filter(r => r.id !== deletedId))
+  }
+
   if (rows.length === 0) {
     return <p className="text-sm text-slate-500 light:text-gray-400 py-10 text-center">No bug reports yet.</p>
   }
@@ -189,7 +274,7 @@ export function BugQueueList({ rows }: { rows: BugRow[] }) {
   return (
     <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm divide-y divide-white/10 light:divide-gray-100 overflow-hidden">
       {rows.map(row => (
-        <BugItem key={row.id} row={row} />
+        <BugItem key={row.id} row={row} onDeleted={() => handleBugDeleted(row.id)} />
       ))}
     </div>
   )
