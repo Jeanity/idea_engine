@@ -4,6 +4,7 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { getPromoPublicStatus } from '@/lib/promo'
+import { getSurveyCardData } from '@/lib/survey'
 import ReportClient from './report-client'
 
 // Shared data-fetch + render for a report — used by both the standalone
@@ -52,6 +53,7 @@ export async function ReportPageContent({ id }: { id: string }) {
   // count, never another user's data. See getPromoPublicStatus for the
   // narrow, user-safe shape it returns.
   const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
+  const surveyData = await getSurveyCardData(createServiceClient(), supabase, user.id)
 
   // Affiliate rewrite at DELIVERY time (never at generation): swap any report
   // URL on a partner's match_domain for a /go/<slug> tracking link. Active
@@ -97,6 +99,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       initialFeedback={feedback ?? null}
       isAdmin={isAdmin}
       promoStatus={promoStatus}
+      surveyData={surveyData}
     />
   )
 }

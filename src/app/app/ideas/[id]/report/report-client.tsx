@@ -6,6 +6,7 @@ import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
+import { SurveyCard, type SurveyData } from './survey-card'
 
 interface ReportData {
   id: string
@@ -34,6 +35,7 @@ interface Props {
   initialFeedback: FeedbackData | null
   isAdmin: boolean
   promoStatus: PromoStatus
+  surveyData: SurveyData
 }
 
 // ── Progress screen ───────────────────────────────────────────
@@ -1591,7 +1593,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, isAdmin, promoStatus, surveyData }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -1624,6 +1626,9 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
           </Link>
           <AffiliateDisclosure />
         </div>
+        <div className="mb-8">
+          <SurveyCard data={surveyData} reportId={report!.id} />
+        </div>
       </div>
     )
   }
@@ -1647,6 +1652,9 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
             Review / edit answers
           </Link>
           <AffiliateDisclosure />
+        </div>
+        <div className="mb-8">
+          <SurveyCard data={surveyData} reportId={report.id} />
         </div>
       </div>
     )

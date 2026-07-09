@@ -19,6 +19,7 @@ export type PurchaseStatus = 'pending' | 'complete' | 'refunded' | 'failed'
 export type OfferAudience = 'new_users' | 'account_holders' | 'everyone'
 export type ContactCategory = 'feedback' | 'complaint' | 'question' | 'partnership'
 export type ContactStatus = 'open' | 'replied' | 'closed'
+export type SurveyQuestionType = 'text' | 'rating' | 'multiple_choice'
 
 export type Database = {
   public: {
@@ -582,6 +583,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      survey_questions: {
+        Row: {
+          id: string
+          prompt: string
+          qtype: SurveyQuestionType
+          options: Json | null
+          sort_order: number
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          prompt: string
+          qtype: SurveyQuestionType
+          options?: Json | null
+          sort_order?: number
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          prompt?: string
+          qtype?: SurveyQuestionType
+          options?: Json | null
+          sort_order?: number
+          active?: boolean
+        }
+        Relationships: []
+      }
+      survey_responses: {
+        Row: {
+          id: string
+          question_id: string
+          user_id: string
+          report_id: string | null
+          answer: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          user_id: string
+          report_id?: string | null
+          answer: string
+          created_at?: string
+        }
+        Update: {
+          answer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'survey_responses_question_id_fkey'
+            columns: ['question_id']
+            isOneToOne: false
+            referencedRelation: 'survey_questions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'survey_responses_report_id_fkey'
+            columns: ['report_id']
+            isOneToOne: false
+            referencedRelation: 'reports'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
     Views: Record<string, never>
