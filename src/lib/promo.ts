@@ -1,6 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { getSetting, setSetting, isMissingTable } from '@/lib/app-settings'
+import {
+  normalizeEmail,
+  isDisposableEmail,
+  hashIp,
+  evaluateAbuseSignals,
+  countSuspiciousClusters,
+  queryPromoIdentityMatches,
+  insertPromoIdentity,
+} from '@/lib/promo-abuse'
+
+// Not meant to be secret-strength — just namespaces the IP hash so it isn't
+// directly reversible/rainbow-tableable as a bare IP. See src/lib/promo-abuse.ts.
+const IP_HASH_SALT = 'idea-engine-promo-abuse-v1'
 
 export const PROMO_SETTING_KEY = 'promo'
 
@@ -154,40 +167,126 @@ export async function getPromoPublicStatus(service: SupabaseClient<Database>, us
   return { active: true, perUserRemaining: remaining }
 }
 
+const PROMO_MESSAGES: Record<PromoDenyReason, string> = {
+  disabled: "Free launch reports aren't available right now — paid reports are coming soon.",
+  spend_cap: 'The free launch offer has ended — paid reports are coming soon.',
+  report_cap: 'The free launch offer has ended — paid reports are coming soon.',
+  per_user_limit: "You've used your free report for this promotion — paid reports are coming soon.",
+}
+
+export interface PromoAbuseSignals {
+  email: string
+  /** First hop of X-Forwarded-For, or null if unavailable. */
+  ip: string | null
+  /** Value of the ie_ab anti-abuse cookie, or null if not yet set on this browser. */
+  abId: string | null
+}
+
+export type PromoGateCheckResult =
+  | { allowed: true; normalizedEmail: string; ipHash: string | null }
+  | { allowed: false; message: string }
+
 /**
  * Full server-side gate for POST /api/reports/full's non-admin path. Reads
- * config + usage, evaluates the pure decision, and — for cap-triggered
- * denials — ends the promo (setSetting) as a side effect so subsequent
- * requests see it off immediately. Returns a user-facing message alongside
- * the decision; callers map `allowed: false` to a 403.
+ * config + usage, evaluates the pure per-user-limit decision, and — for
+ * cap-triggered denials — ends the promo (setSetting) as a side effect so
+ * subsequent requests see it off immediately.
+ *
+ * On top of that, runs the promo-abuse layer (migration 020 / promo-abuse.ts):
+ * a disposable-email blocklist check (no I/O — always active regardless of
+ * whether the migration has run), then — table permitting — email/browser/IP
+ * reuse signals. Any denial here reuses the exact per_user_limit message so
+ * the product never reveals which signal tripped.
+ *
+ * Returns a user-facing message alongside the decision; callers map
+ * `allowed: false` to a 403. On `allowed: true`, also returns the
+ * normalizedEmail/ipHash computed here so the caller can pass them straight
+ * to recordPromoIdentity after the report is successfully queued, without
+ * recomputing (and risking drift from) the same values.
  */
 export async function checkAndApplyPromoGate(
   service: SupabaseClient<Database>,
-  userId: string
-): Promise<{ allowed: true } | { allowed: false; message: string }> {
+  userId: string,
+  signals: PromoAbuseSignals
+): Promise<PromoGateCheckResult> {
   const config = await readPromoConfig(service)
   const usage = await readPromoUsage(service, config, userId)
   const result = evaluatePromoGate(config, usage)
 
-  if (result.allowed) return { allowed: true }
+  if (!result.allowed) {
+    if (result.endsPromo) {
+      await writePromoConfig(service, {
+        ...config,
+        enabled: false,
+        ended_at: new Date().toISOString(),
+        ended_reason: result.reason === 'spend_cap' ? 'spend_cap' : 'report_cap',
+      })
+    }
+    return { allowed: false, message: PROMO_MESSAGES[result.reason] }
+  }
 
-  if (result.endsPromo) {
-    await writePromoConfig(service, {
-      ...config,
-      enabled: false,
-      ended_at: new Date().toISOString(),
-      ended_reason: result.reason === 'spend_cap' ? 'spend_cap' : 'report_cap',
+  // Disposable-email blocklist — pure, no DB dependency, always enforced.
+  if (isDisposableEmail(signals.email)) {
+    return { allowed: false, message: PROMO_MESSAGES.per_user_limit }
+  }
+
+  const normalizedEmail = normalizeEmail(signals.email)
+  const ipHash = signals.ip ? hashIp(signals.ip, IP_HASH_SALT) : null
+
+  // Email/browser/IP reuse signals — degrade gracefully if migration 020
+  // hasn't been run yet (missingTable), same as every other promo table.
+  const { rows, missingTable } = await queryPromoIdentityMatches(service, {
+    normalizedEmail,
+    abId: signals.abId,
+    ipHash,
+  })
+
+  if (!missingTable) {
+    const verdict = evaluateAbuseSignals(rows, {
+      normalizedEmail,
+      abId: signals.abId,
+      ipHash,
+      currentUserId: userId,
+      now: new Date(),
     })
+    if (verdict.verdict === 'deny') {
+      return { allowed: false, message: PROMO_MESSAGES.per_user_limit }
+    }
   }
 
-  const messages: Record<PromoDenyReason, string> = {
-    disabled: "Free launch reports aren't available right now — paid reports are coming soon.",
-    spend_cap: 'The free launch offer has ended — paid reports are coming soon.',
-    report_cap: 'The free launch offer has ended — paid reports are coming soon.',
-    per_user_limit: "You've used your free report for this promotion — paid reports are coming soon.",
-  }
+  return { allowed: true, normalizedEmail, ipHash }
+}
 
-  return { allowed: false, message: messages[result.reason] }
+/**
+ * Records a promo_identity row after a promo full report has been
+ * successfully queued. Call with the normalizedEmail/ipHash returned by
+ * checkAndApplyPromoGate. Swallows missing-table and other errors — never
+ * fails the request that already succeeded.
+ */
+export async function recordPromoIdentity(
+  service: SupabaseClient<Database>,
+  params: { userId: string; normalizedEmail: string; ipHash: string | null; abId: string | null }
+): Promise<void> {
+  await insertPromoIdentity(service, params)
+}
+
+/**
+ * Admin-only readout: count of distinct ip_hash/ab_id values in the current
+ * promo period that are shared by 2+ distinct accounts — a rough "possible
+ * duplicate-account clusters" signal. Scoped the same way as
+ * readPromoUsage/readPromoDistinctUsers (generation window from
+ * config.started_at). Returns 0 gracefully if migration 020 hasn't run yet.
+ */
+export async function readSuspiciousClusters(service: SupabaseClient<Database>, config: PromoConfig): Promise<number> {
+  if (!config.started_at) return 0
+
+  const { data, error } = await service
+    .from('promo_identity')
+    .select('user_id, normalized_email, ip_hash, ab_id, created_at')
+    .gte('created_at', config.started_at)
+
+  if (error || !data) return 0
+  return countSuspiciousClusters(data)
 }
 
 export { isMissingTable }

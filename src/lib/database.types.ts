@@ -742,6 +742,30 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_identity: {
+        Row: {
+          id: string
+          user_id: string
+          normalized_email: string
+          ip_hash: string | null
+          ab_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          normalized_email: string
+          ip_hash?: string | null
+          ab_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          normalized_email?: string
+          ip_hash?: string | null
+          ab_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

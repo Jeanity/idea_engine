@@ -70,9 +70,10 @@ export default function PrivacyPage() {
         <p className="mt-3">We use three categories of first-party cookies, and nothing from third-party ad networks:</p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5">
           <li>
-            <strong>Necessary</strong> — Supabase authentication (keeps you signed in) and{' '}
-            <code>ie_consent</code> (remembers your cookie choice). These are required for the
-            site to function and are never gated behind a choice.
+            <strong>Necessary</strong> — Supabase authentication (keeps you signed in),{' '}
+            <code>ie_consent</code> (remembers your cookie choice), and <code>ie_ab</code> (fraud
+            prevention for free-report promotions). These are required for the site to function
+            and are never gated behind a choice.
           </li>
           <li>
             <strong>Functional</strong> — your theme preference (light/dark), stored in your
@@ -90,6 +91,10 @@ export default function PrivacyPage() {
           identifier, no <code>ie_vid</code>) so we can still see that a visit happened — after
           that, nothing further is tracked for that visit. Accepting or declining never changes
           what the product itself can do.
+        </p>
+        <p className="mt-3">
+          During promotional periods offering free reports, we also retain a hashed (not raw)
+          version of your IP address to help prevent abuse of the offer.
         </p>
       </section>
 

@@ -22,6 +22,7 @@ interface PromoState {
   config: PromoConfig
   usage: PromoUsage
   distinctUsers: number
+  suspiciousClusters: number
   migrationMissing: boolean
 }
 
@@ -157,7 +158,7 @@ export function PromoCard() {
     )
   }
 
-  const { config, usage, distinctUsers } = state
+  const { config, usage, distinctUsers, suspiciousClusters } = state
 
   return (
     <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
@@ -297,6 +298,12 @@ export function PromoCard() {
             <p className="text-sm font-semibold text-white light:text-gray-900">{distinctUsers}</p>
           </div>
         </div>
+      )}
+
+      {suspiciousClusters > 0 && (
+        <p className="mt-3 text-xs text-amber-300 light:text-amber-700">
+          {suspiciousClusters} possible duplicate-account clusters — see promo_identity table.
+        </p>
       )}
 
       {!config.enabled && config.ended_at && (

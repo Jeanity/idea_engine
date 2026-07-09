@@ -7,6 +7,7 @@ import {
   writePromoConfig,
   readPromoUsage,
   readPromoDistinctUsers,
+  readSuspiciousClusters,
   mergePromoConfig,
   type PromoConfig,
 } from '@/lib/promo'
@@ -42,7 +43,8 @@ export async function GET() {
   const config = await readPromoConfig(service)
   const usage = await readPromoUsage(service, config)
   const distinctUsers = await readPromoDistinctUsers(service, config)
-  return NextResponse.json({ config, usage, distinctUsers, migrationMissing: false })
+  const suspiciousClusters = await readSuspiciousClusters(service, config)
+  return NextResponse.json({ config, usage, distinctUsers, suspiciousClusters, migrationMissing: false })
 }
 
 function parseCaps(body: Record<string, unknown>): { fields: Partial<PromoConfig> } | { error: string } {
