@@ -9,22 +9,34 @@
    with the light: variant, e.g. bg-slate-950 light:bg-gray-50. */
 @custom-variant light (&:where(.light, .light *));
 
-/* Recharts (admin growth graphs, Block 8) renders raw SVG, so it can't use
-   the `light:` Tailwind variant directly — these CSS vars give it the same
-   theme-awareness via plain inline styles. */
+/* Recharts renders raw SVG — CSS vars in SVG *attributes* (fill="var(…)")
+   don't resolve (SVG spec), so the axis/tick text falls back to black.
+   Fix: target Recharts' class names directly with real CSS selectors.
+   Tooltip and grid still use vars because they're applied via React style
+   props on HTML elements (tooltip) or simple SVG stroke (grid). */
 :root {
   --chart-grid: rgba(148, 163, 184, 0.15);
-  --chart-axis: rgba(148, 163, 184, 0.65);
+  --chart-axis: #94a3b8;
   --chart-tooltip-bg: #0f172a;
   --chart-tooltip-border: rgba(255, 255, 255, 0.12);
   --chart-tooltip-text: #e2e8f0;
 }
 .light {
   --chart-grid: rgba(100, 116, 139, 0.18);
-  --chart-axis: rgba(71, 85, 105, 0.75);
+  --chart-axis: #475569;
   --chart-tooltip-bg: #ffffff;
   --chart-tooltip-border: rgba(0, 0, 0, 0.08);
   --chart-tooltip-text: #1e293b;
+}
+
+/* Recharts SVG text — axis ticks, legend text, labels */
+.recharts-cartesian-axis-tick text,
+.recharts-legend-item-text {
+  fill: #94a3b8 !important;
+}
+.light .recharts-cartesian-axis-tick text,
+.light .recharts-legend-item-text {
+  fill: #475569 !important;
 }
 
 /* Native <select> popups follow the browser color-scheme, not our CSS — without

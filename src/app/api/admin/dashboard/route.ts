@@ -216,6 +216,10 @@ export async function GET(request: NextRequest) {
       | { cost_usd?: number; steps?: Record<string, { model?: string; cost_usd?: number }> }
       | undefined
 
+    const sections = row.sections as Record<string, unknown> | null
+    const sectionKeys = sections ? Object.keys(sections).filter(k => k !== '_meta') : []
+    const isTeaserOnly = sectionKeys.length === 0
+
     if (meta?.steps) {
       for (const step of Object.values(meta.steps)) {
         const model = step.model ?? 'unknown'
@@ -225,8 +229,11 @@ export async function GET(request: NextRequest) {
       if (teaserCost > 0.0001) {
         initialByModel[TEASER_MODEL] = (initialByModel[TEASER_MODEL] ?? 0) + teaserCost
       }
-    } else {
+    } else if (isTeaserOnly) {
       initialByModel[TEASER_MODEL] = (initialByModel[TEASER_MODEL] ?? 0) + rowCost
+    } else {
+      // Old full report without _meta — attribute to full/unknown
+      fullByModel['unknown'] = (fullByModel['unknown'] ?? 0) + rowCost
     }
   }
 
