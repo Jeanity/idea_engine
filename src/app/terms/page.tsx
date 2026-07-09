@@ -60,9 +60,35 @@ export default function TermsPage() {
       <section>
         <H2>5. Payment and refunds</H2>
         <p className="mt-3">
-          Pricing and refund terms are being finalised ahead of general availability and will be
-          published here before payment is required. Nothing in this section should be relied on
-          as final.
+          Paid reports are one-off purchases (final pricing will be shown at checkout before you
+          pay). Because a full report is researched and generated specifically for your idea, the
+          work is delivered — and its cost incurred — the moment the report is produced. Our
+          refund policy reflects that:
+        </p>
+        <ul className="mt-3 list-disc space-y-2 pl-5">
+          <li>
+            <strong>Before generation:</strong> if you&apos;ve paid but your full report has not
+            yet been generated, you can request a full refund — no questions asked.
+          </li>
+          <li>
+            <strong>Failed or defective reports:</strong> if generation fails, or your report
+            arrives with missing or clearly broken sections, we&apos;ll regenerate it free or
+            refund you in full — your choice.
+          </li>
+          <li>
+            <strong>After delivery:</strong> once a complete report has been generated, we
+            don&apos;t offer change-of-mind refunds. A report&apos;s value is the research it
+            contains, and that&apos;s delivered in full the moment you can read it.
+          </li>
+        </ul>
+        <p className="mt-3">
+          Refunds go back to the original payment method. To request one,{' '}
+          <a href="/contact" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+            contact us
+          </a>
+          . Nothing in this policy limits or excludes your rights under the Australian Consumer
+          Law or any other consumer protection law that applies to you — where those laws entitle
+          you to a remedy, they prevail over this section.
         </p>
       </section>
 
