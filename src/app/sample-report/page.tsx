@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteFooter } from '@/components/site-footer'
 import { createPublicClient } from '@/lib/db'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { SAMPLE_IDEA, SAMPLE_REPORT_SECTIONS } from '@/lib/sample-report'
@@ -111,6 +112,8 @@ export default async function SampleReportPage() {
           </div>
         </div>
       </section>
+
+      <SiteFooter />
     </main>
   )
 }

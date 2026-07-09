@@ -11,6 +11,7 @@ import {
   Tag,
   MessageSquare,
   BookOpen,
+  Mail,
   DollarSign,
   AlertTriangle,
   Settings,
@@ -57,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/app/admin/offers', label: 'Offers', icon: Tag },
       { href: '/app/admin/samples', label: 'Samples', icon: BookOpen },
       { href: '/app/admin/feedback', label: 'Feedback', icon: MessageSquare },
+      { href: '/app/admin/contact', label: 'Contact', icon: Mail },
     ],
   },
   {

@@ -3,6 +3,7 @@ import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ScrollReveal } from '@/components/scroll-reveal'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ScoreRing } from '@/components/score-ring'
+import { SiteFooter } from '@/components/site-footer'
 import { OfferBanners, type BannerOffer } from '@/components/offer-banner'
 import { DEMO_STATS } from '@/lib/demo-stats'
 import { createPublicClient, createServiceClient } from '@/lib/db'
@@ -357,7 +358,6 @@ function ReportCard({ card }: { card: ReportCardData }) {
 }
 
 export default async function LandingPage() {
-  const year = new Date().getFullYear()
   const [testimonials, offers] = await Promise.all([getTestimonials(), getHomepageOffers()])
 
   return (
@@ -376,9 +376,19 @@ export default async function LandingPage() {
 
         <header className="relative z-10 px-6 py-5 flex items-center justify-between">
           <span className="font-semibold tracking-tight text-white light:text-gray-900">Idea Engine</span>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <HeaderAuthLink />
+          <div className="flex items-center gap-4">
+            <nav className="hidden sm:flex items-center gap-4">
+              <Link href="/faq" className="text-sm text-slate-200 hover:text-white font-medium transition-colors light:text-gray-600 light:hover:text-gray-900">
+                FAQ
+              </Link>
+              <Link href="/contact" className="text-sm text-slate-200 hover:text-white font-medium transition-colors light:text-gray-600 light:hover:text-gray-900">
+                Contact
+              </Link>
+            </nav>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <HeaderAuthLink />
+            </div>
           </div>
         </header>
 
@@ -610,9 +620,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-100 bg-white px-6 py-5 text-center text-xs text-gray-400">
-        © {year} Idea Engine. All rights reserved.
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

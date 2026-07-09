@@ -1,0 +1,77 @@
+import type { Metadata } from 'next'
+import { StaticPageShell } from '@/components/static-page-shell'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy — Idea Engine',
+  description: 'What Idea Engine collects, how it is used, and how to request deletion.',
+}
+
+function H2({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-lg font-semibold text-white light:text-gray-900">{children}</h2>
+}
+
+export default function PrivacyPage() {
+  return (
+    <StaticPageShell title="Privacy Policy" draftBanner>
+      <section>
+        <H2>1. What we collect</H2>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5">
+          <li>Account information: your email address and any profile details you add (username, display name).</li>
+          <li>Idea content: the ideas, answers, and reports you create.</li>
+          <li>Basic analytics events (page views, session activity) to understand product usage — no third-party ad trackers.</li>
+        </ul>
+      </section>
+
+      <section>
+        <H2>2. Who processes it</H2>
+        <p className="mt-3">Your data is processed by the infrastructure providers that run the service:</p>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5">
+          <li>Supabase — database, authentication, and storage.</li>
+          <li>Vercel — application hosting.</li>
+          <li>Anthropic — the AI API used to generate your report content.</li>
+          <li>Inngest — background job processing for report generation.</li>
+        </ul>
+        <p className="mt-3">
+          Each processes only what&apos;s needed to run the service. We don&apos;t sell your data
+          to anyone.
+        </p>
+      </section>
+
+      <section>
+        <H2>3. Why we collect it</H2>
+        <p className="mt-3">
+          To generate your reports, run your account, keep the service reliable, and understand
+          how the product is used so we can improve it.
+        </p>
+      </section>
+
+      <section>
+        <H2>4. Deletion</H2>
+        <p className="mt-3">
+          You can delete your account at any time from account settings. Deletion is permanent —
+          your ideas, answers, and reports are erased and cannot be recovered.
+        </p>
+      </section>
+
+      <section>
+        <H2>5. Your rights</H2>
+        <p className="mt-3">
+          For questions about what data we hold on you, or to request deletion outside of the
+          self-service flow, reach out via the{' '}
+          <a href="/contact" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+            contact page
+          </a>
+          .
+        </p>
+      </section>
+
+      <section>
+        <H2>6. Changes to this policy</H2>
+        <p className="mt-3">
+          We may update this policy as the product develops. Material changes will be reflected on
+          this page with an updated review status.
+        </p>
+      </section>
+    </StaticPageShell>
+  )
+}

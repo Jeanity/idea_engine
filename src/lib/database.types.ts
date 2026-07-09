@@ -17,6 +17,8 @@ export type IdeaStatus = 'draft' | 'questioning' | 'researching' | 'ready'
 export type ReportStatus = 'queued' | 'running' | 'complete' | 'failed'
 export type PurchaseStatus = 'pending' | 'complete' | 'refunded' | 'failed'
 export type OfferAudience = 'new_users' | 'account_holders' | 'everyone'
+export type ContactCategory = 'feedback' | 'complaint' | 'question' | 'partnership'
+export type ContactStatus = 'open' | 'replied' | 'closed'
 
 export type Database = {
   public: {
@@ -528,6 +530,36 @@ export type Database = {
           active?: boolean
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_submissions: {
+        Row: {
+          id: string
+          category: ContactCategory
+          name: string
+          email: string
+          message: string
+          user_id: string | null
+          status: ContactStatus
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category: ContactCategory
+          name: string
+          email: string
+          message: string
+          user_id?: string | null
+          status?: ContactStatus
+          created_at?: string
+        }
+        Update: {
+          category?: ContactCategory
+          name?: string
+          email?: string
+          message?: string
+          status?: ContactStatus
         }
         Relationships: []
       }
