@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/db'
 import { Pagination } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import type { ContactCategory } from '@/lib/database.types'
-import { ContactQueueList, type ContactRow } from './contact-queue-list'
+import { ContactQueueList, type ContactRow, type ContactReplyRow } from './contact-queue-list'
 
 export const metadata = { title: 'Contact — Admin — Idea Engine' }
 
@@ -42,9 +42,32 @@ export default async function AdminContactPage({
   // against a database missing the table, PostgREST actually returns
   // PGRST205 here, not 42P01.
   const migrationMissing = error?.code === '42P01' || error?.code === 'PGRST205'
-  const submissions: ContactRow[] = rows ?? []
+  const submissions: Omit<ContactRow, 'replies'>[] = rows ?? []
   const totalCount = count ?? 0
   const pages = totalPageCount(totalCount)
+
+  // Past replies for the submissions on this page. Migration 022
+  // (contact_replies) may not have been run yet — tolerate that the same way
+  // as the submissions query above rather than crashing the whole page; the
+  // reply modal itself also 503s gracefully until the migration is applied.
+  const repliesBySubmission = new Map<string, ContactReplyRow[]>()
+  if (!migrationMissing && submissions.length > 0) {
+    const { data: replyRows } = await service
+      .from('contact_replies')
+      .select('id, submission_id, body, created_by, emailed_at, created_at')
+      .in('submission_id', submissions.map(s => s.id))
+      .order('created_at', { ascending: true })
+
+    for (const reply of replyRows ?? []) {
+      const list = repliesBySubmission.get(reply.submission_id) ?? []
+      list.push(reply)
+      repliesBySubmission.set(reply.submission_id, list)
+    }
+  }
+  const submissionsWithReplies: ContactRow[] = submissions.map(s => ({
+    ...s,
+    replies: repliesBySubmission.get(s.id) ?? [],
+  }))
 
   return (
     <div>
@@ -96,7 +119,7 @@ export default async function AdminContactPage({
             ))}
           </div>
 
-          <ContactQueueList rows={submissions} />
+          <ContactQueueList rows={submissionsWithReplies} />
 
           {totalCount > ADMIN_PAGE_SIZE && (
             <Pagination

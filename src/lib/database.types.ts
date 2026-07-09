@@ -623,6 +623,37 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_replies: {
+        Row: {
+          id: string
+          submission_id: string
+          body: string
+          created_by: string
+          emailed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          submission_id: string
+          body: string
+          created_by: string
+          emailed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          body?: string
+          emailed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contact_replies_submission_id_fkey'
+            columns: ['submission_id']
+            isOneToOne: false
+            referencedRelation: 'contact_submissions'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       app_settings: {
         Row: {
           key: string
