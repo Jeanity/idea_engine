@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { TemplatePicker } from '@/components/admin'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -18,11 +19,16 @@ const DEFAULT_MESSAGE =
 function InviteModal({ onClose, onSent }: { onClose: () => void; onSent: (email: string) => void }) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState(DEFAULT_MESSAGE)
+  // Tracks whatever the box was auto-filled with (hardcoded default, or the
+  // 'invite' kind's default template once it loads) — comparing against this
+  // rather than the hardcoded DEFAULT_MESSAGE means swapping in the template
+  // default doesn't itself count as an edit worth discard-confirming.
+  const [baselineMessage, setBaselineMessage] = useState(DEFAULT_MESSAGE)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
 
-  const dirty = email.trim() !== '' || message !== DEFAULT_MESSAGE
+  const dirty = email.trim() !== '' || message !== baselineMessage
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -135,6 +141,16 @@ function InviteModal({ onClose, onSent }: { onClose: () => void; onSent: (email:
             />
 
             <label className="block text-xs font-medium text-slate-300 light:text-gray-600 mb-1">Message</label>
+            <TemplatePicker
+              kind="invite"
+              value={message}
+              onApply={setMessage}
+              onLoaded={({ defaultTemplate }) => {
+                if (!defaultTemplate) return
+                setMessage(prev => (prev === DEFAULT_MESSAGE ? defaultTemplate.body : prev))
+                setBaselineMessage(defaultTemplate.body)
+              }}
+            />
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}

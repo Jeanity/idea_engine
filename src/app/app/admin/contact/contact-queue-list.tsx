@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { TemplatePicker } from '@/components/admin'
 
 export interface ContactReplyRow {
   id: string
@@ -237,6 +238,14 @@ function ReplyModal({ row, onClose, onSent }: { row: ContactRow; onClose: () => 
         ) : (
           <form onSubmit={handleSend}>
             <label className="block text-xs font-medium text-slate-300 light:text-gray-600 mb-1">Your reply</label>
+            <TemplatePicker
+              kind="contact_reply"
+              value={body}
+              onApply={setBody}
+              onLoaded={({ defaultTemplate }) => {
+                if (defaultTemplate) setBody(prev => (prev === '' ? defaultTemplate.body : prev))
+              }}
+            />
             <textarea
               value={body}
               onChange={e => setBody(e.target.value)}

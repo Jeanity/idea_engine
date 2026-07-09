@@ -18,6 +18,7 @@ import {
   Bug,
   Settings,
   UserCircle,
+  LayoutTemplate,
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
@@ -63,6 +64,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/app/admin/surveys', label: 'Surveys', icon: ClipboardList },
       { href: '/app/admin/feedback', label: 'Feedback', icon: MessageSquare },
       { href: '/app/admin/contact', label: 'Contact', icon: Mail },
+      { href: '/app/admin/templates', label: 'Templates', icon: LayoutTemplate },
     ],
   },
   {

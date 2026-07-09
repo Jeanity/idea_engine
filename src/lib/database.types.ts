@@ -21,6 +21,7 @@ export type ContactCategory = 'feedback' | 'complaint' | 'question' | 'partnersh
 export type ContactStatus = 'open' | 'replied' | 'closed'
 export type SurveyQuestionType = 'text' | 'rating' | 'multiple_choice'
 export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
+export type MessageTemplateKind = 'invite' | 'contact_reply' | 'feedback_reply'
 
 export type Database = {
   public: {
@@ -776,6 +777,34 @@ export type Database = {
           page_url?: string | null
           status?: BugReportStatus
           admin_notes?: string | null
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          id: string
+          kind: MessageTemplateKind
+          name: string
+          body: string
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          kind: MessageTemplateKind
+          name: string
+          body: string
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          kind?: MessageTemplateKind
+          name?: string
+          body?: string
+          is_default?: boolean
+          updated_at?: string
         }
         Relationships: []
       }

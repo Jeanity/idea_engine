@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { TemplatePicker } from '@/components/admin'
 
 interface Reply {
   id: string
@@ -185,12 +186,51 @@ export function AdminPublicToggle({ feedbackId, initialAdminPublic }: { feedback
   )
 }
 
-export function ReplySection({ feedbackId, initialReplies }: { feedbackId: string; initialReplies: Reply[] }) {
-  const [replies, setReplies] = useState(initialReplies)
+// Reply modal — the composer used to be an inline textarea directly on the
+// card; converted to a modal (Danny's standing modals-over-navigation rule)
+// following the contact reply modal's conventions
+// (src/app/app/admin/contact/contact-queue-list.tsx): backdrop + Escape
+// close, body scroll lock, discard-confirm on unsent text. All prior
+// behaviour is preserved — public-reply checkbox, sent reply appended to the
+// card's reply list, same POST /api/admin/feedback/replies contract.
+function FeedbackReplyModal({
+  feedbackId,
+  onClose,
+  onSent,
+}: {
+  feedbackId: string
+  onClose: () => void
+  onSent: (reply: Reply) => void
+}) {
   const [body, setBody] = useState('')
   const [isPublic, setIsPublic] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') requestClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [body, confirmingDiscard])
+
+  function requestClose() {
+    if (body.trim() && !confirmingDiscard) {
+      setConfirmingDiscard(true)
+      return
+    }
+    onClose()
+  }
 
   async function send() {
     const trimmed = body.trim()
@@ -206,17 +246,97 @@ export function ReplySection({ feedbackId, initialReplies }: { feedbackId: strin
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError(data.error ?? 'Failed to send reply')
+        setSending(false)
         return
       }
-      setReplies(prev => [...prev, data.reply])
-      setBody('')
-      setIsPublic(false)
+      onSent(data.reply)
     } catch {
       setError('Failed to send reply')
-    } finally {
       setSending(false)
     }
   }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 backdrop-blur-sm px-4 py-8 sm:py-12"
+      onClick={requestClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950 light:bg-white light:border-gray-200 shadow-2xl px-6 py-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={requestClose}
+          aria-label="Close"
+          className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-white/10 hover:text-white light:text-gray-500 light:hover:bg-gray-100 light:hover:text-gray-900"
+        >
+          ×
+        </button>
+
+        <h2 className="text-sm font-semibold text-white light:text-gray-900 mb-4">Reply to this feedback</h2>
+
+        {confirmingDiscard ? (
+          <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-4 py-3 mb-4">
+            <p className="text-sm text-amber-200 light:text-amber-900 mb-2">Discard this unsent reply?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-500/80 hover:bg-amber-500 text-white"
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => setConfirmingDiscard(false)}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <label className="block text-xs font-medium text-slate-300 light:text-gray-600 mb-1">Your reply</label>
+            <TemplatePicker
+              kind="feedback_reply"
+              value={body}
+              onApply={setBody}
+              onLoaded={({ defaultTemplate }) => {
+                if (defaultTemplate) setBody(prev => (prev === '' ? defaultTemplate.body : prev))
+              }}
+            />
+            <textarea
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              placeholder="Write a reply…"
+              rows={6}
+              autoFocus
+              className="w-full rounded-lg border border-white/10 bg-white/5 light:bg-gray-50 light:border-gray-200 px-3 py-2 text-sm text-slate-200 light:text-gray-800 placeholder:text-slate-500 light:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
+            />
+
+            <label className="flex items-center gap-2 text-xs text-slate-400 light:text-gray-500 mb-3">
+              <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
+              Public reply — may appear as a homepage testimonial reply
+            </label>
+
+            {error && <p className="text-xs text-red-300 light:text-red-600 mb-2">{error}</p>}
+
+            <button
+              onClick={send}
+              disabled={sending || !body.trim()}
+              className="w-full rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sending ? 'Sending…' : 'Send reply'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function ReplySection({ feedbackId, initialReplies }: { feedbackId: string; initialReplies: Reply[] }) {
+  const [replies, setReplies] = useState(initialReplies)
+  const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <div className="border-t border-white/10 light:border-gray-200 pt-3 mt-1 flex flex-col gap-2">
@@ -244,28 +364,23 @@ export function ReplySection({ feedbackId, initialReplies }: { feedbackId: strin
         </div>
       )}
 
-      <textarea
-        value={body}
-        onChange={e => setBody(e.target.value)}
-        placeholder="Write a reply…"
-        rows={2}
-        className="w-full rounded-lg border border-white/10 bg-white/5 light:bg-gray-50 light:border-gray-200 px-2.5 py-1.5 text-xs text-slate-200 light:text-gray-800 placeholder:text-slate-500 light:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-      />
+      <button
+        onClick={() => setModalOpen(true)}
+        className="self-start text-xs font-medium px-3 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 light:hover:border-gray-300"
+      >
+        Reply
+      </button>
 
-      <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-400 light:text-gray-500">
-          <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
-          Public reply
-        </label>
-        <button
-          onClick={send}
-          disabled={sending || !body.trim()}
-          className="text-xs font-medium px-3 py-1 rounded-full bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
-        >
-          {sending ? 'Sending…' : 'Send'}
-        </button>
-      </div>
-      {error && <p className="text-[11px] text-red-300 light:text-red-600">{error}</p>}
+      {modalOpen && (
+        <FeedbackReplyModal
+          feedbackId={feedbackId}
+          onClose={() => setModalOpen(false)}
+          onSent={reply => {
+            setReplies(prev => [...prev, reply])
+            setModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
