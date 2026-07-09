@@ -491,6 +491,46 @@ export type Database = {
         }
         Relationships: []
       }
+      sample_reports: {
+        Row: {
+          id: string
+          title: string
+          archetype: string
+          restatement: string
+          sections: Json
+          headline_score: number
+          source_report_id: string | null
+          active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          archetype: string
+          restatement: string
+          sections: Json
+          headline_score: number
+          source_report_id?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          archetype?: string
+          restatement?: string
+          sections?: Json
+          headline_score?: number
+          source_report_id?: string | null
+          active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

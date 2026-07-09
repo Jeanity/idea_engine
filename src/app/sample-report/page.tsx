@@ -2,16 +2,54 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { HeaderAuthLink } from '@/components/header-auth-link'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { SAMPLE_IDEA } from '@/lib/sample-report'
-import { SampleReportClient } from './sample-report-client'
+import { createPublicClient } from '@/lib/db'
+import { deriveHeadlineScore } from '@/lib/viability-score'
+import { SAMPLE_IDEA, SAMPLE_REPORT_SECTIONS } from '@/lib/sample-report'
+import { SampleGallery, type GalleryCard, type FallbackCard } from './sample-gallery-client'
 
 export const metadata: Metadata = {
-  title: 'Sample report — Idea Engine',
+  title: 'Sample reports — Idea Engine',
   description:
-    'See a full example Idea Engine report — viability score, competitors, cost breakdown, legal & compliance, and prioritised next steps.',
+    'Browse example Idea Engine reports — viability score, competitors, cost breakdown, legal & compliance, and prioritised next steps.',
 }
 
-export default function SampleReportPage() {
+const FALLBACK_CARD: FallbackCard = {
+  id: 'fallback-coffee-van',
+  title: 'Weekend specialty coffee van',
+  archetype: SAMPLE_IDEA.archetype,
+  restatement: SAMPLE_IDEA.restatement,
+  headlineScore: deriveHeadlineScore(
+    (SAMPLE_REPORT_SECTIONS.viability_snapshot as { scores: Record<string, { score: number }> }).scores
+  ),
+  sections: SAMPLE_REPORT_SECTIONS,
+}
+
+// Server component: reads active samples with the per-request anon client so
+// RLS ("sample_reports: public read active") — not app code — is what keeps
+// inactive rows and the sections column (not selected here at all) out of
+// this page's HTML. If the table doesn't exist yet (migration 011 not run)
+// or the query errors for any other reason, `data` comes back null/empty and
+// we fall through to the built-in coffee-van sample — this page must never
+// crash because of that migration's status.
+async function getActiveSamples(): Promise<GalleryCard[]> {
+  const publicClient = createPublicClient()
+  const { data } = await publicClient
+    .from('sample_reports')
+    .select('id, title, archetype, restatement, headline_score, sort_order')
+    .order('sort_order', { ascending: true })
+
+  return (data ?? []).map(row => ({
+    id: row.id,
+    title: row.title,
+    archetype: row.archetype,
+    restatement: row.restatement,
+    headlineScore: row.headline_score,
+  }))
+}
+
+export default async function SampleReportPage() {
+  const cards = await getActiveSamples()
+
   return (
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">
       {/* Header */}
@@ -25,35 +63,27 @@ export default function SampleReportPage() {
         </div>
       </header>
 
-      {/* Sample banner */}
+      {/* Gallery */}
       <div className="relative overflow-hidden bg-slate-950 light:bg-gray-50">
         <div className="absolute inset-0 dot-grid opacity-40 light:opacity-20" aria-hidden="true" />
-        <div className="relative z-10 max-w-3xl mx-auto px-6 pt-10 pb-8">
-          <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/10 light:bg-indigo-50 light:border-indigo-200 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="relative z-10 max-w-5xl mx-auto px-6 pt-10 pb-16">
+          <div className="mb-8 max-w-2xl">
             <span className="inline-flex items-center rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-200 light:bg-indigo-100 light:text-indigo-700">
-              SAMPLE REPORT
+              SAMPLE REPORTS
             </span>
-            <p className="mt-3 text-lg font-semibold text-white light:text-gray-900">
-              {SAMPLE_IDEA.restatement}
-            </p>
+            <h1 className="mt-3 text-2xl font-semibold text-white light:text-gray-900 sm:text-3xl">
+              See what a real report looks like
+            </h1>
             <p className="mt-2 text-sm text-slate-300 light:text-gray-600">
-              This is an example report with illustrative data — links are disabled in the sample.
-              Real reports include live competitor, source, and funding links.
+              Pick any idea below to open the full example report — viability score, competitors,
+              costs, legal, and next steps. These are illustrative reports with links disabled;
+              real reports include live competitor, source, and funding links.
             </p>
-            <Link
-              href="/sign-in"
-              className="mt-4 inline-block rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white
-                         shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:scale-105 hover:bg-indigo-400
-                         focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
-            >
-              Get this for your idea
-            </Link>
           </div>
+
+          <SampleGallery cards={cards} fallback={FALLBACK_CARD} />
         </div>
       </div>
-
-      {/* Report */}
-      <SampleReportClient />
 
       {/* Bottom CTA band */}
       <section className="relative overflow-hidden bg-slate-950 light:bg-gray-50 px-6 py-24 text-center border-t border-white/10 light:border-gray-200">
