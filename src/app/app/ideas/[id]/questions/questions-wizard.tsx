@@ -44,6 +44,7 @@ const MONEY_MAPS_TO = new Set([
   'cost.packaging_per_unit',
   'cost.hourly_rate',
   'cost.unit_cost_estimate',
+  'cost.startup_capital',
 ])
 
 // Money-flavoured option strings in the static banks are written with a plain
