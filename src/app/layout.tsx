@@ -17,10 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // the .light class before hydration when the user opted into light mode.
     <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full antialiased`}>
       <head>
-        {/* Dark is the default; apply saved light preference before paint (no flash). */}
+        {/* Dark is the default; apply the saved light/smexy preference before
+            paint (no flash). If smexy has been disabled by the admin since the
+            visitor saved it, ThemeToggle demotes them to dark after mount. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('theme')==='light')document.documentElement.classList.add('light')}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.add('light');else if(t==='smexy')document.documentElement.classList.add('smexy')}catch(e){}`,
           }}
         />
       </head>

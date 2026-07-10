@@ -3,6 +3,7 @@ import { REPORT_MODEL_OPTIONS } from '@/lib/ai'
 import { ReportModelPicker } from './model-picker'
 import { PromoCard } from './promo-card'
 import { TeaserGatingCard } from './teaser-gating-card'
+import { SmexyCard } from './smexy-card'
 
 export const metadata = { title: 'Settings — Admin — HadIdea' }
 
@@ -31,6 +32,10 @@ export default async function AdminSettingsPage() {
 
       <div className="mb-8">
         <TeaserGatingCard />
+      </div>
+
+      <div className="mb-8">
+        <SmexyCard />
       </div>
 
       <div className="rounded-lg border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">

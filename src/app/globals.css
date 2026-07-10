@@ -219,12 +219,177 @@ select option {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Smexy mode — third theme (.smexy on <html>, cycled by ThemeToggle).     */
+/* Dark mode is the base; this layer restyles the shared visual language   */
+/* on top of it: an animated aurora behind every page, liquid-glass cards, */
+/* gradient buttons, a silver-sheen on page titles, and a film-grain wash. */
+/* It deliberately targets the codebase's own utility-class conventions    */
+/* (bg-slate-950 shells, bg-slate-900/80 cards, bg-indigo-500 CTAs) so no  */
+/* component needs editing — which also means: if those conventions change */
+/* this veneer quietly stops applying rather than breaking anything.       */
+/* Admin kill switch: app_settings 'smexy_theme' (src/lib/smexy.ts).       */
+/* ---------------------------------------------------------------------- */
+
+.smexy body {
+  background-color: #06040f;
+}
+
+/* Aurora — huge blurred color fields drifting behind everything. The page
+   shells become translucent (below) so this glows through. */
+.smexy body::before {
+  content: '';
+  position: fixed;
+  inset: -22%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(30% 36% at 10% 12%, rgba(99, 102, 241, 0.28), transparent 64%),
+    radial-gradient(24% 30% at 92% 8%, rgba(217, 70, 239, 0.18), transparent 62%),
+    radial-gradient(32% 38% at 88% 90%, rgba(34, 211, 238, 0.14), transparent 66%),
+    radial-gradient(24% 30% at 12% 92%, rgba(139, 92, 246, 0.20), transparent 62%),
+    #06040f;
+  filter: blur(64px) saturate(125%);
+  animation: smexy-aurora 28s ease-in-out infinite alternate;
+}
+
+@keyframes smexy-aurora {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(4deg) scale(1.09) translate(2%, -2%); }
+  100% { transform: rotate(-3deg) scale(1.05) translate(-2%, 2%); }
+}
+
+/* Film grain — fixed wash above content (below nothing interactive: it is
+   pointer-transparent and near-invisible; it just kills flat digital color). */
+.smexy body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Page shells: solid slate-950 becomes deep translucent violet-black so the
+   aurora reads through every page, not just the landing hero. */
+.smexy .bg-slate-950 {
+  background-color: rgba(6, 4, 17, 0.74);
+}
+
+/* …but NOT on the landing page: its dark sections sit on an opaque white
+   wrapper (the page's light lower half), so a translucent shell composites
+   against WHITE and turns grey. Inside any .bg-white wrapper the dark
+   sections stay solid slate-950, and instead of the aurora the hero's own
+   drift-blobs get supercharged — richer color on true black. */
+.smexy .bg-white .bg-slate-950 {
+  background-color: rgb(2, 6, 23);
+}
+
+.smexy .bg-white .animate-blob-1,
+.smexy .bg-white .animate-blob-2,
+.smexy .bg-white .animate-blob-3 {
+  filter: blur(64px) saturate(1.6) brightness(1.2);
+}
+
+/* …except floating dialogs (they all carry shadow-2xl): those need to stay
+   readable over arbitrary content, so they get real glass instead. */
+.smexy .shadow-2xl.bg-slate-950 {
+  background-color: rgba(9, 7, 26, 0.88);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Cards (the app-wide bg-slate-900/80 convention) become liquid glass:
+   translucent, blurred, hairline top-light, soft lift + violet glow on hover. */
+.smexy .bg-slate-900\/80 {
+  background-color: rgba(15, 16, 42, 0.52);
+  backdrop-filter: blur(14px) saturate(150%);
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 8px 32px rgba(3, 2, 14, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.smexy .bg-slate-900\/80:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 139, 250, 0.35);
+  box-shadow:
+    0 16px 48px rgba(99, 102, 241, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* Primary CTAs (bg-indigo-500 convention): animated indigo→violet→fuchsia
+   gradient with a glow that intensifies on hover. background-image wins over
+   the hover:bg-indigo-400 utility, so hover color changes stay coherent. */
+.smexy .bg-indigo-500 {
+  background-image: linear-gradient(120deg, #6366f1 0%, #8b5cf6 45%, #d946ef 100%);
+  background-size: 200% auto;
+  background-position: 0% 0;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.45);
+  transition: background-position 0.4s ease, box-shadow 0.3s ease, transform 0.15s ease;
+}
+
+.smexy .bg-indigo-500:hover {
+  background-position: 95% 0;
+  box-shadow: 0 6px 28px rgba(217, 70, 239, 0.45);
+}
+
+.smexy .bg-indigo-500:active {
+  transform: scale(0.98);
+}
+
+/* Page titles get a subtle silver-to-lavender sheen. h1 only — every h1 in
+   the app sits on a dark surface (the landing page's light lower half uses
+   h2s), and nested accent spans (e.g. the hero's .gradient-text) keep their
+   own more specific gradient. */
+.smexy h1 {
+  background-image: linear-gradient(115deg, #f8fafc 0%, #c7d2fe 55%, #e9d5ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Ambience details */
+.smexy ::selection {
+  background: rgba(167, 139, 250, 0.9);
+  color: #0c0518;
+}
+
+.smexy ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.smexy ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.smexy ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1, #a855f7);
+  border-radius: 8px;
+  border: 2px solid rgba(6, 4, 17, 0.6);
+}
+.smexy {
+  scrollbar-color: #7c6cf1 rgba(15, 15, 35, 0.4);
+}
+
+.smexy {
+  --chart-tooltip-bg: #0d0a24;
+  --chart-tooltip-border: rgba(167, 139, 250, 0.25);
+}
+
+/* ---------------------------------------------------------------------- */
 /* Print — report export/PDF path must stay black-on-white regardless of   */
 /* the app's dark theme.                                                   */
 /* ---------------------------------------------------------------------- */
 
 @media print {
   body { background: #fff !important; }
+  /* Smexy is a screen-only veneer — no aurora/grain layers or gradient-text
+     titles on paper. */
+  .smexy body::before,
+  .smexy body::after { display: none !important; }
+  .smexy h1 { background: none !important; color: #000 !important; }
   .print-force-light, .print-force-light * {
     background: transparent !important;
     color: #000 !important;
@@ -248,6 +413,19 @@ select option {
   .cursor-blink,
   .animate-ping {
     animation: none !important;
+  }
+
+  .smexy body::before {
+    animation: none !important;
+  }
+
+  .smexy .bg-slate-900\/80,
+  .smexy .bg-indigo-500 {
+    transition: none !important;
+  }
+
+  .smexy .bg-slate-900\/80:hover {
+    transform: none;
   }
 
   .scroll-reveal {
