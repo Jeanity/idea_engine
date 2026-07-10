@@ -49,6 +49,22 @@ app_settings 'survey' flag (that key is now retired, left in place unread).
 - Survey v2.1 ideas deliberately not built: "when" targeting (date windows / after-N-days),
   post-purchase render surface (needs payments).
 
+## TODO — Customer support feature (Danny's ask, 2026-07-10, build with/before payments)
+Stripe signup surfaced the requirement: customers must be able to reach us about a charge
+(support email is on Stripe receipts — hello@hadidea.com; phone kept private). What to build:
+1. **Billing/refund support path**: add a "Billing & refunds" category to the /contact form's
+   reason selector (contact_submissions.category enum + admin filter chip — same pattern as
+   the existing partnership highlight; these rows should be visually flagged too, since
+   charge disputes are time-sensitive: unanswered billing mail becomes chargebacks).
+2. **Refund handling workflow**: admin needs a way to action a refund request against a
+   purchase (find purchase by email/report, refund via Stripe API or dashboard link, record
+   refunded_at — purchases table already has the column). Ties to /terms §5 policy.
+3. **Support surface on receipts/emails**: order-confirmation email (payments build) must
+   carry the support contact + link to /contact; consider a /support alias page or FAQ
+   section for "problems with my purchase".
+4. Optional later: order lookup in the account area ("My purchases" list with a "get help
+   with this order" link that pre-fills the contact form).
+
 ---
 
 # Handoff — 2026-07-10 (domain, email, admin ops polish — continuation of the marathon)
