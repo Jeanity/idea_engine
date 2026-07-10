@@ -3,7 +3,7 @@ import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import QuestionsWizard from './questions-wizard'
 
-export const metadata = { title: 'Questions — Idea Engine' }
+export const metadata = { title: 'Questions — HadIdea' }
 
 export default async function QuestionsPage({
   params,

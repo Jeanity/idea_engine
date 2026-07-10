@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'FAQ — Idea Engine',
-  description: 'Common questions about Idea Engine, answered honestly.',
+  title: 'FAQ — HadIdea',
+  description: 'Common questions about HadIdea, answered honestly.',
 }
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
-    q: 'What is Idea Engine?',
+    q: 'What is HadIdea?',
     a: (
       <p>
         A tool that turns a raw business idea into a structured research report — competitors,

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'About — Idea Engine',
-  description: 'What Idea Engine does, and the philosophy behind it.',
+  title: 'About — HadIdea',
+  description: 'What HadIdea does, and the philosophy behind it.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -13,11 +13,11 @@ function H2({ children }: { children: React.ReactNode }) {
 export default function AboutPage() {
   return (
     <StaticPageShell
-      title="About Idea Engine"
+      title="About HadIdea"
       intro="What we do, and why we built it this way."
     >
       <section>
-        <H2>What Idea Engine does</H2>
+        <H2>What HadIdea does</H2>
         <p className="mt-3">
           You describe a raw business idea in plain English. We ask a handful of targeted
           follow-up questions to sharpen it, then research your market with live web search —
@@ -54,7 +54,7 @@ export default function AboutPage() {
       <section>
         <H2>Who&apos;s behind it</H2>
         <p className="mt-3">
-          Idea Engine is built by a small independent team based in Australia. We&apos;re early —
+          HadIdea is built by a small independent team based in Australia. We&apos;re early —
           the product is under active development, and we&apos;d rather tell you that plainly than
           dress it up with numbers we don&apos;t have yet.
         </p>

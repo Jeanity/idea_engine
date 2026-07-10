@@ -7,7 +7,7 @@ import { TemplatePicker } from '@/components/admin'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const DEFAULT_MESSAGE =
-  "Hi! I'd like to invite you to try Idea Engine — it turns a business idea into a researched, actionable report. Click below to set up your account."
+  "Hi! I'd like to invite you to try HadIdea — it turns a business idea into a researched, actionable report. Click below to set up your account."
 
 // Add-account action. Opens a modal (Danny's standing modals-over-navigation
 // rule) where the invite message can be edited before sending — follows the

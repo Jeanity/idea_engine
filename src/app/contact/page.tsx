@@ -4,7 +4,7 @@ import { createDbClient } from '@/lib/db'
 import { ContactForm } from './contact-form'
 
 export const metadata: Metadata = {
-  title: 'Contact — Idea Engine',
+  title: 'Contact — HadIdea',
   description: 'Get in touch — feedback, questions, complaints, billing, or partnerships.',
 }
 

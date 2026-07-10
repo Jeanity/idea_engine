@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { ReportPageContent } from './report-page-content'
 
-export const metadata = { title: 'Report — Idea Engine' }
+export const metadata = { title: 'Report — HadIdea' }
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

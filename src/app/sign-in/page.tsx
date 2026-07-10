@@ -4,7 +4,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteFooter } from '@/components/site-footer'
 import SignInForm from './sign-in-form'
 
-export const metadata = { title: 'Sign in — Idea Engine' }
+export const metadata = { title: 'Sign in — HadIdea' }
 
 export default function SignInPage() {
   return (
@@ -27,7 +27,7 @@ export default function SignInPage() {
               href="/"
               className="font-semibold tracking-tight text-white transition-colors hover:text-slate-200 light:text-gray-900 light:hover:text-gray-600"
             >
-              Idea Engine
+              HadIdea
             </Link>
           </div>
 

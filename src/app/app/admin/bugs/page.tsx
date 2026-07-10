@@ -5,7 +5,7 @@ import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/adm
 import type { BugReportStatus } from '@/lib/database.types'
 import { BugQueueList, type BugRow } from './bug-queue-list'
 
-export const metadata = { title: 'Bugs — Admin — Idea Engine' }
+export const metadata = { title: 'Bugs — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). Reading

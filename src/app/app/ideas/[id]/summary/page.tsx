@@ -6,7 +6,7 @@ import { formatAnswer } from '@/lib/format-answer'
 import { StartOverButton } from '@/components/start-over-button'
 import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 
-export const metadata = { title: 'Review Answers — Idea Engine' }
+export const metadata = { title: 'Review Answers — HadIdea' }
 
 const ARCHETYPE_LABELS: Record<string, string> = {
   physical_product: 'Physical Product',

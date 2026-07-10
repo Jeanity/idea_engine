@@ -5,7 +5,7 @@ import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { FeedbackCards } from './feedback-cards'
 
-export const metadata = { title: 'Feedback — Admin — Idea Engine' }
+export const metadata = { title: 'Feedback — Admin — HadIdea' }
 
 // Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
 // in schema cache" (migration 019 not run yet — `hidden`/`admin_public`

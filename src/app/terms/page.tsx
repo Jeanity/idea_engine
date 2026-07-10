@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Idea Engine',
-  description: 'The terms that govern use of Idea Engine.',
+  title: 'Terms of Service — HadIdea',
+  description: 'The terms that govern use of HadIdea.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {
@@ -16,7 +16,7 @@ export default function TermsPage() {
       <section>
         <H2>1. The service</H2>
         <p className="mt-3">
-          Idea Engine turns a raw business idea into an AI-generated business research report:
+          HadIdea turns a raw business idea into an AI-generated business research report:
           market context, competitor research, cost estimates, legal and compliance pointers, and
           suggested next steps. Reports are generated with the help of AI language models and live
           web search.
@@ -38,7 +38,7 @@ export default function TermsPage() {
         <H2>3. Your idea, your IP</H2>
         <p className="mt-3">
           You retain all intellectual property rights in the ideas, answers, and other content you
-          submit to Idea Engine. We don&apos;t claim ownership of your ideas, we don&apos;t use
+          submit to HadIdea. We don&apos;t claim ownership of your ideas, we don&apos;t use
           them to train models beyond generating your own report, and we don&apos;t share them
           with other users.
         </p>
@@ -95,7 +95,7 @@ export default function TermsPage() {
       <section>
         <H2>6. Limitation of liability</H2>
         <p className="mt-3">
-          Idea Engine is provided &ldquo;as is&rdquo;. To the maximum extent permitted by law, we
+          HadIdea is provided &ldquo;as is&rdquo;. To the maximum extent permitted by law, we
           are not liable for business decisions made on the basis of a report, or for losses
           arising from inaccuracies, omissions, or downtime in the service.
         </p>

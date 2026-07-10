@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/db'
 import { TemplatesClient, type TemplateRow } from './templates-client'
 import { EmailChromeCard } from './email-chrome-card'
 
-export const metadata = { title: 'Templates — Admin — Idea Engine' }
+export const metadata = { title: 'Templates — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). Reading

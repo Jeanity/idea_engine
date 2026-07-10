@@ -40,7 +40,7 @@ export async function AppHeader({ email }: { email: string }) {
     <header className="bg-slate-950/80 backdrop-blur border-b border-white/10 light:bg-white/80 light:border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-6">
         <Link href="/app" className="font-semibold text-white light:text-gray-900 hover:text-slate-200 light:hover:text-gray-700 transition-colors">
-          Idea Engine
+          HadIdea
         </Link>
         {isAdmin && (
           <span

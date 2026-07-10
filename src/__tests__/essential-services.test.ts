@@ -210,13 +210,13 @@ describe('absolutizeEssentialServices', () => {
       { slug: 'us-accountant', name: 'US Tax Pros', category: 'accountants', countries: ['US'], note: null },
     ]
     const resolved = selectEssentialServices(rows, 'US')
-    const abs = absolutizeEssentialServices(resolved, 'https://ideaengine.app/')
-    expect(abs.find(s => s.id === 'accountants')!.href).toBe('https://ideaengine.app/go/us-accountant')
+    const abs = absolutizeEssentialServices(resolved, 'https://hadidea.com/')
+    expect(abs.find(s => s.id === 'accountants')!.href).toBe('https://hadidea.com/go/us-accountant')
   })
 
   it('leaves search hrefs (already absolute) unchanged', () => {
     const resolved = selectEssentialServices([], 'US')
-    const abs = absolutizeEssentialServices(resolved, 'https://ideaengine.app')
+    const abs = absolutizeEssentialServices(resolved, 'https://hadidea.com')
     for (const s of abs) {
       expect(s.href).toMatch(/^https:\/\/www\.google\.com\/search\?q=/)
     }

@@ -3,7 +3,7 @@ import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import ConfirmForm from './confirm-form'
 
-export const metadata = { title: 'Confirm your idea — Idea Engine' }
+export const metadata = { title: 'Confirm your idea — HadIdea' }
 
 const ARCHETYPE_LABELS: Record<string, string> = {
   physical_product: 'Physical product',

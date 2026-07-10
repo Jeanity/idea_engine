@@ -14,7 +14,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-5xl">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <span className="font-semibold tracking-tight text-white light:text-gray-900">Idea Engine</span>
+            <span className="font-semibold tracking-tight text-white light:text-gray-900">HadIdea</span>
             <p className="mt-2 text-xs text-slate-500 light:text-gray-400">
               Turn a raw idea into a researched, actionable report.
             </p>
@@ -79,7 +79,7 @@ export function SiteFooter() {
         </div>
 
         <p className="mt-10 text-xs text-slate-500 light:text-gray-400">
-          © {year} Idea Engine. All rights reserved.
+          © {year} HadIdea. All rights reserved.
         </p>
       </div>
     </footer>

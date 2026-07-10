@@ -24,7 +24,7 @@ export function StaticPageShell({
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">
       <header className="relative z-10 flex items-center justify-between border-b border-white/10 px-6 py-5 light:border-gray-200">
         <Link href="/" className="font-semibold tracking-tight text-white light:text-gray-900">
-          Idea Engine
+          HadIdea
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />

@@ -9,9 +9,9 @@ import { SAMPLE_IDEA, SAMPLE_REPORT_SECTIONS } from '@/lib/sample-report'
 import { SampleGallery, type GalleryCard, type FallbackCard } from './sample-gallery-client'
 
 export const metadata: Metadata = {
-  title: 'Sample reports — Idea Engine',
+  title: 'Sample reports — HadIdea',
   description:
-    'Browse example Idea Engine reports — viability score, competitors, cost breakdown, legal & compliance, and prioritised next steps.',
+    'Browse example HadIdea reports — viability score, competitors, cost breakdown, legal & compliance, and prioritised next steps.',
 }
 
 const FALLBACK_CARD: FallbackCard = {
@@ -66,7 +66,7 @@ export default async function SampleReportPage({
       <header className="relative z-10 px-6 py-5 flex items-center justify-between border-b border-white/10 light:border-gray-200">
         <div className="flex items-center gap-4">
           <Link href="/" className="font-semibold tracking-tight text-white light:text-gray-900">
-            Idea Engine
+            HadIdea
           </Link>
           {backHref && (
             <Link

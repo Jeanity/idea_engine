@@ -5,7 +5,7 @@ import { AppHeader } from '@/components/app-header'
 import NewIdeaForm from '@/components/new-idea-form'
 import { DEMO_STATS } from '@/lib/demo-stats'
 
-export const metadata = { title: 'New idea — Idea Engine' }
+export const metadata = { title: 'New idea — HadIdea' }
 
 export default async function DashboardPage() {
   const supabase = await createDbClient()

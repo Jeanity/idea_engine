@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { rewriteAffiliateUrls, type AffiliateLink } from '@/lib/affiliate-rewrite'
 
-const ORIGIN = 'https://ideaengine.app'
+const ORIGIN = 'https://hadidea.com'
 const IDEA = 'idea-123'
 
 const links: AffiliateLink[] = [

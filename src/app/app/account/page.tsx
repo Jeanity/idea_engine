@@ -10,7 +10,7 @@ import { getPromoPublicStatus } from '@/lib/promo'
 import { pickSurveyFor } from '@/lib/survey'
 import { SurveyCard } from '@/components/survey-card'
 
-export const metadata = { title: 'My ideas — Idea Engine' }
+export const metadata = { title: 'My ideas — HadIdea' }
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Classifying',

@@ -87,23 +87,23 @@ export async function POST(request: NextRequest) {
         : `${getSiteUrl()}/app/account`
 
       const publicNote = is_public === true
-        ? '<p style="color:#64748b;font-size:13px;">This reply was posted publicly on the Idea Engine homepage.</p>'
+        ? '<p style="color:#64748b;font-size:13px;">This reply was posted publicly on the HadIdea homepage.</p>'
         : ''
       const publicNoteText = is_public === true
-        ? '\n(This reply was posted publicly on the Idea Engine homepage.)'
+        ? '\n(This reply was posted publicly on the HadIdea homepage.)'
         : ''
 
       const { html, text } = await buildBrandedEmail({
-        bodyHtml: `<p>You have a reply on your Idea Engine feedback:</p>
+        bodyHtml: `<p>You have a reply on your HadIdea feedback:</p>
 <p>${trimmed.replace(/\n/g, '<br />')}</p>
 ${publicNote}
 <p><a href="${reportUrl}">View your report</a></p>`,
-        bodyText: `You have a reply on your Idea Engine feedback:\n\n${trimmed}${publicNoteText}\n\nView your report: ${reportUrl}`,
+        bodyText: `You have a reply on your HadIdea feedback:\n\n${trimmed}${publicNoteText}\n\nView your report: ${reportUrl}`,
       })
 
       const result = await sendMail({
         to: authorEmail,
-        subject: 'You have a reply on your Idea Engine feedback',
+        subject: 'You have a reply on your HadIdea feedback',
         html,
         text,
       })

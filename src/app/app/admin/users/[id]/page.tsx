@@ -5,7 +5,7 @@ import { isAdminEmail } from '@/lib/admin'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { DeleteUserButton } from '../delete-user-button'
 
-export const metadata = { title: 'User — Admin — Idea Engine' }
+export const metadata = { title: 'User — Admin — HadIdea' }
 
 // Read-only detail view except for the delete action (DeleteUserButton).
 // This page lives under src/app/app/admin/, whose layout.tsx already gates

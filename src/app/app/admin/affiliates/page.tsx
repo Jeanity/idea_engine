@@ -3,7 +3,7 @@ import { Pagination } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { AffiliatesClient, type AffiliateLinkRow } from './affiliates-client'
 
-export const metadata = { title: 'Affiliates — Admin — Idea Engine' }
+export const metadata = { title: 'Affiliates — Admin — HadIdea' }
 
 // Bucket clicks into 7d / 30d / all-time per link. Kept out of the component
 // render body so the time read (Date.now) isn't flagged as impure-in-render.

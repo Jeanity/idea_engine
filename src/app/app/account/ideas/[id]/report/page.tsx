@@ -1,6 +1,6 @@
 import { ReportPageContent } from '@/app/app/ideas/[id]/report/report-page-content'
 
-export const metadata = { title: 'Report — Idea Engine' }
+export const metadata = { title: 'Report — HadIdea' }
 
 // In-place report reading — renders inside the account shell (children of
 // src/app/app/account/layout.tsx), so "Read Report" no longer bounces the

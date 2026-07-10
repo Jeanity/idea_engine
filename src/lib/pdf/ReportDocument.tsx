@@ -123,12 +123,12 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
   ].filter(t => t.show)
 
   return (
-    <Document title={data.reportTitle} author="Idea Engine">
+    <Document title={data.reportTitle} author="HadIdea">
       {/* ── Cover page ─────────────────────────────────────────── */}
       <Page size="A4" style={styles.page}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 90 }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent, marginRight: 6 }} />
-          <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: COLORS.ink, letterSpacing: 0.5 }}>IDEA ENGINE</Text>
+          <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: COLORS.ink, letterSpacing: 0.5 }}>HADIDEA</Text>
         </View>
 
         <Text style={styles.eyebrow}>BUSINESS VIABILITY REPORT</Text>
@@ -156,7 +156,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
         <View style={{ position: 'absolute', bottom: 56, left: 48, right: 48 }}>
           <View style={styles.divider} />
           <Text style={styles.footerText}>
-            Prepared by Idea Engine. This report contains AI-assisted research and estimates for planning purposes —
+            Prepared by HadIdea. This report contains AI-assisted research and estimates for planning purposes —
             it is not legal, financial, tax, or professional advice. Confidential — prepared solely for the person
             named above.
           </Text>
@@ -463,7 +463,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
           })}
 
           <Text style={[styles.caption, { marginTop: 4 }]}>
-            Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
+            Some links may earn HadIdea a commission. This never changes what you pay, and never changes what we recommend.
           </Text>
           <PageFooter reportTitle={data.reportTitle} />
         </Page>

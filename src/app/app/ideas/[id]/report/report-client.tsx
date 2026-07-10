@@ -1011,7 +1011,7 @@ function GettingSetUpBlock({ services }: { services: ResolvedEssentialService[] 
       })}
       <div className="rounded-2xl border border-white/10 bg-white/[0.02] light:bg-gray-50 light:border-gray-200 px-5 py-4">
         <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed">
-          Some links may earn Idea Engine a commission. This never changes what you pay, and never changes what we recommend.
+          Some links may earn HadIdea a commission. This never changes what you pay, and never changes what we recommend.
         </p>
       </div>
     </div>
@@ -1880,7 +1880,7 @@ function DownloadPdfButton({ ideaId }: { ideaId: string }) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `idea-engine-report-${ideaId.slice(0, 8)}.pdf`
+      a.download = `hadidea-report-${ideaId.slice(0, 8)}.pdf`
       document.body.appendChild(a)
       a.click()
       a.remove()

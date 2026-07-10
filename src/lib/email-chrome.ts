@@ -23,9 +23,9 @@ export interface EmailChrome {
 }
 
 export const DEFAULT_EMAIL_CHROME: EmailChrome = {
-  header_title: 'Idea Engine',
-  signature: '— The Idea Engine team',
-  footer_note: "You're receiving this because of activity on your Idea Engine account.",
+  header_title: 'HadIdea',
+  signature: '— The HadIdea team',
+  footer_note: "You're receiving this because of activity on your HadIdea account.",
 }
 
 export const CHROME_LIMITS = { header_title: 60, signature: 120, footer_note: 300 } as const

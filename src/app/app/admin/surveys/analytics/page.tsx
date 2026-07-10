@@ -1,6 +1,6 @@
 import { AnalyticsClient } from './analytics-client'
 
-export const metadata = { title: 'Survey analytics — Admin — Idea Engine' }
+export const metadata = { title: 'Survey analytics — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). All

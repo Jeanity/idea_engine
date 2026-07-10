@@ -97,7 +97,7 @@ function rewriteValue(value: unknown, links: AffiliateLink[], origin: string, id
  *
  * @param sections The report sections JSON (deep-walked, not mutated).
  * @param links    Active affiliate links (slug + match_domains).
- * @param origin   Absolute origin, e.g. "https://ideaengine.app" (trailing slash tolerated).
+ * @param origin   Absolute origin, e.g. "https://hadidea.com" (trailing slash tolerated).
  * @param ideaId   The idea id, embedded as `ctx=report:<ideaId>` for click attribution.
  * @returns A new sections object with matching URLs swapped for /go/<slug> links.
  */

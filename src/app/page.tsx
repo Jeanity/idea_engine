@@ -375,7 +375,7 @@ export default async function LandingPage() {
         </div>
 
         <header className="relative z-10 px-6 py-5 flex items-center justify-between">
-          <span className="font-semibold tracking-tight text-white light:text-gray-900">Idea Engine</span>
+          <span className="font-semibold tracking-tight text-white light:text-gray-900">HadIdea</span>
           <div className="flex items-center gap-4">
             <nav className="hidden sm:flex items-center gap-4">
               <Link href="/faq" className="text-sm text-slate-200 hover:text-white font-medium transition-colors light:text-gray-600 light:hover:text-gray-900">

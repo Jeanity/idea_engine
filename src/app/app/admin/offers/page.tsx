@@ -3,7 +3,7 @@ import { Pagination } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { OffersClient, type OfferRow } from './offers-client'
 
-export const metadata = { title: 'Offers — Admin — Idea Engine' }
+export const metadata = { title: 'Offers — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). Reading

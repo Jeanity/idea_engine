@@ -345,7 +345,7 @@ function Sidebar({
           <Sparkles className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
-          <span className="block truncate text-sm font-semibold text-white light:text-gray-900">Idea Engine</span>
+          <span className="block truncate text-sm font-semibold text-white light:text-gray-900">HadIdea</span>
           <span className="block text-[11px] font-medium uppercase tracking-wider text-indigo-300 light:text-indigo-500">
             Admin
           </span>

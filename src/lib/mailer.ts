@@ -52,7 +52,7 @@ export function getSiteUrl(): string {
 }
 
 /**
- * Pure — wraps a content block in the branded Idea Engine shell (wordmark +
+ * Pure — wraps a content block in the branded HadIdea shell (wordmark +
  * content + muted footer) and produces the matching text fallback. Table-free
  * HTML so it renders consistently across mail clients. Exported standalone so
  * it can be unit-tested without touching SMTP.

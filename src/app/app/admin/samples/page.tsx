@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/db'
 import { SamplesClient, type SampleRow } from './samples-client'
 
-export const metadata = { title: 'Samples — Admin — Idea Engine' }
+export const metadata = { title: 'Samples — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). Reading

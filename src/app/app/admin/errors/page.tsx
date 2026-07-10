@@ -4,7 +4,7 @@ import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { ErrorLogList, type ErrorRow } from './errors-client'
 
-export const metadata = { title: 'Errors — Admin — Idea Engine' }
+export const metadata = { title: 'Errors — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders). Reading

@@ -1,7 +1,7 @@
 import { createDbClient } from '@/lib/db'
 import { DashboardClient } from './dashboard-client'
 
-export const metadata = { title: 'Admin — Idea Engine' }
+export const metadata = { title: 'Admin — HadIdea' }
 
 // Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
 // in schema cache" — both mean migration 021 (admin_dashboard_layout) hasn't

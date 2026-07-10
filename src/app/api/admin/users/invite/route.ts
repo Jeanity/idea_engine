@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
   try {
     sendResult = await sendMail({
       to: email,
-      subject: "You're invited to Idea Engine",
+      subject: "You're invited to HadIdea",
       html,
       text,
       replyTo: process.env.ADMIN_NOTIFY_EMAIL,

@@ -5,7 +5,7 @@ import AccountForm from '../account-form'
 import DemoModeToggle from '../demo-mode-toggle'
 import { DangerZone } from './danger-zone'
 
-export const metadata = { title: 'Settings — Idea Engine' }
+export const metadata = { title: 'Settings — HadIdea' }
 
 export default async function AccountSettingsPage({
   searchParams,
@@ -32,7 +32,7 @@ export default async function AccountSettingsPage({
 
       {welcome === '1' && (
         <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] light:border-indigo-200 light:bg-indigo-50 px-5 py-4 mb-8">
-          <p className="text-sm font-medium text-indigo-200 light:text-indigo-800">Welcome to Idea Engine!</p>
+          <p className="text-sm font-medium text-indigo-200 light:text-indigo-800">Welcome to HadIdea!</p>
           <p className="text-sm text-indigo-300/80 light:text-indigo-700 mt-0.5">
             Set your username and details below to get started.
           </p>

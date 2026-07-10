@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Idea Engine',
-  description: 'What Idea Engine collects, how it is used, and how to request deletion.',
+  title: 'Privacy Policy — HadIdea',
+  description: 'What HadIdea collects, how it is used, and how to request deletion.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {

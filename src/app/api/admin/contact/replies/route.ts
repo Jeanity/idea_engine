@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await sendMail({
       to: submission.email,
-      subject: 'Re: your message to Idea Engine',
+      subject: 'Re: your message to HadIdea',
       html,
       text,
       replyTo: adminReplyTo,

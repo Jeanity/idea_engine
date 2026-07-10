@@ -107,7 +107,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     request.nextUrl.origin
   )
 
-  const reportTitle = `Idea Engine — ${idea.restatement ?? 'Business Viability Report'}`
+  const reportTitle = `HadIdea — ${idea.restatement ?? 'Business Viability Report'}`
 
   const data: ReportPdfInput = {
     reportTitle,
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const buffer = await renderToBuffer(<ReportDocument data={data} />)
 
-  const filename = `idea-engine-report-${id.slice(0, 8)}.pdf`
+  const filename = `hadidea-report-${id.slice(0, 8)}.pdf`
   // Buffer's TS type doesn't structurally satisfy BodyInit in this Node/lib.dom
   // combination — a plain Uint8Array copy does.
   return new NextResponse(new Uint8Array(buffer), {

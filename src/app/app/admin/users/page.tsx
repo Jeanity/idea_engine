@@ -6,7 +6,7 @@ import { Pagination } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { UsersClient, type UserRow } from './users-client'
 
-export const metadata = { title: 'Users — Admin — Idea Engine' }
+export const metadata = { title: 'Users — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates
 // on isAdminEmail (redirects non-admins to /app before this ever renders).

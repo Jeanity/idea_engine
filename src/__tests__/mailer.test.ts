@@ -8,9 +8,9 @@ function clearSmtpEnv() {
 }
 
 describe('buildEmail', () => {
-  it('wraps the body in the branded shell with the Idea Engine wordmark', () => {
+  it('wraps the body in the branded shell with the HadIdea wordmark', () => {
     const { html } = buildEmail({ bodyHtml: '<p>hello</p>', bodyText: 'hello' })
-    expect(html).toContain('Idea Engine')
+    expect(html).toContain('HadIdea')
     expect(html).toContain('<p>hello</p>')
   })
 
@@ -18,7 +18,7 @@ describe('buildEmail', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://example.com'
     const { html } = buildEmail({ bodyHtml: '<p>test</p>', bodyText: 'test' })
     expect(html).toContain('<a href="https://example.com"')
-    expect(html).toContain('Idea Engine</a>')
+    expect(html).toContain('HadIdea</a>')
     delete process.env.NEXT_PUBLIC_SITE_URL
   })
 
@@ -33,20 +33,20 @@ describe('buildEmail', () => {
 
   it('includes the team signature line in the footer', () => {
     const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
-    expect(html).toContain('— The Idea Engine team')
-    expect(text).toContain('— The Idea Engine team')
+    expect(html).toContain('— The HadIdea team')
+    expect(text).toContain('— The HadIdea team')
   })
 
   it('includes the current year in the copyright line', () => {
     const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
     const currentYear = new Date().getFullYear()
-    expect(html).toContain(`© ${currentYear} Idea Engine`)
+    expect(html).toContain(`© ${currentYear} HadIdea`)
     expect(text).toContain(`© ${currentYear}`)
   })
 
   it('includes the muted footer line in both html and text', () => {
     const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
-    const footer = "You're receiving this because of activity on your Idea Engine account."
+    const footer = "You're receiving this because of activity on your HadIdea account."
     expect(html).toContain(footer)
     expect(text).toContain(footer)
   })
@@ -113,7 +113,7 @@ describe('isMailerConfigured', () => {
     process.env.SMTP_PORT = 'not-a-number'
     process.env.SMTP_USER = 'me@example.com'
     process.env.SMTP_PASS = 'secret'
-    process.env.MAIL_FROM = 'Idea Engine <reports@hadidea.com>'
+    process.env.MAIL_FROM = 'HadIdea <reports@hadidea.com>'
     expect(isMailerConfigured()).toBe(false)
   })
 
@@ -122,7 +122,7 @@ describe('isMailerConfigured', () => {
     process.env.SMTP_PORT = '587'
     process.env.SMTP_USER = 'me@example.com'
     process.env.SMTP_PASS = 'secret'
-    process.env.MAIL_FROM = 'Idea Engine <reports@hadidea.com>'
+    process.env.MAIL_FROM = 'HadIdea <reports@hadidea.com>'
     expect(isMailerConfigured()).toBe(true)
   })
 })
@@ -162,7 +162,7 @@ describe('buildEmail with custom chrome', () => {
     const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' }, chrome)
     expect(html).toContain('>hadidea</a>')
     expect(html).toMatch(/© \d{4} hadidea/)
-    expect(html).not.toContain('Idea Engine')
+    expect(html).not.toContain('HadIdea')
     expect(text.startsWith('hadidea\n')).toBe(true)
   })
 
@@ -179,8 +179,8 @@ describe('buildEmail with custom chrome', () => {
       { bodyHtml: '<p>x</p>', bodyText: 'x' },
       { header_title: 'hadidea', signature: '', footer_note: '' }
     )
-    expect(html).not.toContain('— The Idea Engine team')
-    expect(text).not.toContain('— The Idea Engine team')
+    expect(html).not.toContain('— The HadIdea team')
+    expect(text).not.toContain('— The HadIdea team')
     expect(html).not.toContain("You're receiving this")
     expect(text).not.toContain("You're receiving this")
   })
@@ -198,9 +198,9 @@ describe('buildEmail with custom chrome', () => {
   it('defaults produce the same output as calling without chrome', () => {
     const a = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
     const b = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' }, {
-      header_title: 'Idea Engine',
-      signature: '— The Idea Engine team',
-      footer_note: "You're receiving this because of activity on your Idea Engine account.",
+      header_title: 'HadIdea',
+      signature: '— The HadIdea team',
+      footer_note: "You're receiving this because of activity on your HadIdea account.",
     })
     expect(a).toEqual(b)
   })

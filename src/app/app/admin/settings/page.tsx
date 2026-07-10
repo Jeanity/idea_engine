@@ -4,7 +4,7 @@ import { ReportModelPicker } from './model-picker'
 import { PromoCard } from './promo-card'
 import { TeaserGatingCard } from './teaser-gating-card'
 
-export const metadata = { title: 'Settings — Admin — Idea Engine' }
+export const metadata = { title: 'Settings — Admin — HadIdea' }
 
 // This page lives under src/app/app/admin/, whose layout.tsx already gates on
 // isAdminEmail (redirects non-admins to /app before this ever renders).

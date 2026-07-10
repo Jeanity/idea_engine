@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ============================================
-echo  Idea Engine - startup
+echo  HadIdea - startup
 echo ============================================
 
 REM --- Sanity checks -------------------------------------------------
@@ -32,10 +32,10 @@ if not exist "node_modules\" (
 
 REM --- Start servers in their own windows ----------------------------
 echo [1/2] Starting Next.js dev server (http://localhost:3000)...
-start "Idea Engine - Next.js" cmd /k "cd /d %~dp0 && npm run dev"
+start "HadIdea - Next.js" cmd /k "cd /d %~dp0 && npm run dev"
 
 echo [2/2] Starting Inngest dev server (http://localhost:8288)...
-start "Idea Engine - Inngest" cmd /k "cd /d %~dp0 && npx inngest-cli@latest dev -u http://localhost:3000/api/inngest"
+start "HadIdea - Inngest" cmd /k "cd /d %~dp0 && npx inngest-cli@latest dev -u http://localhost:3000/api/inngest"
 
 echo.
 echo Both servers launched in separate windows.
