@@ -2,7 +2,7 @@ import { inngest } from '@/lib/inngest'
 import { createServiceClient } from '@/lib/db'
 import { callAI, HAIKU_MODEL, DEFAULT_MODEL, type AIResult } from '@/lib/ai'
 import { providerOverrideForUser, reportModelForUser } from '@/lib/demo-mode'
-import { calculateCosts, parseNumber } from '@/lib/cost-calculator'
+import { calculateCosts, parseNumber, needsAiCostFallback } from '@/lib/cost-calculator'
 import {
   COMPETITOR_RESEARCH_SYSTEM_PROMPT,
   buildCompetitorResearchMessage,
@@ -400,11 +400,41 @@ export const generateReport = inngest.createFunction(
     await persistSections('persist-competitors')
 
     // ── Step 2: Cost estimation ───────────────────────────────
+    // Shared AI cost-estimation call. This is the ONLY cost path for
+    // non-product archetypes, and it's also the fallback for product
+    // archetypes below — kept in one place so the two callers can't drift.
+    const estimateCostsViaAI = () => aiStep(
+      step,
+      'estimate-costs',
+      4096,
+      (maxTokens) => callAI({
+        messages: [{ role: 'user', content: buildCostEstimationMessage({
+          idea_raw_text: idea.raw_text,
+          archetype: idea.archetype,
+          location_country: idea.location_country,
+          location_region: idea.location_region,
+          restatement: idea.restatement,
+          answers,
+          competitors: Array.isArray(competitors) ? competitors : [],
+        }) }],
+        system: COST_ESTIMATION_SYSTEM_PROMPT,
+        maxTokens,
+        tag: 'report:costs',
+        model: stepModel('costs'),
+        provider,
+      }),
+      parseJsonObject,
+    )
+
     const productArchetypes = ['physical_product', 'ecommerce_brand']
     let costBreakdown: unknown
     if (productArchetypes.includes(idea.archetype)) {
-      // Deterministic calculator — no AI call, no cost.
-      costBreakdown = calculateCosts({
+      // Deterministic calculator first — no AI call, no cost, and it's the
+      // most precise source when the founder answered the batch/unit-cost
+      // questions. Those questions are optional (product directive: never
+      // require a cost founders can't know), so this can come back with
+      // materials omitted.
+      const deterministic = calculateCosts({
         location_country: idea.location_country,
         materials_batch_cost: parseNumber(mapsTo['cost.materials']),
         packaging_per_unit: parseNumber(mapsTo['cost.packaging_per_unit']),
@@ -415,29 +445,29 @@ export const generateReport = inngest.createFunction(
         hourly_rate: parseNumber(mapsTo['cost.hourly_rate']),
         unit_cost_estimate: parseNumber(mapsTo['cost.unit_cost_estimate']),
       })
+
+      if (!needsAiCostFallback(deterministic)) {
+        costBreakdown = deterministic
+        sectionStatus.cost_breakdown = 'live_ok'
+      } else {
+        // Founder left both materials and per-unit cost blank — the
+        // deterministic breakdown would silently omit materials from the
+        // total. Fall back to the same AI step non-product archetypes use;
+        // it already reads the founder's raw materials/manufacturing
+        // answers and the SPECIALIST-COST RULE covers manufacturing costs.
+        // Model-economy note: this is the only case where a product
+        // archetype spends an AI call on costs — it only fires when the
+        // founder didn't already give us the numbers.
+        const costOutcome = await estimateCostsViaAI()
+        bankStep('estimate-costs', costOutcome)
+        // If the AI call also fails, keep the deterministic (partial)
+        // breakdown rather than losing the section entirely — it still has
+        // whatever the founder did answer, honestly flagged as estimated.
+        costBreakdown = costOutcome.status === 'ok' ? costOutcome.value : deterministic
+        sectionStatus.cost_breakdown = 'fallback_inferred'
+      }
     } else {
-      const costOutcome = await aiStep(
-        step,
-        'estimate-costs',
-        4096,
-        (maxTokens) => callAI({
-          messages: [{ role: 'user', content: buildCostEstimationMessage({
-            idea_raw_text: idea.raw_text,
-            archetype: idea.archetype,
-            location_country: idea.location_country,
-            location_region: idea.location_region,
-            restatement: idea.restatement,
-            answers,
-            competitors: Array.isArray(competitors) ? competitors : [],
-          }) }],
-          system: COST_ESTIMATION_SYSTEM_PROMPT,
-          maxTokens,
-          tag: 'report:costs',
-          model: stepModel('costs'),
-          provider,
-        }),
-        parseJsonObject,
-      )
+      const costOutcome = await estimateCostsViaAI()
       bankStep('estimate-costs', costOutcome)
       costBreakdown = costOutcome.status === 'ok'
         ? costOutcome.value

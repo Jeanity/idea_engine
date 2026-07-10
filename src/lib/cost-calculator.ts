@@ -132,6 +132,18 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+// True when the deterministic result couldn't put a number on materials —
+// the founder gave neither a batch materials cost (cost.materials, with a
+// batch yield to divide it by) nor a per-unit manufacturer estimate
+// (cost.unit_cost_estimate). A cost breakdown with materials omitted is
+// misleadingly incomplete, so generate-report.ts uses this as the signal to
+// fall back to the AI cost-estimation step for product archetypes (see the
+// "Step 2: Cost estimation" comment there). Pulled out as a pure function so
+// the trigger condition is unit-testable without touching the Inngest step.
+export function needsAiCostFallback(result: CostResult): boolean {
+  return result.per_unit.materials === null
+}
+
 // A leading/trailing currency symbol or ISO-style code — "$", "€", "£", "¥",
 // a one/two-letter country prefix + "$" ("A$", "US$", "NZ$"), or a bare
 // 3-letter code ("AUD", "USD"). Only stripped when it sits directly against

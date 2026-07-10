@@ -160,16 +160,16 @@
   },
   {
     "key": "product_unit_cost",
-    "text": "What do you expect to pay the manufacturer per unit?",
-    "subtext": "A rough guess or a real quote — either is fine.",
+    "text": "What will the manufacturer charge you per unit — if you already know?",
+    "subtext": "Optional. Leave blank and we'll estimate manufacturing costs in your report — a real quote just makes the numbers sharper.",
     "input_type": "number",
-    "required": true,
+    "required": false,
     "maps_to": "cost.unit_cost_estimate",
     "show_if": {
       "key": "product_made_how",
       "in": ["A local manufacturer will make it for me", "An overseas manufacturer will make it for me"]
     },
-    "why": "Per-unit cost is the base of your margins. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
+    "why": "Per-unit cost is the base of your margins; we'll estimate it if blank. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "product_first_run_budget",
@@ -212,7 +212,7 @@
   {
     "key": "product_packaging_shipping",
     "text": "Roughly what will packaging and delivery cost per unit?",
-    "subtext": "Optional — leave blank if you're not sure yet.",
+    "subtext": "Optional — most people don't know this yet. Leave blank and the report estimates it.",
     "input_type": "number",
     "required": false,
     "maps_to": "cost.packaging_per_unit",

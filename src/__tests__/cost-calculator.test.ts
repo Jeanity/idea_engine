@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseNumber, calculateCosts } from '@/lib/cost-calculator'
+import { parseNumber, calculateCosts, needsAiCostFallback } from '@/lib/cost-calculator'
 
 describe('parseNumber', () => {
   it('returns null for null/undefined/empty input', () => {
@@ -107,5 +107,57 @@ describe('calculateCosts — null inputs degrade honestly', () => {
     expect(result.per_unit.packaging).toBe(2.5)
     expect(result.per_unit.total_cogs).toBe(12.5)
     expect(result.per_unit.total_cogs).toBeLessThan(1000) // sanity bound — no digit-mashing garbage
+  })
+})
+
+describe('needsAiCostFallback', () => {
+  // This is the exact trigger condition generate-report.ts uses to decide
+  // whether a product-archetype report needs the AI cost-estimation
+  // fallback (Step 2 in src/lib/inngest/generate-report.ts): a materials
+  // figure of null means neither a batch materials cost nor a per-unit
+  // manufacturer estimate was parseable from the founder's answers.
+  it('is true when neither materials nor unit-cost estimate was provided', () => {
+    const result = calculateCosts({
+      location_country: 'AU',
+      materials_batch_cost: null,
+      packaging_per_unit: null,
+      equipment_wattage: null,
+      active_minutes_per_batch: null,
+      passive_minutes_per_batch: null,
+      batch_yield: null,
+      hourly_rate: null,
+      unit_cost_estimate: null,
+    })
+    expect(needsAiCostFallback(result)).toBe(true)
+  })
+
+  it('is false when a batch materials cost and yield were provided', () => {
+    const result = calculateCosts({
+      location_country: 'AU',
+      materials_batch_cost: 120,
+      packaging_per_unit: null,
+      equipment_wattage: null,
+      active_minutes_per_batch: null,
+      passive_minutes_per_batch: null,
+      batch_yield: 12,
+      hourly_rate: null,
+      unit_cost_estimate: null,
+    })
+    expect(needsAiCostFallback(result)).toBe(false)
+  })
+
+  it('is false when only a per-unit manufacturer estimate was provided (no batch materials)', () => {
+    const result = calculateCosts({
+      location_country: 'AU',
+      materials_batch_cost: null,
+      packaging_per_unit: null,
+      equipment_wattage: null,
+      active_minutes_per_batch: null,
+      passive_minutes_per_batch: null,
+      batch_yield: null,
+      hourly_rate: null,
+      unit_cost_estimate: 4.5,
+    })
+    expect(needsAiCostFallback(result)).toBe(false)
   })
 })
