@@ -1,3 +1,15 @@
+# Smexy is now the DEFAULT theme (2026-07-11, same night)
+
+Danny: "I love it… dark mode replaced." `.smexy` is baked into the SSR <html> class;
+the toggle cycles smexy ↔ light (sun/sparkles icons). Classic dark still exists in CSS
+(smexy layers on it) but is only reachable as the fallback when the admin kill switch is
+OFF: then the default reverts to dark, the toggle is the old dark ↔ light, saved smexy
+demotes to dark, and ThemeToggle caches the flag in localStorage('smexy_off') so the
+no-flash init script keeps later first paints correct (first load after a flip paints
+smexy once). Re-enabling promotes fallback-dark visitors (no explicit choice) back to
+smexy. Full matrix click-verified: default paint, both cycles, light persistence,
+demote/promote, cache behaviour.
+
 # Smexy mode — third theme (2026-07-11)
 
 Danny asked for a third "wow" theme next to dark/light. Shipped as `.smexy` on <html>

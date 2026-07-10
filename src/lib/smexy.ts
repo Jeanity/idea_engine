@@ -2,15 +2,16 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { getSetting, setSetting } from '@/lib/app-settings'
 
-// ── Smexy mode (third theme) ─────────────────────────────────────────────
+// ── Smexy mode (the default look) ────────────────────────────────────────
 //
 // The .smexy class on <html> layers an aurora/glass treatment over the dark
-// theme (globals.css "Smexy mode" section). This flag is the admin kill
-// switch: when disabled, ThemeToggle stops offering the mode and demotes
-// visitors who had it saved back to dark. Default is ON — it ships visible,
-// and the admin settings card exists precisely to turn it off if it
-// underwhelms. getSetting returns null on any read failure, so a missing
-// table/key degrades to the default rather than erroring.
+// theme (globals.css "Smexy mode" section) and is the site's DEFAULT (baked
+// into the SSR class list in layout.tsx). This flag is the admin kill
+// switch: when disabled, the site reverts to the classic dark default, the
+// toggle collapses to dark↔light, and smexy visitors demote to dark. It
+// ships ON; the admin settings card exists precisely to back out if the look
+// ever needs to go. getSetting returns null on any read failure, so a
+// missing table/key degrades to the default rather than erroring.
 
 export const SMEXY_KEY = 'smexy_theme'
 

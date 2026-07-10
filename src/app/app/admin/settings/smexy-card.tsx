@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 
-// Admin kill switch for the third theme (src/lib/smexy.ts): ON = the theme
-// toggle cycles dark → light → smexy; OFF = the mode disappears from the
-// toggle and visitors who had it saved are demoted back to dark on their
-// next page load. Purely cosmetic either way — no report content changes.
+// Admin kill switch for the smexy default (src/lib/smexy.ts): ON = smexy is
+// the site's default look and the toggle cycles smexy ↔ light; OFF = the
+// site reverts to the classic dark default (toggle cycles dark ↔ light) and
+// smexy visitors demote to dark on their next page load. Purely cosmetic
+// either way — no report content changes.
 export function SmexyCard() {
   const [enabled, setEnabled] = useState<boolean | null>(null)
   const [error, setError] = useState('')
@@ -50,10 +51,11 @@ export function SmexyCard() {
         <div>
           <h2 className="font-semibold text-white light:text-gray-900 mb-1">Smexy mode</h2>
           <p className="text-xs text-slate-500 light:text-gray-400 leading-relaxed max-w-md">
-            The third theme in the light/dark toggle — an animated aurora, glass cards, and
-            gradient accents layered over dark mode. When <span className="font-medium">off</span>,
-            the option vanishes from the theme toggle and anyone who had it selected falls back
-            to dark on their next visit. Cosmetic only; flip freely.
+            The site&apos;s default look — an animated aurora, glass cards, and gradient accents
+            layered over dark mode, with light mode as the opt-out. When{' '}
+            <span className="font-medium">off</span>, the site reverts to the classic dark
+            default (dark/light toggle) and anyone on smexy falls back to dark on their next
+            visit. Cosmetic only; flip freely.
           </p>
         </div>
         <button

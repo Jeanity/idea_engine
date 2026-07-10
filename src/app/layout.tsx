@@ -13,16 +13,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // suppressHydrationWarning on <html>: the theme init script below adds
-    // the .light class before hydration when the user opted into light mode.
-    <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full antialiased`}>
+    // suppressHydrationWarning on <html>: the theme init script below swaps
+    // theme classes before hydration when the visitor opted out of the default.
+    // Smexy is the default look, so it's baked into the SSR class list — the
+    // script only ever removes it (light preference, or admin kill switch).
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full antialiased smexy`}>
       <head>
-        {/* Dark is the default; apply the saved light/smexy preference before
-            paint (no flash). If smexy has been disabled by the admin since the
-            visitor saved it, ThemeToggle demotes them to dark after mount. */}
+        {/* Apply the saved preference before paint (no flash). 'smexy_off' is
+            ThemeToggle's cached copy of the admin kill switch — when the
+            switch is off the default falls back to classic dark (first load
+            after the flip still paints smexy once; ThemeToggle then demotes
+            and caches). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.add('light');else if(t==='smexy')document.documentElement.classList.add('smexy')}catch(e){}`,
+            __html: `try{var el=document.documentElement,t=localStorage.getItem('theme');if(t==='light'){el.classList.remove('smexy');el.classList.add('light')}else if(localStorage.getItem('smexy_off')==='1')el.classList.remove('smexy')}catch(e){}`,
           }}
         />
       </head>
