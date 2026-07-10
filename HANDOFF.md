@@ -1,3 +1,27 @@
+# Day wrap — 2026-07-11 (all shipped to main + prod)
+
+Everything below is live: c4af64e stepped survey → b5932c1 HadIdea rebrand → 1a222c7
+smexy mode → 93510cc homepage "Every report includes" refresh → 9a1cd80 smexy as DEFAULT
+(dark = kill-switch fallback) → 363aa21 roaming aurora (blobs cross the screen and bounce
+off edges). Tests 266 green throughout; no new DB migrations — the smexy flag uses the
+existing app_settings KV (no row needed until first admin toggle; missing key = ON).
+
+**Danny's to-do list (nothing blocking, no migrations):**
+1. Vercel env `MAIL_FROM` display name still says "Idea Engine" → change to HadIdea.
+2. Supabase dashboard: check auth email templates (magic link) for the old name.
+3. Eyeball smexy on real devices/prod; Admin → Settings → "Smexy mode" is the instant
+   revert-to-dark switch if anything looks off.
+
+**Tomorrow: logo.** Danny is iterating on a candidate (green rounded-square "hi" mark —
+h + dotted i, first letters of HadIdea; reads slightly like a puppy, undecided if bug or
+feature). Agreed spec when finalising: transparent background; SVG master; square mark
+1:1 on a 1024×1024 canvas (safe zone: inner ~820px for circle crops); horizontal lockup
+4:1 on 1600×400 with ~40px baked padding; wordmark needs BOTH colorways (white for
+smexy/dark, dark for light) since transparency alone doesn't solve text contrast; PNG @2x
+exports for email (SVG unsupported in many clients — mailer currently uses a text
+wordmark); consider an indigo→fuchsia aurora-gradient variant to match the new house
+style. Green + navy as-is clashes with the smexy palette.
+
 # Smexy is now the DEFAULT theme (2026-07-11, same night)
 
 Danny: "I love it… dark mode replaced." `.smexy` is baked into the SSR <html> class;
