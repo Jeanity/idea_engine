@@ -1,3 +1,18 @@
+# Rebrand: Idea Engine → HadIdea (2026-07-10)
+
+Product renamed **HadIdea** (camel case in text/titles, `HADIDEA` PDF wordmark) to match
+the live hadidea.com domain. Swept all user-facing copy: page titles/metadata, header +
+footer + sidebar wordmarks, sign-in, about/FAQ/terms/privacy/sample-report, email chrome
+defaults + admin reply/invite emails, PDF cover + disclosure lines, download filenames
+(`hadidea-report-*.pdf`), .env.example MAIL_FROM display name, start.bat, package name.
+Deliberately NOT renamed (internal, breakage risk, invisible to users): Inngest app id +
+event names (`idea-engine/...`), promo IP_HASH_SALT, repo folder/URL, .claude agent defs,
+historical docs/plan files. Post-report survey also reworked same day: one question per
+step with progress bar + Back/Next (survey-card.tsx).
+**Manual follow-ups outside the repo**: Vercel env `MAIL_FROM` still says
+"Idea Engine <reports@hadidea.com>" → change display name to HadIdea; check Supabase auth
+email templates (magic link) for the old name; Inngest dashboard app name is cosmetic.
+
 # ❓ DECISIONS NEEDED FROM DANNY — question-flow audit, 2026-07-10 evening
 
 Two-researcher user-simulation audit of the question flow (per Danny's ask after the
@@ -1233,7 +1248,7 @@ Three pushes today: `584535b` (report v2 — see section below), `81f78ca` (PDF 
 
 ## Product decisions made today (bind future copy/work)
 - **Never say "teaser" in user-facing copy** — it's an "initial report" (or "basic report"). Fixed everywhere visible in `df5a544`. Internal identifiers (`generateTeaser`, `preview_sections`, `report:teaser` tag) intentionally unchanged.
-- **Domain**: Danny registered **hadidea.com**, may use it for this project. Nothing wired yet. When committing to it: add domain in Vercel, update Supabase auth site-URL + redirect allowlist (OAuth/magic links break otherwise), and decide whether the "Idea Engine" name follows the domain (header wordmark, PDF cover, footers, sample-report copy).
+- **Domain**: ~~Danny registered **hadidea.com**, may use it for this project. Nothing wired yet.~~ RESOLVED 2026-07-10: domain live on Vercel, Supabase auth updated, and the brand renamed to **HadIdea** across the app (see rebrand entry at top).
 
 ## What shipped in `81f78ca`
 
