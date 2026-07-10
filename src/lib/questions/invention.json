@@ -11,7 +11,15 @@
       "Design"
     ],
     "required": true,
-    "maps_to": "ip.category"
+    "maps_to": "ip.category",
+    "why": "What kind of invention this is changes what protection is realistic — hardware, software and processes are treated differently under IP law.",
+    "option_notes": {
+      "Device / hardware": "We'll look at utility patent routes, prototyping costs and manufacturing considerations.",
+      "Process / method": "We'll look at whether a process patent is realistic and how you'd prove and defend the method.",
+      "Composition / material": "We'll look at patent options for formulations or materials, and how you'd keep the recipe protected.",
+      "Software algorithm": "We'll cover the tighter software patent rules and whether trade secret or copyright protection fits better.",
+      "Design": "We'll look at design patent or registered design routes, which protect appearance rather than function."
+    }
   },
   {
     "key": "invention_ip_status",
@@ -25,7 +33,15 @@
       "Trade secret only (no filing intended)"
     ],
     "required": true,
-    "maps_to": "ip.status"
+    "maps_to": "ip.status",
+    "why": "Where you are in the filing process changes what protection steps and timelines we recommend.",
+    "option_notes": {
+      "No filing yet": "We'll cover your filing options and the costs and timelines to get initial protection in place.",
+      "Provisional patent filed": "We'll focus on what's next — the non-provisional deadline and building out your full claims.",
+      "Non-provisional / PCT filed": "We'll focus on prosecution timelines and international filing decisions from here.",
+      "Granted patent": "We'll focus on commercialisation, licensing and enforcement rather than the filing process itself.",
+      "Trade secret only (no filing intended)": "We'll focus on how you'd protect the secret operationally, since patents are off the table."
+    }
   },
   {
     "key": "invention_target_market",
@@ -33,14 +49,16 @@
     "subtext": "e.g., 'Residential electricians retrofitting older homes.' or 'Consumer pet owners.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "ip.target_market"
+    "maps_to": "ip.target_market",
+    "why": "Knowing who ultimately buys or uses this shapes the market-size and licensing research in your report."
   },
   {
     "key": "invention_differentiator",
     "text": "What's the novel claim — what does yours do that existing solutions can't?",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.differentiator"
+    "maps_to": "market.differentiator",
+    "why": "The novel claim is what any patent or licensing deal would rest on — it's central to your protection strategy."
   },
   {
     "key": "invention_stage",
@@ -53,7 +71,14 @@
       "Ready for scale / licensing"
     ],
     "required": true,
-    "maps_to": "idea.stage"
+    "maps_to": "idea.stage",
+    "why": "How far along your invention is changes whether we focus on validating the idea or on scaling and licensing it.",
+    "option_notes": {
+      "Just an idea": "We'll focus on validating feasibility and the first steps toward a prototype.",
+      "Working prototype": "We'll focus on testing, refining and the path from prototype to production.",
+      "Small production run tested": "We'll focus on scaling manufacturing and getting the invention to a wider market.",
+      "Ready for scale / licensing": "We'll focus on licensing deals, manufacturing partners and go-to-market routes."
+    }
   },
   {
     "key": "invention_startup_capital",
@@ -62,6 +87,7 @@
     "input_type": "select",
     "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
     "required": true,
-    "maps_to": "cost.startup_capital"
+    "maps_to": "cost.startup_capital",
+    "why": "Your budget shapes whether we focus on DIY filing or a faster, funded path. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   }
 ]

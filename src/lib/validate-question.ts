@@ -30,6 +30,10 @@ export interface Question {
   // required when the answer to `key` is one of `in`. Dynamic (AI-generated)
   // questions never carry this — validateQuestion strips it.
   show_if?: { key: string; in: string[] }
+  /** Short "Why we ask" explanation rendered in a card under the input. */
+  why?: string | null
+  /** Per-option consequence notes, keyed by the RAW option text (pre-localisation). */
+  option_notes?: Record<string, string>
 }
 
 export function validateQuestion(
@@ -49,9 +53,12 @@ export function validateQuestion(
   if (typeof obj.maps_to !== 'string') return null
   if (!(ALL_MAPS_TO_KEYS as readonly string[]).includes(obj.maps_to)) return null
   if (usedMapsto.includes(obj.maps_to)) return null
-  // show_if is a static-bank-only feature; dynamic questions never carry it.
-  const { show_if: _show_if, ...rest } = obj as unknown as Question
-  return { ...rest, required: false }
+  // show_if and option_notes are static-bank-only features; dynamic questions
+  // never carry them.
+  const { show_if: _show_if, option_notes: _option_notes, why, ...rest } = obj as unknown as Question
+  const trimmedWhy = typeof why === 'string' ? why.trim() : ''
+  const validWhy = trimmedWhy.length >= 6 && trimmedWhy.length <= 300 ? trimmedWhy : undefined
+  return { ...rest, required: false, ...(validWhy !== undefined ? { why: validWhy } : {}) }
 }
 
 export function firstUnansweredIndex(questions: Question[], answeredKeys: Set<string>): number {

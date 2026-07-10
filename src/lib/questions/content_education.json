@@ -5,7 +5,8 @@
     "subtext": "e.g., '15-minute weeknight dinners for parents of picky eaters.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "A specific topic and audience lets us judge how crowded the space is and who you're actually competing with."
   },
   {
     "key": "content_delivery_format",
@@ -18,7 +19,14 @@
       "A mix of content and live sessions"
     ],
     "required": true,
-    "maps_to": "idea.sales_channel"
+    "maps_to": "idea.sales_channel",
+    "why": "How you deliver this changes your whole cost and revenue model — published content, courses and live sessions all work differently.",
+    "option_notes": {
+      "Published content (videos, podcast, newsletter, blog)": "We'll focus on audience growth, ad/sponsorship rates and content-based monetisation for your report.",
+      "Online course or paid community": "We'll look at course pricing benchmarks, platform costs and what it takes to launch and fill a cohort.",
+      "Live sessions I deliver (one-on-one or small group)": "We'll focus on session pricing, your time capacity and how you'll book and retain clients.",
+      "A mix of content and live sessions": "We'll cover both audience-building and session delivery, since you're combining the two."
+    }
   },
   {
     "key": "content_primary_monetisation",
@@ -34,7 +42,17 @@
       "Merch"
     ],
     "required": true,
-    "maps_to": "monetisation.primary_channel"
+    "maps_to": "monetisation.primary_channel",
+    "why": "Your main way of making money shapes what revenue benchmarks and platform costs we research for you.",
+    "option_notes": {
+      "Ads": "We'll look at ad rates for your niche and the audience size you'd realistically need to earn from them.",
+      "Sponsorships": "We'll research typical sponsorship rates for your audience size and how brands usually find creators like you.",
+      "Paid subscription": "We'll cover subscription pricing benchmarks, churn and what it takes to keep paying members.",
+      "Course sales": "We'll look at course pricing, launch strategies and what converts an audience into paying students.",
+      "Coaching / consulting": "We'll focus on hourly or package pricing and how you'll find and convert one-on-one clients.",
+      "Affiliate": "We'll look at typical affiliate commission rates and how much traffic or audience you need to make it worthwhile.",
+      "Merch": "We'll cover production costs, minimum order quantities and the margins on physical merchandise."
+    }
   },
   {
     "key": "content_secondary_monetisation",
@@ -51,7 +69,18 @@
       "Merch"
     ],
     "required": false,
-    "maps_to": "monetisation.secondary_channel"
+    "maps_to": "monetisation.secondary_channel",
+    "why": "Knowing if you're stacking revenue streams changes how we model your overall income potential.",
+    "option_notes": {
+      "None": "We'll model your numbers around a single revenue stream, keeping projections simple and realistic.",
+      "Ads": "We'll add ad revenue as a smaller secondary line alongside your main income source.",
+      "Sponsorships": "We'll factor in sponsorship income as a secondary stream on top of your primary model.",
+      "Paid subscription": "We'll factor in subscription income as an added stream on top of your primary model.",
+      "Course sales": "We'll factor in course revenue as a secondary stream alongside your main income source.",
+      "Coaching / consulting": "We'll factor in coaching income as a secondary stream alongside your main income source.",
+      "Affiliate": "We'll factor in affiliate income as a smaller secondary stream on top of your main model.",
+      "Merch": "We'll factor in merch revenue as a secondary stream, alongside production costs and margins."
+    }
   },
   {
     "key": "content_existing_content",
@@ -65,6 +94,7 @@
     ],
     "required": true,
     "maps_to": "resource.existing_content",
+    "why": "How much you've already published tells us whether to focus on starting from zero or growing an existing audience.",
     "show_if": {
       "key": "content_delivery_format",
       "in": [
@@ -82,6 +112,7 @@
     "options": ["None yet", "Under 1k", "1k–10k", "10k–100k", "100k+"],
     "required": true,
     "maps_to": "resource.audience_size",
+    "why": "Audience size is one of the biggest levers on how fast you could monetise — it changes our growth timeline assumptions.",
     "show_if": {
       "key": "content_delivery_format",
       "in": [
@@ -98,6 +129,12 @@
     "options": ["Online (video calls)", "In person", "Both online and in person"],
     "required": true,
     "maps_to": "cost.fulfilment_model",
+    "why": "Whether sessions happen online or in person changes your costs, your reach and how many clients you can realistically serve.",
+    "option_notes": {
+      "Online (video calls)": "We'll skip travel and venue costs and focus on the tools and platforms you'll need to run sessions.",
+      "In person": "We'll factor in travel, venue or space costs and the geographic limits on how many clients you can serve.",
+      "Both online and in person": "We'll cover both the tools you need online and the travel/venue costs for in-person sessions."
+    },
     "show_if": {
       "key": "content_delivery_format",
       "in": [
@@ -113,6 +150,13 @@
     "options": ["Per single session", "Session packages", "Monthly subscription/retainer", "Not sure yet"],
     "required": true,
     "maps_to": "price.model",
+    "why": "How you price sessions changes your cash flow and how we model your revenue over time.",
+    "option_notes": {
+      "Per single session": "We'll model revenue session-by-session and look at typical one-off pricing in your field.",
+      "Session packages": "We'll look at package pricing and how bundling affects your cash flow and client commitment.",
+      "Monthly subscription/retainer": "We'll model steady recurring revenue and typical retainer pricing for your field.",
+      "Not sure yet": "We'll show you a couple of common pricing approaches so you can decide once you've seen the numbers."
+    },
     "show_if": {
       "key": "content_delivery_format",
       "in": [
@@ -127,6 +171,7 @@
     "input_type": "select",
     "options": ["Evenings/weekends only", "Part-time (~20 hrs)", "Full-time"],
     "required": true,
-    "maps_to": "idea.time_commitment"
+    "maps_to": "idea.time_commitment",
+    "why": "How much time you can put in each week shapes how realistic our growth and income timeline is."
   }
 ]

@@ -5,7 +5,8 @@
     "subtext": "e.g., 'Weekly residential lawn mowing including edging and green-waste removal.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.differentiator"
+    "maps_to": "market.differentiator",
+    "why": "A specific description of your service lets us judge demand and find realistic local competitors."
   },
   {
     "key": "service_area_scope",
@@ -18,7 +19,14 @@
       "Regional (multiple towns)"
     ],
     "required": true,
-    "maps_to": "market.service_area_scope"
+    "maps_to": "market.service_area_scope",
+    "why": "How wide an area you'll serve changes your travel time, how many competitors you're up against, and how big the market is.",
+    "option_notes": {
+      "Single suburb / neighbourhood": "We'll keep competitor and demand research tight and local, with minimal travel time built in.",
+      "City-wide": "We'll widen the competitor search and factor in more travel time between jobs.",
+      "Metro + surrounds (up to ~50km)": "We'll factor in longer travel times and a broader, more competitive local market.",
+      "Regional (multiple towns)": "We'll factor in significant travel between towns and a more spread-out, lower-density customer base."
+    }
   },
   {
     "key": "service_target_customer",
@@ -26,7 +34,8 @@
     "subtext": "e.g., 'Busy families with front-and-back yards in single-storey homes.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "A clear picture of your ideal customer sharpens the demand and pricing research in your report."
   },
   {
     "key": "service_pricing_model",
@@ -40,7 +49,15 @@
       "Package (bundle of visits)"
     ],
     "required": true,
-    "maps_to": "price.model"
+    "maps_to": "price.model",
+    "why": "How you charge changes your cash flow and what pricing benchmarks we compare you against.",
+    "option_notes": {
+      "Per hour": "We'll compare you against typical hourly rates in your trade and area.",
+      "Per visit / per job (flat)": "We'll look at typical flat per-job pricing so you're not under- or over-charging.",
+      "Per project (quoted)": "We'll cover how to scope and quote jobs accurately, since pricing varies job to job.",
+      "Monthly subscription / retainer": "We'll model steady recurring revenue and typical retainer pricing in your trade.",
+      "Package (bundle of visits)": "We'll look at how bundled pricing affects your cash flow and customer commitment."
+    }
   },
   {
     "key": "service_target_price",
@@ -48,7 +65,8 @@
     "subtext": "Whatever fits the model above — hourly rate, per-job fee, monthly retainer. Leave blank if unsure.",
     "input_type": "number",
     "required": false,
-    "maps_to": "price.target_price"
+    "maps_to": "price.target_price",
+    "why": "Your target price tells us if you're pricing in line with the local market. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "service_time_commitment",
@@ -56,7 +74,8 @@
     "input_type": "select",
     "options": ["Evenings/weekends only", "Part-time (~20 hrs)", "Full-time"],
     "required": true,
-    "maps_to": "idea.time_commitment"
+    "maps_to": "idea.time_commitment",
+    "why": "How much time you can commit each week shapes how many clients or jobs are realistic to take on."
   },
   {
     "key": "service_startup_capital",
@@ -65,6 +84,7 @@
     "input_type": "select",
     "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
     "required": true,
-    "maps_to": "cost.startup_capital"
+    "maps_to": "cost.startup_capital",
+    "why": "Your budget shapes what tools and insurance are realistic from day one. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   }
 ]

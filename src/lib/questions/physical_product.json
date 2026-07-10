@@ -12,7 +12,15 @@
       "Mix of local + online"
     ],
     "required": true,
-    "maps_to": "idea.sales_channel"
+    "maps_to": "idea.sales_channel",
+    "why": "How you sell changes almost everything else we ask — permits, costs and competitors differ between markets, wholesale and online.",
+    "option_notes": {
+      "Weekend markets / pop-ups": "We'll include market stall fees, vendor permits and what similar stalls charge in your area.",
+      "Wholesale to local shops": "We'll look at wholesale margins, minimum order quantities and how to approach local retailers.",
+      "Own online store": "We'll focus on platform costs, shipping and how to get your first online customers — no local permits needed.",
+      "Marketplace (Etsy / eBay)": "We'll cover marketplace fees, listing optimisation and how buyers there discover and compare products.",
+      "Mix of local + online": "We'll cover both local set-up costs and online selling costs, since you're splitting effort across channels."
+    }
   },
   {
     "key": "founder_location_region",
@@ -24,7 +32,8 @@
     "show_if": {
       "key": "product_sales_channel",
       "in": ["Weekend markets / pop-ups", "Wholesale to local shops", "Mix of local + online"]
-    }
+    },
+    "why": "Local pricing, permits and competitor research are sharper with a city or region than with just a country."
   },
   {
     "key": "product_home_based",
@@ -38,7 +47,14 @@
       "Online only (fulfilled from home)"
     ],
     "required": true,
-    "maps_to": "cost.production_location"
+    "maps_to": "cost.production_location",
+    "why": "Where you make and sell from changes what permits and inspections you'll need, and how big your cost base is.",
+    "option_notes": {
+      "Home kitchen / workshop only": "We'll check home-business and food/safety permit rules for your area, and keep your cost base low.",
+      "Home workshop plus market stall / pop-up": "We'll cover home production rules plus stall fees and any extra permits for selling in public.",
+      "Rented commercial space": "We'll factor in rent, commercial fit-out and the compliance rules that come with a dedicated premises.",
+      "Online only (fulfilled from home)": "We'll skip market and retail permits and focus on shipping, packaging and online set-up costs."
+    }
   },
   {
     "key": "product_specific_focus",
@@ -46,7 +62,8 @@
     "subtext": "e.g., 'dogs with anxiety', 'coffee drinkers who like fruity notes', 'cyclists commuting in the rain'.",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "The more specific your target customer, the sharper we can make the marketing and demand research in your report."
   },
   {
     "key": "product_materials",
@@ -54,7 +71,8 @@
     "subtext": "Free text is fine — e.g., '500g oat flour, 2 eggs, 400g pumpkin, 200g peanut butter'.",
     "input_type": "text",
     "required": true,
-    "maps_to": "cost.materials"
+    "maps_to": "cost.materials",
+    "why": "Your ingredient list drives the cost-per-batch numbers in your report. Rough numbers are fine — the report refines these with real local prices."
   },
   {
     "key": "product_equipment_owned",
@@ -72,7 +90,8 @@
       "Refrigeration / cold storage"
     ],
     "required": true,
-    "maps_to": "cost.equipment_owned"
+    "maps_to": "cost.equipment_owned",
+    "why": "This tells us your realistic starting costs — equipment you already own doesn't need to be bought again."
   },
   {
     "key": "product_equipment_wattage",
@@ -80,7 +99,8 @@
     "subtext": "Check the label on your oven or dehydrator. If unsure, a domestic oven is ~1800–2400W.",
     "input_type": "number",
     "required": true,
-    "maps_to": "cost.equipment_wattage"
+    "maps_to": "cost.equipment_wattage",
+    "why": "Power draw feeds your running-cost estimate per batch. Rough numbers are fine — the report refines these with real local prices."
   },
   {
     "key": "product_active_minutes",
@@ -88,7 +108,8 @@
     "subtext": "Only the time you're actually mixing, shaping, packaging — not oven time.",
     "input_type": "number",
     "required": true,
-    "maps_to": "cost.active_minutes_per_batch"
+    "maps_to": "cost.active_minutes_per_batch",
+    "why": "Hands-on time is what your hourly rate gets multiplied by — it's a core input to your unit economics."
   },
   {
     "key": "product_batch_yield",
@@ -96,7 +117,8 @@
     "subtext": "e.g., '40 packs of treats', '24 bottles of sauce'.",
     "input_type": "number",
     "required": true,
-    "maps_to": "cost.batch_yield"
+    "maps_to": "cost.batch_yield",
+    "why": "How many units come out of a batch is what spreads your costs across — it's central to your per-unit price."
   },
   {
     "key": "product_hourly_rate",
@@ -104,6 +126,7 @@
     "subtext": "In your local currency. If you're not sure, pick a number you'd accept for a casual job locally.",
     "input_type": "number",
     "required": true,
-    "maps_to": "cost.hourly_rate"
+    "maps_to": "cost.hourly_rate",
+    "why": "What you pay yourself per hour is a core input to your numbers. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   }
 ]

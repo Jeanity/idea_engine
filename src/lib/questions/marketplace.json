@@ -5,7 +5,8 @@
     "subtext": "e.g., 'Independent dog walkers who want extra weekend income.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "Clearly defining your supply side shapes the research into how you'll recruit and retain them."
   },
   {
     "key": "market_side_b",
@@ -13,7 +14,8 @@
     "subtext": "e.g., 'Dog owners in Chicago who work long hours and need a mid-day walk.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.differentiator"
+    "maps_to": "market.differentiator",
+    "why": "Clearly defining your demand side shapes the research into how you'll reach and convert them."
   },
   {
     "key": "market_monetisation_model",
@@ -27,7 +29,15 @@
       "Payment processing fee"
     ],
     "required": true,
-    "maps_to": "price.model"
+    "maps_to": "price.model",
+    "why": "How you make money on each transaction is the core of your revenue model and what benchmarks we compare you against.",
+    "option_notes": {
+      "Take rate (commission on each transaction)": "We'll benchmark typical commission rates for marketplaces like yours.",
+      "Subscription (from one or both sides)": "We'll look at subscription pricing and what it takes to get users to commit upfront.",
+      "Listing fee": "We'll look at typical listing fee levels and how they affect supply-side willingness to join.",
+      "Featured / promoted listings": "We'll treat this as an add-on revenue layer and look at typical promoted-listing pricing.",
+      "Payment processing fee": "We'll look at typical payment processing margins and the volume you'd need for it to add up."
+    }
   },
   {
     "key": "market_take_rate",
@@ -35,7 +45,8 @@
     "subtext": "Number between 0 and 100. Skip if you're not using commissions.",
     "input_type": "number",
     "required": false,
-    "maps_to": "price.take_rate_pct"
+    "maps_to": "price.take_rate_pct",
+    "why": "Your commission percentage drives the revenue model in your report. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "market_free_tier_shape",
@@ -43,7 +54,8 @@
     "subtext": "Marketplaces often make one side free to solve the chicken-and-egg problem.",
     "input_type": "text",
     "required": false,
-    "maps_to": "monetisation.free_tier_shape"
+    "maps_to": "monetisation.free_tier_shape",
+    "why": "Knowing which side is free helps us judge how you'll solve the chicken-and-egg problem most marketplaces face."
   },
   {
     "key": "market_geographic_scope",
@@ -56,7 +68,14 @@
       "Global"
     ],
     "required": true,
-    "maps_to": "market.geographic_scope"
+    "maps_to": "market.geographic_scope",
+    "why": "Where the marketplace operates changes how big a market we size, and what compliance and payments complexity you'll face.",
+    "option_notes": {
+      "One city": "We'll keep the market sizing tight and focus on local liquidity between supply and demand.",
+      "One country": "We'll size the market nationally and factor in a single set of compliance and payments rules.",
+      "English-speaking countries": "We'll widen the market sizing and flag the extra complexity of multiple countries' rules.",
+      "Global": "We'll size the market broadly and flag the compliance, currency and payments complexity of going worldwide."
+    }
   },
   {
     "key": "market_tech_capability",
@@ -69,6 +88,13 @@
       "I'll hire / outsource development"
     ],
     "required": true,
-    "maps_to": "resource.tech_capability"
+    "maps_to": "resource.tech_capability",
+    "why": "Who's building the platform changes your build costs, timeline and technical risk.",
+    "option_notes": {
+      "I code it myself": "We'll assume low cash build costs but factor in your own time as the main constraint.",
+      "I have a technical co-founder": "We'll assume low cash build costs, with two people's time as the main constraint.",
+      "No-code tools": "We'll factor in platform subscription costs and the limits no-code tools put on customisation.",
+      "I'll hire / outsource development": "We'll factor in developer costs and the time it takes to brief and manage outsourced work."
+    }
   }
 ]

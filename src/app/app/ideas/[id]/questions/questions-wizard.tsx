@@ -15,6 +15,10 @@ interface Question {
   required: boolean
   maps_to?: string
   show_if?: { key: string; in: string[] }
+  /** Short "Why we ask" explanation, revealed via a click-to-expand link. */
+  why?: string | null
+  /** Per-option consequence notes, keyed by the RAW option text (pre-localisation). */
+  option_notes?: Record<string, string>
 }
 
 // Absolute indices (into the full `questions` array) of questions currently
@@ -48,6 +52,35 @@ const MONEY_MAPS_TO = new Set([
 function localiseCurrency(text: string, symbol: string): string {
   if (!symbol || symbol === '$') return text
   return text.replace(/(?<![A-Za-z])\$/g, symbol)
+}
+
+// option_notes is keyed by the RAW option text (see Question.option_notes),
+// but the value actually displayed/stored is the localised string produced
+// by localiseCurrency above. Resolve a stored/displayed value back to its
+// raw counterpart via its positional index in q.options.
+function noteForValue(q: Question, localisedOptions: string[] | undefined, value: string): string | undefined {
+  if (!q.option_notes || !q.options || !localisedOptions) return undefined
+  const idx = localisedOptions.indexOf(value)
+  if (idx === -1) return undefined
+  const raw = q.options[idx]
+  return raw !== undefined ? q.option_notes[raw] : undefined
+}
+
+// Resolves notes for whichever option(s) are currently selected — a single
+// value for select, an array for multiselect. Only entries with a note are
+// returned, in the order the values were selected.
+function optionNotesForValue(
+  q: Question,
+  localisedOptions: string[] | undefined,
+  value: string | string[]
+): Array<{ label: string; note: string }> {
+  if (!q.option_notes) return []
+  const values = Array.isArray(value) ? value : value ? [value] : []
+  return values.reduce<Array<{ label: string; note: string }>>((acc, v) => {
+    const note = noteForValue(q, localisedOptions, v)
+    if (note) acc.push({ label: v, note })
+    return acc
+  }, [])
 }
 
 interface ExistingAnswer {
@@ -188,6 +221,9 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   const [currentValue, setCurrentValue] = useState<string | string[]>('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [editLimitMessage, setEditLimitMessage] = useState<string | null>(null)
+  // Whether the "Why we're asking" disclosure is expanded for the current
+  // question — reset whenever the wizard moves to a different question.
+  const [whyOpen, setWhyOpen] = useState(false)
   // Tracks which currentIndex the input state was last synced for, so we can
   // re-derive currentValue/validationError during render (see below) instead
   // of in an effect.
@@ -387,6 +423,7 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
     setSyncedIndex(currentIndex)
     setCurrentValue(parseValue(q, answers.get(q.key) ?? ''))
     setValidationError(null)
+    setWhyOpen(false)
   }
 
   // Progress/navigation are computed over *visible* questions only — hidden
@@ -406,6 +443,10 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
   const localisedOptions = q.options && currencySymbol
     ? q.options.map(o => localiseCurrency(o, currencySymbol))
     : q.options
+  // Consequence feedback for the currently selected option(s) — always shown
+  // when present (not gated behind the "why" disclosure), and updates live
+  // as the selection changes.
+  const optionNoteEntries = optionNotesForValue(q, localisedOptions, currentValue)
 
   return (
     <div className="space-y-8">
@@ -488,6 +529,43 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
             >
               Generate report now →
             </button>
+          </div>
+        )}
+
+        {/* "Why we ask" — click-to-reveal, collapsed by default and reset on
+            every question change. Questions without `why` render no link. */}
+        {q.why && (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setWhyOpen(v => !v)}
+              aria-expanded={whyOpen}
+              className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
+            >
+              Why we&apos;re asking
+            </button>
+            {whyOpen && (
+              <div className="mt-2 rounded-lg border border-white/10 bg-white/5 light:bg-gray-50 light:border-gray-200 px-4 py-3">
+                <p className="text-xs text-slate-400 light:text-gray-500 leading-relaxed">{q.why}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Option notes — consequence feedback for the current selection,
+            not help text, so it appears automatically (never behind a click). */}
+        {optionNoteEntries.length > 0 && (
+          <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-500/5 light:bg-indigo-50 light:border-indigo-100 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 light:text-indigo-600">
+              What this means for your report
+            </p>
+            <div className="mt-1 space-y-1">
+              {optionNoteEntries.map(entry => (
+                <p key={entry.label} className="text-xs text-slate-300 light:text-gray-700">
+                  {q.input_type === 'multiselect' ? `${entry.label} — ${entry.note}` : entry.note}
+                </p>
+              ))}
+            </div>
           </div>
         )}
       </div>

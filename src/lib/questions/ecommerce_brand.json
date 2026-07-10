@@ -5,14 +5,16 @@
     "subtext": "e.g., 'People buying gifts for iPhone-owning teens, in the US and UK.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "A clear picture of your ideal customer sharpens the market-size and marketing-channel research in your report."
   },
   {
     "key": "ecom_differentiator",
     "text": "What makes your product different from what's already for sale online?",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.differentiator"
+    "maps_to": "market.differentiator",
+    "why": "What makes you different from existing sellers is central to whether your report can find a real opening in the market."
   },
   {
     "key": "ecom_fulfilment_model",
@@ -26,7 +28,15 @@
       "White-label supplier + own storage"
     ],
     "required": true,
-    "maps_to": "cost.fulfilment_model"
+    "maps_to": "cost.fulfilment_model",
+    "why": "How orders get made and shipped drives your margins, lead times and how much cash you need up front.",
+    "option_notes": {
+      "Print-on-demand": "We'll focus on per-unit costs and margins, since there's no inventory risk or upfront stock to buy.",
+      "Dropship from supplier": "We'll look at supplier margins, shipping times and the risks of not controlling your own stock.",
+      "Own inventory, ship from home": "We'll factor in upfront stock costs, storage space and the time you'll spend packing orders.",
+      "3PL warehouse": "We'll factor in warehouse and pick-pack fees alongside your product costs and margins.",
+      "White-label supplier + own storage": "We'll cover supplier minimums, storage costs and the margin benefit of a branded product."
+    }
   },
   {
     "key": "ecom_sales_channel",
@@ -39,7 +49,14 @@
       "Multiple channels (own site + marketplace)"
     ],
     "required": true,
-    "maps_to": "idea.sales_channel"
+    "maps_to": "idea.sales_channel",
+    "why": "Where you sell changes your fee structure, how customers find you, and how much control you have over pricing and branding.",
+    "option_notes": {
+      "Own Shopify store": "We'll focus on platform and payment fees, and how you'll drive traffic without a marketplace's built-in audience.",
+      "Etsy / marketplace only": "We'll cover marketplace fees and how buyers discover and compare listings there.",
+      "Amazon FBA": "We'll factor in FBA storage and fulfilment fees, plus how Amazon's search and reviews affect visibility.",
+      "Multiple channels (own site + marketplace)": "We'll cover fees and dynamics across each channel, since you're splitting sales between them."
+    }
   },
   {
     "key": "ecom_unit_cost_estimate",
@@ -47,7 +64,8 @@
     "subtext": "Include product + supplier shipping to you. Local currency. If you don't know yet, leave blank.",
     "input_type": "number",
     "required": false,
-    "maps_to": "cost.unit_cost_estimate"
+    "maps_to": "cost.unit_cost_estimate",
+    "why": "Your landed cost per unit is the base your margins are calculated from. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "ecom_packaging_per_unit",
@@ -55,14 +73,16 @@
     "subtext": "Box or mailer + inserts + tape. Rough is fine. Leave blank for print-on-demand.",
     "input_type": "number",
     "required": false,
-    "maps_to": "cost.packaging_per_unit"
+    "maps_to": "cost.packaging_per_unit",
+    "why": "Packaging cost adds directly to your cost per unit. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "ecom_target_price",
     "text": "What retail price do you have in mind (per unit, local currency)?",
     "input_type": "number",
     "required": false,
-    "maps_to": "price.target_price"
+    "maps_to": "price.target_price",
+    "why": "Your target price, set against your costs, is what determines your margin. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "ecom_geographic_scope",
@@ -75,7 +95,14 @@
       "Global (wherever the fulfilment supports)"
     ],
     "required": true,
-    "maps_to": "market.geographic_scope"
+    "maps_to": "market.geographic_scope",
+    "why": "How widely you plan to ship changes your shipping costs, customs rules and how big a market we size for you.",
+    "option_notes": {
+      "My country only": "We'll keep shipping and compliance research local and skip cross-border customs and duties.",
+      "My country + neighbouring countries": "We'll factor in cross-border shipping costs and basic customs rules for nearby countries.",
+      "English-speaking countries": "We'll widen the market sizing and look at shipping costs and rules across those countries.",
+      "Global (wherever the fulfilment supports)": "We'll size the market broadly and flag the customs and currency complexity of shipping worldwide."
+    }
   },
   {
     "key": "ecom_startup_capital",
@@ -84,6 +111,7 @@
     "input_type": "select",
     "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
     "required": true,
-    "maps_to": "cost.startup_capital"
+    "maps_to": "cost.startup_capital",
+    "why": "Your starting budget shapes what's realistic now versus later. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   }
 ]

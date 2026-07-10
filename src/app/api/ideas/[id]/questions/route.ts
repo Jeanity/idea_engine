@@ -21,6 +21,7 @@ const SUCCESS_QUESTION: Question = {
   ],
   required: false,
   maps_to: 'founder.success_definition',
+  why: "This shapes how we frame the opportunity — a side-income idea gets judged differently than one meant to replace your job.",
 }
 
 // Asked for every idea regardless of archetype. Location moved out of the
@@ -35,6 +36,7 @@ const COUNTRY_QUESTION: Question = {
   input_type: 'country',
   required: true,
   maps_to: 'founder.location_country',
+  why: "Legal rules, permits, funding options and costs all depend on where you are — this makes sure your report is grounded in your country's rules, not generic advice.",
 }
 
 // Only asked for archetypes where the answer materially changes the research
@@ -51,6 +53,7 @@ const REGION_QUESTION: Question = {
   input_type: 'text',
   required: false,
   maps_to: 'founder.location_region',
+  why: "Knowing your city or region lets us pull in local competitors, pricing and setup costs instead of generic national averages.",
 }
 
 function loadBank(archetype: string) {

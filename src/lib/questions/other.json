@@ -4,20 +4,23 @@
     "text": "What problem does this solve?",
     "input_type": "text",
     "required": true,
-    "maps_to": "fallback.problem"
+    "maps_to": "fallback.problem",
+    "why": "A clear problem statement is the foundation everything else in your report gets built on."
   },
   {
     "key": "other_customer",
     "text": "Who is the customer?",
     "input_type": "text",
     "required": true,
-    "maps_to": "fallback.customer"
+    "maps_to": "fallback.customer",
+    "why": "Knowing who has this problem shapes the market and demand research in your report."
   },
   {
     "key": "other_money_model",
     "text": "How would you make money from it?",
     "input_type": "text",
     "required": true,
-    "maps_to": "fallback.money_model"
+    "maps_to": "fallback.money_model",
+    "why": "How you'd make money from this shapes the financial modelling in your report."
   }
 ]

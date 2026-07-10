@@ -93,6 +93,82 @@ describe('validateQuestion', () => {
   })
 })
 
+// ── validateQuestion: why / option_notes ───────────────────────
+
+describe('validateQuestion why/option_notes handling', () => {
+  const validBase = {
+    key: 'test_key',
+    text: 'What is your answer?',
+    input_type: 'text',
+    required: false,
+    maps_to: 'fallback.problem',
+  }
+
+  it('passes through a valid why string, trimmed', () => {
+    const q = { ...validBase, why: '  This explains why we ask, in plain English.  ' }
+    const result = validateQuestion(q, [], [])
+    expect(result?.why).toBe('This explains why we ask, in plain English.')
+  })
+
+  it('accepts a why at the minimum length (6 chars)', () => {
+    const q = { ...validBase, why: '123456' }
+    expect(validateQuestion(q, [], [])?.why).toBe('123456')
+  })
+
+  it('accepts a why at the maximum length (300 chars)', () => {
+    const why = 'x'.repeat(300)
+    const q = { ...validBase, why }
+    expect(validateQuestion(q, [], [])?.why).toBe(why)
+  })
+
+  it('drops a why that is too short', () => {
+    const q = { ...validBase, why: 'hi' }
+    const result = validateQuestion(q, [], [])
+    expect(result).not.toBeNull()
+    expect(result?.why).toBeUndefined()
+  })
+
+  it('drops a why that is too long (over 300 chars)', () => {
+    const q = { ...validBase, why: 'x'.repeat(301) }
+    const result = validateQuestion(q, [], [])
+    expect(result?.why).toBeUndefined()
+  })
+
+  it('drops a non-string why', () => {
+    const q = { ...validBase, why: 12345 }
+    const result = validateQuestion(q, [], [])
+    expect(result).not.toBeNull()
+    expect(result?.why).toBeUndefined()
+  })
+
+  it('drops a null why', () => {
+    const q = { ...validBase, why: null }
+    const result = validateQuestion(q, [], [])
+    expect(result).not.toBeNull()
+    expect(result?.why).toBeUndefined()
+  })
+
+  it('omits why entirely when not provided', () => {
+    const result = validateQuestion(validBase, [], [])
+    expect(result).not.toBeNull()
+    expect('why' in (result as object)).toBe(false)
+  })
+
+  it('strips option_notes from dynamic questions even when present', () => {
+    const q = {
+      ...validBase,
+      key: 'q_sel',
+      input_type: 'select',
+      options: ['A', 'B'],
+      maps_to: 'fallback.customer',
+      option_notes: { A: 'Note for A', B: 'Note for B' },
+    }
+    const result = validateQuestion(q, [], [])
+    expect(result).not.toBeNull()
+    expect(result?.option_notes).toBeUndefined()
+  })
+})
+
 // ── ALL_MAPS_TO_KEYS ──────────────────────────────────────────
 
 describe('ALL_MAPS_TO_KEYS', () => {

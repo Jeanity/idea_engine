@@ -12,7 +12,8 @@ Each question object MUST conform to this schema exactly:
   "input_type": "text | select | number | multiselect",
   "options": ["string"] — REQUIRED if input_type is select or multiselect, FORBIDDEN otherwise,
   "required": false,
-  "maps_to": "string — MUST be from the allowed_maps_to list, NOT in used_maps_to"
+  "maps_to": "string — MUST be from the allowed_maps_to list, NOT in used_maps_to",
+  "why": "string or null — one plain sentence explaining why this answer improves the report, max 200 chars"
 }
 
 Rules:
@@ -23,6 +24,7 @@ Rules:
 - Max 3 items. Return fewer if they'd be better — a focused 1 beats a padded 3.
 - Return [] if the static answers already paint a rich picture.
 - Each option in a select/multiselect: 1–60 chars, unique, minimum 2 options.
+- why is optional; write it in plain English with no hype.
 - BUSINESS MODEL CHECK: the static price/monetisation question offers a fixed set of options (e.g. subscription, one-off, commission). If the founder's chosen option doesn't cleanly fit their idea, or the idea's own description implies a different revenue model than what they picked (e.g. they picked "subscription" but described a one-off service, or picked a generic option but the idea is clearly commission/marketplace-shaped), do NOT silently assume subscription or any other default. Add a follow-up question that clarifies the actual business model in their own words — e.g. asking them to describe exactly how money changes hands for one transaction — rather than letting the report synthesis guess.`
 
 export interface DynamicQuestionInput {

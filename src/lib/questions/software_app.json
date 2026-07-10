@@ -5,14 +5,16 @@
     "subtext": "e.g., 'Freelance designers who juggle 3–10 clients at once.'",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.target_customer"
+    "maps_to": "market.target_customer",
+    "why": "A specific target user sharpens the competitor and market-size research in your report."
   },
   {
     "key": "app_differentiator",
     "text": "What does your app do that existing tools don't?",
     "input_type": "text",
     "required": true,
-    "maps_to": "market.differentiator"
+    "maps_to": "market.differentiator",
+    "why": "What sets your app apart from existing tools is central to whether your report finds a real opening in the market."
   },
   {
     "key": "app_monetisation_model",
@@ -30,7 +32,19 @@
       "Commission / % per transaction"
     ],
     "required": true,
-    "maps_to": "price.model"
+    "maps_to": "price.model",
+    "why": "How users pay changes your revenue model, churn risk and what pricing benchmarks we compare you against.",
+    "option_notes": {
+      "Monthly subscription": "We'll benchmark monthly SaaS pricing and factor in ongoing churn as a key risk.",
+      "Annual subscription": "We'll benchmark annual pricing and the discount typically needed to get people to commit upfront.",
+      "One-time license": "We'll model a one-off payment per customer, with no recurring revenue to fall back on.",
+      "Freemium + paid tier": "We'll look at typical free-to-paid conversion rates, since most users may never pay.",
+      "Free with ads": "We'll focus on the user volume you'd need for ad revenue to be worthwhile.",
+      "Per-seat (team plans)": "We'll benchmark per-seat pricing and factor in how you'll sell into teams, not just individuals.",
+      "Usage-based / metered": "We'll look at typical usage-based pricing and how revenue scales with how much people use it.",
+      "One-off purchase per report / item / project": "We'll model per-transaction revenue and what volume you'd need to add up.",
+      "Commission / % per transaction": "We'll benchmark typical commission rates and the transaction volume you'd need."
+    }
   },
   {
     "key": "app_free_tier_shape",
@@ -38,7 +52,8 @@
     "subtext": "Skip if you're not doing free.",
     "input_type": "text",
     "required": false,
-    "maps_to": "monetisation.free_tier_shape"
+    "maps_to": "monetisation.free_tier_shape",
+    "why": "What's free versus paid shapes how we model your conversion funnel and revenue."
   },
   {
     "key": "app_target_price",
@@ -46,7 +61,8 @@
     "subtext": "Per month if subscription, per item/report if one-off, per seat if team pricing — whichever fits the payment model you picked.",
     "input_type": "number",
     "required": false,
-    "maps_to": "price.target_price"
+    "maps_to": "price.target_price",
+    "why": "Your target price tells us if you're pricing in line with similar tools. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
   {
     "key": "app_tech_capability",
@@ -59,7 +75,14 @@
       "I'll hire / outsource development"
     ],
     "required": true,
-    "maps_to": "resource.tech_capability"
+    "maps_to": "resource.tech_capability",
+    "why": "Who's building it changes your build costs, timeline and technical risk.",
+    "option_notes": {
+      "I code it myself": "We'll assume low cash build costs but factor in your own time as the main constraint.",
+      "I have a technical co-founder": "We'll assume low cash build costs, with two people's time as the main constraint.",
+      "No-code tools": "We'll factor in platform subscription costs and the limits no-code tools put on customisation.",
+      "I'll hire / outsource development": "We'll factor in developer costs and the time it takes to brief and manage outsourced work."
+    }
   },
   {
     "key": "app_geographic_scope",
@@ -72,6 +95,13 @@
       "Global"
     ],
     "required": true,
-    "maps_to": "market.geographic_scope"
+    "maps_to": "market.geographic_scope",
+    "why": "Where your users are changes how big a market we size and what compliance or localisation work you'll need.",
+    "option_notes": {
+      "My local city": "We'll keep the market sizing tight and focus on local discovery and word of mouth.",
+      "My country": "We'll size the market nationally and keep compliance and localisation to a single country's rules.",
+      "English-speaking countries": "We'll widen the market sizing and flag basic localisation needs across those countries.",
+      "Global": "We'll size the market broadly and flag the localisation, payments and compliance complexity of going worldwide."
+    }
   }
 ]
