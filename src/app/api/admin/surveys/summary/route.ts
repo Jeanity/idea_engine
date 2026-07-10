@@ -2,28 +2,37 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { callAI, HAIKU_MODEL } from '@/lib/ai'
 import { logError } from '@/lib/log-error'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 const MAX_RESPONSES = 200
 
-// On-demand AI overview of survey responses. Ephemeral — the summary is
-// returned in the response body and rendered client-side, never stored.
-export async function POST() {
+// On-demand AI overview of one survey's responses. Ephemeral — the summary
+// is returned in the response body and rendered client-side, never stored.
+export async function POST(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
   if (!isAdminEmail(user.email)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  const body = await request.json().catch(() => ({}))
+  const surveyId = typeof body.survey_id === 'string' ? body.survey_id : null
+  if (!surveyId) return NextResponse.json({ error: 'Missing survey_id.' }, { status: 400 })
+
   const service = createServiceClient()
+
+  const { data: survey } = await service.from('surveys').select('id, name').eq('id', surveyId).maybeSingle()
+  if (!survey) return NextResponse.json({ error: 'Survey not found.' }, { status: 404 })
 
   const { data: questions } = await service
     .from('survey_questions')
     .select('id, prompt, qtype')
+    .eq('survey_id', surveyId)
     .order('sort_order', { ascending: true })
 
   const { data: responses, error } = await service
     .from('survey_responses')
     .select('question_id, answer, created_at')
+    .eq('survey_id', surveyId)
     .order('created_at', { ascending: false })
     .limit(MAX_RESPONSES)
 
@@ -50,7 +59,10 @@ export async function POST() {
         'short "Notable quotes" section with 2-4 short verbatim quotes. Be specific and neutral — no ' +
         'filler, no repeating the question text back verbatim.',
       messages: [
-        { role: 'user', content: `Survey responses (most recent ${responses.length}):\n\n${transcript}\n\nSummarise the above.` },
+        {
+          role: 'user',
+          content: `Survey: "${survey.name}". Responses (most recent ${responses.length}):\n\n${transcript}\n\nSummarise the above.`,
+        },
       ],
     })
 

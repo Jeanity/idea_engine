@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Sparkles,
+  ChevronDown,
   type LucideProps,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -36,13 +37,23 @@ import { ADMIN_NAV_SEEN_EVENT } from '@/lib/admin-nav-events'
 // (Dashboard, whose href is a prefix of every sibling). `noActive` items link
 // somewhere real but never own the active pill (Analytics = the dashboard's
 // growth section). Errors (R4) is a real page once migration 009 is run.
+// `children` makes an item an expandable dropdown (Surveys): the parent row
+// toggles open/closed, children own the active pill, and the parent shows a
+// subdued highlight while any child route is active. Collapsed (icon-only)
+// mode renders just the parent icon, linking to the first child.
 // ---------------------------------------------------------------------------
+type NavChild = {
+  href: string
+  label: string
+  exact?: boolean
+}
 type NavItem = {
   href: string
   label: string
   icon: ComponentType<LucideProps>
   exact?: boolean
   noActive?: boolean
+  children?: NavChild[]
 }
 type NavGroup = { label: string; items: NavItem[] }
 
@@ -61,7 +72,15 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/app/admin/affiliates', label: 'Affiliates', icon: Handshake },
       { href: '/app/admin/offers', label: 'Offers', icon: Tag },
       { href: '/app/admin/samples', label: 'Samples', icon: BookOpen },
-      { href: '/app/admin/surveys', label: 'Surveys', icon: ClipboardList },
+      {
+        href: '/app/admin/surveys',
+        label: 'Surveys',
+        icon: ClipboardList,
+        children: [
+          { href: '/app/admin/surveys', label: 'Create survey', exact: true },
+          { href: '/app/admin/surveys/analytics', label: 'Analytics' },
+        ],
+      },
       { href: '/app/admin/feedback', label: 'Feedback', icon: MessageSquare },
       { href: '/app/admin/contact', label: 'Contact', icon: Mail },
       { href: '/app/admin/templates', label: 'Templates', icon: LayoutTemplate },
@@ -86,6 +105,11 @@ function isItemActive(item: NavItem, pathname: string): boolean {
   if (item.noActive) return false
   if (item.exact) return pathname === item.href
   return pathname === item.href || pathname.startsWith(item.href + '/')
+}
+
+function isChildActive(child: NavChild, pathname: string): boolean {
+  if (child.exact) return pathname === child.href
+  return pathname === child.href || pathname.startsWith(child.href + '/')
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +220,13 @@ function pageTitle(pathname: string): string {
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
       if (item.noActive) continue
+      // Children first: the parent's index route keeps the parent label,
+      // deeper children read as "Parent — Child" (Surveys — Analytics).
+      for (const child of item.children ?? []) {
+        if (isChildActive(child, pathname)) {
+          return child.href === item.href ? item.label : `${item.label} — ${child.label}`
+        }
+      }
       if (isItemActive(item, pathname)) {
         // A user detail page reads better as "User detail" than "Users".
         if (item.href === '/app/admin/users' && pathname !== '/app/admin/users') {
@@ -296,6 +327,11 @@ function Sidebar({
   navStatus: NavStatus
   onCloseMobile: () => void
 }) {
+  // Dropdown items (Surveys): explicit open/closed choices per parent href.
+  // Absent an explicit choice, a parent auto-opens while one of its child
+  // routes is active.
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({})
+
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/10 bg-slate-900 light:border-gray-200 light:bg-white transition-transform duration-200 lg:transition-[width]
@@ -338,6 +374,89 @@ function Sidebar({
                 const hasIndicator = badge.kind !== 'none'
                 const desc = badgeDescription(item.href, navStatus)
                 const linkLabel = desc ? `${item.label}${desc}` : undefined
+
+                if (item.children) {
+                  const childIsActive = item.children.some((c) => isChildActive(c, pathname))
+                  const open = openItems[item.href] ?? childIsActive
+                  const rowClass = `group flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+                    childIsActive
+                      ? 'text-indigo-300 light:text-indigo-700'
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white light:text-gray-600 light:hover:bg-gray-100 light:hover:text-gray-900'
+                  }`
+                  return (
+                    <li key={item.href}>
+                      {/* Expanded (and the always-expanded mobile drawer): a toggle row. */}
+                      <button
+                        type="button"
+                        onClick={() => setOpenItems((prev) => ({ ...prev, [item.href]: !open }))}
+                        aria-expanded={open}
+                        aria-label={linkLabel}
+                        title={linkLabel}
+                        className={`${collapsed ? 'lg:hidden' : ''} ${rowClass}`}
+                      >
+                        <span className="relative shrink-0">
+                          <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                        </span>
+                        <span>{item.label}</span>
+                        {badge.kind === 'dot-emerald' && (
+                          <span
+                            className="animate-pulse-dot ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-400 light:bg-emerald-500"
+                            aria-hidden="true"
+                          />
+                        )}
+                        <ChevronDown
+                          className={`h-4 w-4 shrink-0 transition-transform ${badge.kind === 'dot-emerald' ? '' : 'ml-auto'} ${open ? '' : '-rotate-90'}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                      {/* Collapsed desktop: icon-only link to the first child. */}
+                      <Link
+                        href={item.children[0].href}
+                        title={linkLabel ?? item.label}
+                        aria-label={linkLabel ?? item.label}
+                        aria-current={childIsActive ? 'page' : undefined}
+                        className={`hidden ${collapsed ? 'lg:flex' : ''} items-center justify-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+                          childIsActive
+                            ? 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-50 light:text-indigo-700'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white light:text-gray-600 light:hover:bg-gray-100 light:hover:text-gray-900'
+                        }`}
+                      >
+                        <span className="relative shrink-0">
+                          <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                          {hasIndicator && (
+                            <span
+                              className="absolute -right-1 -top-1 h-2 w-2 rounded-full ring-2 ring-slate-900 light:ring-white bg-emerald-400 light:bg-emerald-500"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </span>
+                      </Link>
+                      {open && (
+                        <ul className={`${collapsed ? 'lg:hidden' : ''} mt-1 space-y-1`}>
+                          {item.children.map((child) => {
+                            const cActive = isChildActive(child, pathname)
+                            return (
+                              <li key={child.href}>
+                                <Link
+                                  href={child.href}
+                                  aria-current={cActive ? 'page' : undefined}
+                                  className={`flex items-center rounded-lg py-1.5 pl-[42px] pr-2.5 text-sm font-medium transition-colors ${
+                                    cActive
+                                      ? 'bg-indigo-500/15 text-indigo-300 light:bg-indigo-50 light:text-indigo-700'
+                                      : 'text-slate-400 hover:bg-white/5 hover:text-white light:text-gray-600 light:hover:bg-gray-100 light:hover:text-gray-900'
+                                  }`}
+                                >
+                                  {child.label}
+                                </Link>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  )
+                }
+
                 return (
                   <li key={item.href}>
                     <Link

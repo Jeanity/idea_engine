@@ -1,14 +1,15 @@
-import { createDbClient, createServiceClient } from '@/lib/db'
+import { createDbClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
-import { readSurveyConfig, validateSurveySubmission, type SurveyQuestionForValidation } from '@/lib/survey'
+import { validateSurveySubmission, type SurveyQuestionForValidation } from '@/lib/survey'
 import { isMissingTable } from '@/lib/app-settings'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Public survey submission. Uses the per-request (RLS) client for BOTH the
-// question lookup and the insert — "survey_responses: authenticated insert
-// own" (migration 014) is what actually authorises the write, not app code.
-// The service client is only used transiently to read the on/off flag
-// (app_settings has no RLS policies at all).
+// Public survey submission. Uses the per-request (RLS) client for EVERY read
+// and the insert — "surveys: public select active" (migration 025),
+// "survey_questions: public select active", and "survey_responses:
+// authenticated insert own" (migration 014) are what actually authorise the
+// operations, not app code. An inactive or nonexistent survey id is simply
+// invisible through RLS, so both collapse into the same "not open" answer.
 export async function POST(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -17,22 +18,48 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const answers = Array.isArray(body.answers) ? body.answers : []
   const reportId = typeof body.report_id === 'string' ? body.report_id : null
+  const surveyId = typeof body.survey_id === 'string' ? body.survey_id : null
+  if (!surveyId) {
+    return NextResponse.json({ error: 'Missing survey.' }, { status: 400 })
+  }
 
-  const service = createServiceClient()
-  const config = await readSurveyConfig(service)
-  if (!config.enabled) {
-    return NextResponse.json({ error: 'The survey is not currently open.' }, { status: 403 })
+  const { data: survey, error: sError } = await supabase
+    .from('surveys')
+    .select('id')
+    .eq('id', surveyId)
+    .maybeSingle()
+
+  if (sError && !isMissingTable(sError)) {
+    console.error('Error loading survey:', sError)
+    await logError({ source: 'api:survey', message: `Load survey failed: ${sError.message}`, detail: sError, path: 'POST /api/survey', userId: user.id })
+    return NextResponse.json({ error: 'Something went wrong — please try again.' }, { status: 500 })
+  }
+  if (!survey) {
+    return NextResponse.json({ error: 'This survey is not currently open.' }, { status: 403 })
+  }
+
+  // One submission per user per survey — the DB has no unique constraint on
+  // (user_id, survey_id) because a survey has many questions per user, so
+  // this pre-check is the guard. (A racing double-click could still slip
+  // through; harmless — the admin aggregates count respondents by user.)
+  const { data: existing } = await supabase
+    .from('survey_responses')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('survey_id', surveyId)
+    .limit(1)
+
+  if (existing && existing.length > 0) {
+    return NextResponse.json({ error: 'You have already answered this survey.' }, { status: 409 })
   }
 
   const { data: questions, error: qError } = await supabase
     .from('survey_questions')
     .select('id, qtype, options')
+    .eq('survey_id', surveyId)
     .eq('active', true)
 
   if (qError) {
-    if (isMissingTable(qError)) {
-      return NextResponse.json({ error: 'The survey is not currently open.' }, { status: 403 })
-    }
     console.error('Error loading survey questions:', qError)
     await logError({ source: 'api:survey', message: `Load questions failed: ${qError.message}`, detail: qError, path: 'POST /api/survey', userId: user.id })
     return NextResponse.json({ error: 'Something went wrong — please try again.' }, { status: 500 })
@@ -51,6 +78,7 @@ export async function POST(request: NextRequest) {
 
   const { error: insertError } = await supabase.from('survey_responses').insert(
     result.answers.map(a => ({
+      survey_id: surveyId,
       question_id: a.question_id,
       user_id: user.id,
       report_id: reportId,

@@ -2,7 +2,7 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
 import { isMissingTable } from '@/lib/app-settings'
-import { readSurveyConfig, writeSurveyConfig, validateQuestionFields } from '@/lib/survey'
+import { validateSurveyFields } from '@/lib/survey'
 import { NextResponse, type NextRequest } from 'next/server'
 
 async function requireAdmin() {
@@ -13,94 +13,101 @@ async function requireAdmin() {
   return { denied: null }
 }
 
-// ── Master toggle + full question list (incl. inactive) ────────────────
+// ── Everything the management page needs in one read ────────────────────
+// Groups + surveys, each survey carrying its full question list (with
+// per-question response counts, for the delete-vs-deactivate rule) and its
+// distinct-respondent count.
 export async function GET() {
   const { denied } = await requireAdmin()
   if (denied) return denied
 
   const service = createServiceClient()
 
-  const probe = await service.from('survey_questions').select('id').limit(1)
-  if (isMissingTable(probe.error)) {
+  const { data: surveys, error: sError } = await service
+    .from('surveys')
+    .select('id, name, group_id, active, placement, audience, sort_order, created_at')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (isMissingTable(sError)) {
     return NextResponse.json({ migrationMissing: true })
   }
-
-  const config = await readSurveyConfig(service)
-
-  const { data: questions, error } = await service
-    .from('survey_questions')
-    .select('id, prompt, qtype, options, sort_order, active, created_at')
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error loading survey questions:', error)
-    return NextResponse.json({ error: 'Failed to load questions.' }, { status: 500 })
+  if (sError) {
+    console.error('Error loading surveys:', sError)
+    return NextResponse.json({ error: 'Failed to load surveys.' }, { status: 500 })
   }
 
-  // Response counts per question (for the delete-vs-deactivate rule in the UI).
-  const { data: counts } = await service.from('survey_responses').select('question_id')
+  const [groupsRes, questionsRes, responsesRes] = await Promise.all([
+    service.from('survey_groups').select('id, name, created_at').order('created_at', { ascending: true }),
+    service
+      .from('survey_questions')
+      .select('id, survey_id, prompt, qtype, options, sort_order, active, created_at')
+      .order('sort_order', { ascending: true }),
+    service.from('survey_responses').select('survey_id, question_id, user_id'),
+  ])
+
+  if (groupsRes.error || questionsRes.error || responsesRes.error) {
+    console.error('Error loading survey admin data:', groupsRes.error ?? questionsRes.error ?? responsesRes.error)
+    return NextResponse.json({ error: 'Failed to load surveys.' }, { status: 500 })
+  }
+
   const countByQuestion = new Map<string, number>()
-  for (const row of counts ?? []) {
-    countByQuestion.set(row.question_id, (countByQuestion.get(row.question_id) ?? 0) + 1)
+  const usersBySurvey = new Map<string, Set<string>>()
+  for (const r of responsesRes.data ?? []) {
+    countByQuestion.set(r.question_id, (countByQuestion.get(r.question_id) ?? 0) + 1)
+    const users = usersBySurvey.get(r.survey_id) ?? new Set<string>()
+    users.add(r.user_id)
+    usersBySurvey.set(r.survey_id, users)
+  }
+
+  const questionsBySurvey = new Map<string, unknown[]>()
+  for (const q of questionsRes.data ?? []) {
+    const list = questionsBySurvey.get(q.survey_id) ?? []
+    list.push({ ...q, responseCount: countByQuestion.get(q.id) ?? 0 })
+    questionsBySurvey.set(q.survey_id, list)
   }
 
   return NextResponse.json({
     migrationMissing: false,
-    enabled: config.enabled,
-    questions: (questions ?? []).map(q => ({ ...q, responseCount: countByQuestion.get(q.id) ?? 0 })),
+    groups: groupsRes.data ?? [],
+    surveys: (surveys ?? []).map(s => ({
+      ...s,
+      questions: questionsBySurvey.get(s.id) ?? [],
+      respondentCount: usersBySurvey.get(s.id)?.size ?? 0,
+    })),
   })
 }
 
-// ── Master on/off toggle ────────────────────────────────────────────────
-export async function PATCH(request: NextRequest) {
-  const { denied } = await requireAdmin()
-  if (denied) return denied
-
-  const body = await request.json().catch(() => ({}))
-  if (typeof body.enabled !== 'boolean') {
-    return NextResponse.json({ error: 'enabled must be a boolean.' }, { status: 400 })
-  }
-
-  const service = createServiceClient()
-  const { error } = await writeSurveyConfig(service, { enabled: body.enabled })
-  if (error) {
-    console.error('Error updating survey config:', error)
-    await logError({ source: 'api:admin/surveys', message: `Update survey config failed: ${error}`, path: 'PATCH /api/admin/surveys' })
-    return NextResponse.json({ error: 'Failed to update survey settings.' }, { status: 500 })
-  }
-
-  return NextResponse.json({ ok: true })
-}
-
-// ── Create a question ───────────────────────────────────────────────────
+// ── Create a survey ──────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   const { denied } = await requireAdmin()
   if (denied) return denied
 
   const body = await request.json().catch(() => ({}))
-  const parsed = validateQuestionFields(body)
+  const parsed = validateSurveyFields(body)
   if ('error' in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
   const service = createServiceClient()
 
-  // New questions append to the end of the current sort order.
+  // New surveys append to the end of the order and start INACTIVE — Danny
+  // adds questions first, then flips them on.
   const { data: last } = await service
-    .from('survey_questions')
+    .from('surveys')
     .select('sort_order')
     .order('sort_order', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   const { data, error } = await service
-    .from('survey_questions')
-    .insert({ ...parsed, sort_order: (last?.sort_order ?? -1) + 1 })
+    .from('surveys')
+    .insert({ ...parsed, active: false, sort_order: (last?.sort_order ?? -1) + 1 })
     .select('id')
     .single()
 
   if (error) {
-    console.error('Error creating survey question:', error)
-    await logError({ source: 'api:admin/surveys', message: `Create question failed: ${error.message}`, detail: error, path: 'POST /api/admin/surveys' })
-    return NextResponse.json({ error: 'Failed to create question.' }, { status: 500 })
+    console.error('Error creating survey:', error)
+    await logError({ source: 'api:admin/surveys', message: `Create survey failed: ${error.message}`, detail: error, path: 'POST /api/admin/surveys' })
+    return NextResponse.json({ error: 'Failed to create survey.' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true, id: data.id })

@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { validateSurveySubmission, validateQuestionFields, type SurveyQuestionForValidation } from '@/lib/survey'
+import {
+  validateSurveySubmission,
+  validateQuestionFields,
+  audienceMatches,
+  pickEligibleSurvey,
+  type SurveyQuestionForValidation,
+  type AudienceSignals,
+  type EligibleSurveyRow,
+} from '@/lib/survey'
 
 const textQ: SurveyQuestionForValidation = { id: 'q1', qtype: 'text', options: null }
 const ratingQ: SurveyQuestionForValidation = { id: 'q2', qtype: 'rating', options: null }
@@ -127,5 +135,85 @@ describe('validateQuestionFields', () => {
   it('accepts multiple_choice with 2+ trimmed, non-empty options', () => {
     const r = validateQuestionFields({ prompt: 'Pick one', qtype: 'multiple_choice', options: [' A ', 'B', '', '  '] })
     expect(r).toEqual({ prompt: 'Pick one', qtype: 'multiple_choice', options: ['A', 'B'] })
+  })
+})
+
+describe('audienceMatches', () => {
+  const signals = (over: Partial<AudienceSignals> = {}): AudienceSignals => ({
+    completedReports: 0,
+    promoReports: 0,
+    completedPurchases: 0,
+    ...over,
+  })
+
+  it("'all' matches everyone, even with zero activity", () => {
+    expect(audienceMatches('all', signals())).toBe(true)
+  })
+
+  it("'first_report' matches exactly one completed report", () => {
+    expect(audienceMatches('first_report', signals({ completedReports: 1 }))).toBe(true)
+    expect(audienceMatches('first_report', signals({ completedReports: 0 }))).toBe(false)
+    expect(audienceMatches('first_report', signals({ completedReports: 2 }))).toBe(false)
+  })
+
+  it("'repeat_users' matches two or more completed reports", () => {
+    expect(audienceMatches('repeat_users', signals({ completedReports: 2 }))).toBe(true)
+    expect(audienceMatches('repeat_users', signals({ completedReports: 5 }))).toBe(true)
+    expect(audienceMatches('repeat_users', signals({ completedReports: 1 }))).toBe(false)
+  })
+
+  it("'promo_users' matches any promo report", () => {
+    expect(audienceMatches('promo_users', signals({ promoReports: 1 }))).toBe(true)
+    expect(audienceMatches('promo_users', signals())).toBe(false)
+  })
+
+  it("'first_purchase' matches exactly one completed purchase", () => {
+    expect(audienceMatches('first_purchase', signals({ completedPurchases: 1 }))).toBe(true)
+    expect(audienceMatches('first_purchase', signals())).toBe(false)
+    expect(audienceMatches('first_purchase', signals({ completedPurchases: 2 }))).toBe(false)
+  })
+})
+
+describe('pickEligibleSurvey', () => {
+  const s = (id: string, over: Partial<EligibleSurveyRow> = {}): EligibleSurveyRow => ({
+    id,
+    audience: 'all',
+    sort_order: 0,
+    created_at: '2026-07-10T00:00:00Z',
+    ...over,
+  })
+  const none = new Set<string>()
+  const noSignals: AudienceSignals = { completedReports: 0, promoReports: 0, completedPurchases: 0 }
+
+  it('returns null when there are no surveys', () => {
+    expect(pickEligibleSurvey([], none, noSignals)).toBeNull()
+  })
+
+  it('orders by sort_order, then created_at', () => {
+    const later = s('later', { sort_order: 1 })
+    const earlier = s('earlier', { sort_order: 0, created_at: '2026-07-09T00:00:00Z' })
+    const earliest = s('earliest', { sort_order: 0, created_at: '2026-07-08T00:00:00Z' })
+    expect(pickEligibleSurvey([later, earlier, earliest], none, noSignals)?.id).toBe('earliest')
+  })
+
+  it('skips surveys the user already answered', () => {
+    const first = s('first', { sort_order: 0 })
+    const second = s('second', { sort_order: 1 })
+    expect(pickEligibleSurvey([first, second], new Set(['first']), noSignals)?.id).toBe('second')
+  })
+
+  it('skips surveys whose audience does not match', () => {
+    const targeted = s('targeted', { sort_order: 0, audience: 'repeat_users' })
+    const open = s('open', { sort_order: 1 })
+    expect(pickEligibleSurvey([targeted, open], none, noSignals)?.id).toBe('open')
+    expect(
+      pickEligibleSurvey([targeted, open], none, { ...noSignals, completedReports: 2 })?.id
+    ).toBe('targeted')
+  })
+
+  it('returns null when every survey is answered or mismatched', () => {
+    const answered = s('answered')
+    const targeted = s('targeted', { audience: 'first_purchase' })
+    expect(pickEligibleSurvey([answered, targeted], new Set(['answered']), noSignals)).toBeNull()
   })
 })

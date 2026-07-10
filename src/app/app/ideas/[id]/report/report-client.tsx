@@ -8,7 +8,7 @@ import { deriveHeadlineScore } from '@/lib/viability-score'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
 import { SectionLabel } from '@/components/admin/section-label'
-import { SurveyCard, type SurveyData } from './survey-card'
+import { SurveyCard, type SurveyData } from '@/components/survey-card'
 import { BugReportWidget } from '@/components/bug-report-widget'
 
 interface ReportData {

@@ -7,6 +7,8 @@ import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { isNewUser } from '@/lib/offers'
 import { getPromoPublicStatus } from '@/lib/promo'
+import { pickSurveyFor } from '@/lib/survey'
+import { SurveyCard } from '@/components/survey-card'
 
 export const metadata = { title: 'My ideas — Idea Engine' }
 
@@ -106,6 +108,7 @@ export default async function MyIdeasPage() {
 
   const offers = await getAccountOffers(supabase, profile?.created_at ?? user.created_at)
   const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
+  const surveyData = await pickSurveyFor(createServiceClient(), supabase, user.id, 'account')
 
   const { data: ideas } = await supabase
     .from('ideas')
@@ -239,6 +242,12 @@ export default async function MyIdeasPage() {
             )
           })}
         </ul>
+      )}
+
+      {surveyData.show && (
+        <div className="mt-8">
+          <SurveyCard data={surveyData} className="" />
+        </div>
       )}
     </div>
   )

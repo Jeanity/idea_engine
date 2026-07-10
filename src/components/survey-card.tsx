@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+// Client twin of SurveyCardData/SurveyCardQuestion in src/lib/survey.ts —
+// kept structural (not imported) so this stays a pure client component.
 export interface SurveyCardQuestion {
   id: string
   prompt: string
@@ -12,8 +14,8 @@ export interface SurveyCardQuestion {
 
 export interface SurveyData {
   show: boolean
+  surveyId: string | null
   questions: SurveyCardQuestion[]
-  alreadyAnswered: boolean
 }
 
 function StarInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
@@ -41,17 +43,30 @@ function StarInput({ value, onChange }: { value: number; onChange: (n: number) =
   )
 }
 
-export function SurveyCard({ data, reportId }: { data: SurveyData; reportId: string | null }) {
+// Renders the survey resolved server-side by pickSurveyFor (src/lib/survey.ts)
+// — used at the end of report pages and on the account page. An answered
+// survey is never re-offered on later visits (eligibility handles that);
+// `submitted` only covers the rest of THIS page view.
+export function SurveyCard({
+  data,
+  reportId = null,
+  className = 'max-w-3xl mx-auto px-6 print:hidden',
+}: {
+  data: SurveyData
+  reportId?: string | null
+  /** Outer wrapper classes — the default matches the report page layout. */
+  className?: string
+}) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [submitted, setSubmitted] = useState(data.alreadyAnswered)
+  const [submitted, setSubmitted] = useState(false)
 
-  if (!data.show) return null
+  if (!data.show || !data.surveyId) return null
 
   if (submitted) {
     return (
-      <div className="max-w-3xl mx-auto px-6 print:hidden">
+      <div className={className}>
         <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/5 light:bg-emerald-50/50 light:border-emerald-200 light:shadow-sm px-5 py-4">
           <p className="text-sm font-medium text-emerald-200 light:text-emerald-800">Thanks for the feedback!</p>
         </div>
@@ -76,6 +91,7 @@ export function SurveyCard({ data, reportId }: { data: SurveyData; reportId: str
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          survey_id: data.surveyId,
           report_id: reportId,
           answers: data.questions.map(q => ({ question_id: q.id, answer: answers[q.id] })),
         }),
@@ -94,7 +110,7 @@ export function SurveyCard({ data, reportId }: { data: SurveyData; reportId: str
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 print:hidden">
+    <div className={className}>
       <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
         <h2 className="font-semibold text-white light:text-gray-900 mb-1">Help us improve — 2 minutes</h2>
         <p className="text-xs text-slate-500 light:text-gray-400 mb-4">Your answers help shape what we build next.</p>

@@ -1,6 +1,5 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
-import { readSurveyConfig } from '@/lib/survey'
 import { NextResponse } from 'next/server'
 
 // Powers the live nav badges in src/app/app/admin/admin-shell.tsx: survey-active
@@ -71,10 +70,10 @@ export async function GET() {
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const ZERO_RESULT = Promise.resolve({ count: 0, error: null } as { count: number | null; error: { code?: string } | null })
 
-  const [surveyConfig, contactRes, feedbackRes, bugsRes, errorsRes] = await Promise.all([
-    // readSurveyConfig already degrades to DEFAULT_SURVEY_CONFIG (enabled: false)
-    // on any read error, including a missing app_settings table.
-    readSurveyConfig(service),
+  const [surveysRes, contactRes, feedbackRes, bugsRes, errorsRes] = await Promise.all([
+    // Any active survey row lights the Surveys dot (migration 025 —
+    // per-survey active replaced the old app_settings on/off flag).
+    service.from('surveys').select('id', { count: 'exact', head: true }).eq('active', true),
     seenColumnMissing
       ? service.from('contact_submissions').select('id', { count: 'exact', head: true }).eq('status', 'open')
       : service.from('contact_submissions').select('id', { count: 'exact', head: true }).gt('created_at', seen.contact ?? EPOCH),
@@ -89,6 +88,9 @@ export async function GET() {
       : service.from('error_log').select('id', { count: 'exact', head: true }).gt('occurred_at', seen.errors ?? EPOCH),
   ])
 
+  if (surveysRes.error && !isMissingTable(surveysRes.error)) {
+    console.error('Admin nav-status: surveys query failed:', surveysRes.error)
+  }
   if (contactRes.error && !isMissingTable(contactRes.error)) {
     console.error('Admin nav-status: contact query failed:', contactRes.error)
   }
@@ -103,7 +105,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    surveyActive: surveyConfig.enabled,
+    surveyActive: !surveysRes.error && (surveysRes.count ?? 0) > 0,
     contactCount: contactRes.error ? 0 : contactRes.count ?? 0,
     feedbackCount: feedbackRes.error ? 0 : feedbackRes.count ?? 0,
     bugsCount: bugsRes.error ? 0 : bugsRes.count ?? 0,

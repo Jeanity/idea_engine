@@ -1,26 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, SurveyQuestionType } from '@/lib/database.types'
-import { getSetting, setSetting } from '@/lib/app-settings'
+import type { Database, SurveyQuestionType, SurveyPlacement, SurveyAudience } from '@/lib/database.types'
+import { isMissingTable } from '@/lib/app-settings'
 
-export const SURVEY_SETTING_KEY = 'survey'
 export const MAX_ANSWER_LENGTH = 2000
 export const RATING_MIN = 1
 export const RATING_MAX = 5
 
-export interface SurveyConfig {
-  enabled: boolean
-}
-
-export const DEFAULT_SURVEY_CONFIG: SurveyConfig = { enabled: false }
-
-export async function readSurveyConfig(service: SupabaseClient<Database>): Promise<SurveyConfig> {
-  const raw = await getSetting<Partial<SurveyConfig>>(service, SURVEY_SETTING_KEY)
-  return { ...DEFAULT_SURVEY_CONFIG, ...(raw ?? {}) }
-}
-
-export async function writeSurveyConfig(service: SupabaseClient<Database>, config: SurveyConfig): Promise<{ error: string | null }> {
-  return setSetting(service, SURVEY_SETTING_KEY, config)
-}
+export const SURVEY_PLACEMENTS: readonly SurveyPlacement[] = ['full_report_end', 'initial_report_end', 'account', 'post_purchase']
+export const SURVEY_AUDIENCES: readonly SurveyAudience[] = ['all', 'first_report', 'first_purchase', 'promo_users', 'repeat_users']
 
 // ── Pure submission validation (no I/O) ─────────────────────────────────
 
@@ -118,6 +105,30 @@ export function validateSurveySubmission(
   return { valid: true, answers: normalised }
 }
 
+// ── Survey-form validation (admin create) ────────────────────────────────
+
+export function validateSurveyFields(body: {
+  name?: unknown
+  group_id?: unknown
+  placement?: unknown
+  audience?: unknown
+}): { name: string; group_id: string | null; placement: SurveyPlacement; audience: SurveyAudience } | { error: string } {
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  if (!name || name.length > 120) return { error: 'Name is required (max 120 characters).' }
+
+  const placement = body.placement
+  if (!SURVEY_PLACEMENTS.includes(placement as SurveyPlacement)) {
+    return { error: 'placement must be one of ' + SURVEY_PLACEMENTS.join(', ') + '.' }
+  }
+  const audience = body.audience
+  if (!SURVEY_AUDIENCES.includes(audience as SurveyAudience)) {
+    return { error: 'audience must be one of ' + SURVEY_AUDIENCES.join(', ') + '.' }
+  }
+  const group_id = typeof body.group_id === 'string' && body.group_id ? body.group_id : null
+
+  return { name, group_id, placement: placement as SurveyPlacement, audience: audience as SurveyAudience }
+}
+
 // ── Question-form validation (admin create/update) ──────────────────────
 
 export function validateQuestionFields(body: {
@@ -147,7 +158,66 @@ export function validateQuestionFields(body: {
   return { prompt, qtype, options }
 }
 
-// ── Report-page data fetch ───────────────────────────────────────────────
+// ── Audience targeting (pure — no I/O) ───────────────────────────────────
+
+/**
+ * Everything audience rules are allowed to see about a user, as plain
+ * counts so the matching itself stays pure and unit-testable.
+ */
+export interface AudienceSignals {
+  /** Reports (teaser or full) that finished generating — status 'complete'. */
+  completedReports: number
+  /** Reports generated free under promo mode (reports.is_promo). */
+  promoReports: number
+  /** Purchases with status 'complete'. Zero for everyone until payments ship. */
+  completedPurchases: number
+}
+
+export function audienceMatches(audience: SurveyAudience, signals: AudienceSignals): boolean {
+  switch (audience) {
+    case 'all':
+      return true
+    case 'first_report':
+      return signals.completedReports === 1
+    case 'repeat_users':
+      return signals.completedReports >= 2
+    case 'promo_users':
+      return signals.promoReports >= 1
+    case 'first_purchase':
+      return signals.completedPurchases === 1
+  }
+}
+
+export interface EligibleSurveyRow {
+  id: string
+  audience: SurveyAudience
+  sort_order: number
+  created_at: string
+}
+
+/**
+ * First survey (by sort_order, then created_at) the user hasn't answered
+ * whose audience matches. A user answers a given survey ONCE — an answered
+ * survey is never offered again (there is no "thanks" card on revisit; the
+ * next eligible survey, if any, simply takes its place). Callers pass only
+ * surveys that are active and actually have active questions.
+ */
+export function pickEligibleSurvey<T extends EligibleSurveyRow>(
+  surveys: T[],
+  answeredSurveyIds: ReadonlySet<string>,
+  signals: AudienceSignals
+): T | null {
+  const ordered = [...surveys].sort(
+    (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at)
+  )
+  for (const s of ordered) {
+    if (answeredSurveyIds.has(s.id)) continue
+    if (audienceMatches(s.audience, signals)) return s
+  }
+  return null
+}
+
+// ── Survey-card data fetch (report + account pages) ──────────────────────
 
 export interface SurveyCardQuestion {
   id: string
@@ -158,55 +228,104 @@ export interface SurveyCardQuestion {
 }
 
 export interface SurveyCardData {
-  /** Render the card at all — false when survey is off or there are no active questions. */
+  /** Render the card at all — false when no eligible survey exists for this user + placement. */
   show: boolean
+  surveyId: string | null
   questions: SurveyCardQuestion[]
-  /** User already answered at least one currently-active question — show the "thanks" line instead of the form. */
-  alreadyAnswered: boolean
+}
+
+export const NO_SURVEY: SurveyCardData = { show: false, surveyId: null, questions: [] }
+
+/**
+ * Audience signals for one user. The service client is required — reports
+ * RLS would let us count the caller's own rows, but purchases/promo checks
+ * live here too and this keeps all three counts consistent in one place.
+ */
+export async function getAudienceSignals(
+  service: SupabaseClient<Database>,
+  userId: string
+): Promise<AudienceSignals> {
+  const [reports, promo, purchases] = await Promise.all([
+    service.from('reports').select('id', { count: 'exact', head: true }).eq('owner_id', userId).eq('status', 'complete'),
+    service.from('reports').select('id', { count: 'exact', head: true }).eq('owner_id', userId).eq('is_promo', true),
+    service.from('purchases').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'complete'),
+  ])
+  return {
+    completedReports: reports.count ?? 0,
+    promoReports: promo.count ?? 0,
+    completedPurchases: purchases.count ?? 0,
+  }
 }
 
 /**
- * Data for the report-end survey card. `service` reads the on/off flag
- * (app_settings has no RLS policies at all); `requestClient` is the
- * per-request client and does the rest — "survey_questions: public select
- * active" and "survey_responses: authenticated select own" (migration 014)
- * are what authorise those two reads, not app code.
+ * Resolve which survey (if any) to show this user at a placement, with its
+ * active questions. `requestClient` (the per-request RLS client) does the
+ * survey/question/response reads — "surveys: public select active",
+ * "survey_questions: public select active", and "survey_responses:
+ * authenticated select own" (migrations 014/025) are what authorise them,
+ * not app code. `service` is only used for audience signals, and only when
+ * some candidate actually targets a narrower audience than 'all'.
+ *
+ * Graceful degradation: until migration 025 runs, the surveys table doesn't
+ * exist — any missing-table error means "no survey to show".
  */
-export async function getSurveyCardData(
+export async function pickSurveyFor(
   service: SupabaseClient<Database>,
   requestClient: SupabaseClient<Database>,
-  userId: string
+  userId: string,
+  placement: SurveyPlacement
 ): Promise<SurveyCardData> {
-  const config = await readSurveyConfig(service)
-  if (!config.enabled) return { show: false, questions: [], alreadyAnswered: false }
+  const { data: surveys, error } = await requestClient
+    .from('surveys')
+    .select('id, audience, sort_order, created_at')
+    .eq('placement', placement)
 
-  const { data: questions, error } = await requestClient
-    .from('survey_questions')
-    .select('id, prompt, qtype, options, sort_order')
-    .eq('active', true)
-    .order('sort_order', { ascending: true })
-
-  if (error || !questions || questions.length === 0) {
-    return { show: false, questions: [], alreadyAnswered: false }
+  if (error) {
+    if (!isMissingTable(error)) console.error('Error loading surveys:', error)
+    return NO_SURVEY
   }
+  if (!surveys || surveys.length === 0) return NO_SURVEY
 
-  const activeIds = new Set(questions.map(q => q.id))
-  const { data: responses } = await requestClient
-    .from('survey_responses')
-    .select('question_id')
-    .eq('user_id', userId)
+  const surveyIds = surveys.map(s => s.id)
+  const [questionsRes, answeredRes] = await Promise.all([
+    requestClient
+      .from('survey_questions')
+      .select('id, survey_id, prompt, qtype, options, sort_order')
+      .in('survey_id', surveyIds)
+      .eq('active', true)
+      .order('sort_order', { ascending: true }),
+    requestClient
+      .from('survey_responses')
+      .select('survey_id')
+      .eq('user_id', userId),
+  ])
 
-  const alreadyAnswered = (responses ?? []).some(r => activeIds.has(r.question_id))
-
-  return {
-    show: true,
-    questions: questions.map(q => ({
+  const questionsBySurvey = new Map<string, SurveyCardQuestion[]>()
+  for (const q of questionsRes.data ?? []) {
+    const list = questionsBySurvey.get(q.survey_id) ?? []
+    list.push({
       id: q.id,
       prompt: q.prompt,
       qtype: q.qtype,
       options: (q.options as string[] | null) ?? null,
       sort_order: q.sort_order,
-    })),
-    alreadyAnswered,
+    })
+    questionsBySurvey.set(q.survey_id, list)
   }
+
+  const candidates = surveys.filter(s => (questionsBySurvey.get(s.id)?.length ?? 0) > 0)
+  if (candidates.length === 0) return NO_SURVEY
+
+  const answeredIds = new Set((answeredRes.data ?? []).map(r => r.survey_id))
+
+  // Audience signals cost three count queries — skip them entirely when
+  // every candidate targets everyone.
+  const signals = candidates.every(s => s.audience === 'all')
+    ? { completedReports: 0, promoReports: 0, completedPurchases: 0 }
+    : await getAudienceSignals(service, userId)
+
+  const picked = pickEligibleSurvey(candidates, answeredIds, signals)
+  if (!picked) return NO_SURVEY
+
+  return { show: true, surveyId: picked.id, questions: questionsBySurvey.get(picked.id)! }
 }

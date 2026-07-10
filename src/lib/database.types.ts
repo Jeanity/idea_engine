@@ -20,6 +20,8 @@ export type OfferAudience = 'new_users' | 'account_holders' | 'everyone'
 export type ContactCategory = 'feedback' | 'complaint' | 'question' | 'partnership'
 export type ContactStatus = 'open' | 'replied' | 'closed'
 export type SurveyQuestionType = 'text' | 'rating' | 'multiple_choice'
+export type SurveyPlacement = 'full_report_end' | 'initial_report_end' | 'account' | 'post_purchase'
+export type SurveyAudience = 'all' | 'first_report' | 'first_purchase' | 'promo_users' | 'repeat_users'
 export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
 export type MessageTemplateKind = 'invite' | 'contact_reply' | 'feedback_reply'
 
@@ -675,9 +677,65 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_groups: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          name?: string
+        }
+        Relationships: []
+      }
+      surveys: {
+        Row: {
+          id: string
+          name: string
+          group_id: string | null
+          active: boolean
+          placement: SurveyPlacement
+          audience: SurveyAudience
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          group_id?: string | null
+          active?: boolean
+          placement: SurveyPlacement
+          audience: SurveyAudience
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          group_id?: string | null
+          active?: boolean
+          placement?: SurveyPlacement
+          audience?: SurveyAudience
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'surveys_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'survey_groups'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       survey_questions: {
         Row: {
           id: string
+          survey_id: string
           prompt: string
           qtype: SurveyQuestionType
           options: Json | null
@@ -687,6 +745,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          survey_id: string
           prompt: string
           qtype: SurveyQuestionType
           options?: Json | null
@@ -701,11 +760,20 @@ export type Database = {
           sort_order?: number
           active?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'survey_questions_survey_id_fkey'
+            columns: ['survey_id']
+            isOneToOne: false
+            referencedRelation: 'surveys'
+            referencedColumns: ['id']
+          }
+        ]
       }
       survey_responses: {
         Row: {
           id: string
+          survey_id: string
           question_id: string
           user_id: string
           report_id: string | null
@@ -714,6 +782,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          survey_id: string
           question_id: string
           user_id: string
           report_id?: string | null
@@ -724,6 +793,13 @@ export type Database = {
           answer?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'survey_responses_survey_id_fkey'
+            columns: ['survey_id']
+            isOneToOne: false
+            referencedRelation: 'surveys'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'survey_responses_question_id_fkey'
             columns: ['question_id']

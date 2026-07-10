@@ -5,7 +5,7 @@ import { isAdminEmail } from '@/lib/admin'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { resolveEssentialServices } from '@/lib/essential-services'
 import { getPromoPublicStatus } from '@/lib/promo'
-import { getSurveyCardData } from '@/lib/survey'
+import { pickSurveyFor } from '@/lib/survey'
 import ReportClient from './report-client'
 
 // Shared data-fetch + render for a report — used by both the standalone
@@ -67,7 +67,18 @@ export async function ReportPageContent({ id }: { id: string }) {
   // count, never another user's data. See getPromoPublicStatus for the
   // narrow, user-safe shape it returns.
   const promoStatus = await getPromoPublicStatus(createServiceClient(), user.id)
-  const surveyData = await getSurveyCardData(createServiceClient(), supabase, user.id)
+
+  // Which survey placement this page is: a report with populated `sections`
+  // is the full report (mirrors hasFullSections in report-client.tsx);
+  // anything else that renders a survey at all is the initial report.
+  const hasFullSections =
+    report?.status === 'complete' && Object.keys((report.sections as object | null) ?? {}).length > 0
+  const surveyData = await pickSurveyFor(
+    createServiceClient(),
+    supabase,
+    user.id,
+    hasFullSections ? 'full_report_end' : 'initial_report_end'
+  )
 
   // Render-time "Your support team" block (Legal & Compliance tab) — never
   // stored in report sections, never touched by the AI pipeline. Reads active

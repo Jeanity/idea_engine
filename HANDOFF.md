@@ -1,3 +1,56 @@
+# Handoff — 2026-07-10 LATER SESSION (Survey system v2 — multi-survey + groups + targeting)
+
+The big deferred build from the spec below ("NEXT UP — Survey system v2") is **BUILT — see
+docs/plan/2026-07-10-survey-v2.md**. tsc/lint/build/201 tests all clean. NOT click-tested (auth).
+
+## ⚠️ Migration 025 must run IMMEDIATELY after deploy
+`supabase/migrations/025_survey_v2.sql`. Until it runs, no survey renders anywhere (graceful
+degradation) — **if the v1 launch survey is live at deploy time it vanishes until 025 runs.**
+The migration carries the v1 question bank + responses into a default **"Launch survey"**
+(placement full_report_end, audience all) and preserves its on/off state from the old
+app_settings 'survey' flag (that key is now retired, left in place unread).
+
+## What shipped
+1. **Data model**: `survey_groups`, `surveys` (group_id, active, placement, audience,
+   sort_order), `survey_questions.survey_id` + `survey_responses.survey_id` fks. Placements:
+   full_report_end / initial_report_end / account / post_purchase (renders nowhere until
+   payments). Audiences: all / first_report / first_purchase / promo_users / repeat_users.
+2. **Eligibility** (src/lib/survey.ts): pure `audienceMatches` + `pickEligibleSurvey`
+   (unit-tested) + `pickSurveyFor(service, rls, userId, placement)` — first active survey with
+   active questions the user hasn't answered whose audience matches. A user answers a given
+   survey ONCE; no more "thanks" card on revisit (the next eligible survey takes the slot).
+   Audience signals: completed reports (status complete), promo reports (is_promo), completed
+   purchases — purchase audiences match nobody until payments ship (by design, per spec).
+3. **Placements wired**: report page picks full_report_end vs initial_report_end by
+   hasFullSections server-side; account page (/app/account) renders the account placement.
+   SurveyCard generalised to src/components/survey-card.tsx (submits survey_id).
+4. **Admin nav**: AdminShell NavItems support `children` — Surveys is now a dropdown with
+   **Create survey** (/app/admin/surveys) + **Analytics** (/app/admin/surveys/analytics).
+   Collapsed sidebar shows the parent icon (links to first child); emerald dot = any active
+   survey (nav-status now counts surveys.active instead of the retired app_settings flag).
+5. **Management page** rebuilt: surveys grouped by group (+ Ungrouped), create/edit survey
+   modal (name/group/placement/audience), per-survey active toggle + expandable question
+   manager (same qtypes as v1), group create/rename/delete (delete → members become
+   ungrouped). Delete rules preserved: a survey OR question with responses can only be
+   deactivated; zero-response deletes need the two-step confirm.
+6. **Analytics page**: picker over surveys + whole-group rollups (questions labelled by
+   survey), same aggregates as v1 (rating avg+distribution / choice counts / text list),
+   Haiku summary scoped per survey (hidden on group rollups).
+7. **API**: /api/survey requires survey_id (validates active via RLS, blocks double-answer
+   with a 409). Admin routes restructured: /api/admin/surveys (GET list + POST), /[id]
+   (PATCH/DELETE survey), /[id]/questions (+ /[qid]), /groups (+ /[gid]),
+   /responses?survey=|group=, /summary takes { survey_id }.
+
+## Danny-side / notes
+- **Stripe**: Danny started the Stripe signup process today (2026-07-10). The payments build
+  is still LAST per the standing decision — signup is just merchant-side runway.
+- Launch runway now: create/verify the Launch survey questions in the new UI → promo caps →
+  Start. The v1 10-question draft still applies (chat 2026-07-09).
+- Survey v2.1 ideas deliberately not built: "when" targeting (date windows / after-N-days),
+  post-purchase render surface (needs payments).
+
+---
+
 # Handoff — 2026-07-10 (domain, email, admin ops polish — continuation of the marathon)
 
 All pushed to main; migrations through **023** RUN in prod (Danny confirmed).
@@ -156,7 +209,10 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
 
 ---
 
-# NEXT UP — Survey system v2: multi-survey + groups + targeting (SPEC ONLY, 2026-07-09)
+# Survey system v2: multi-survey + groups + targeting — **DONE 2026-07-10** (spec kept for context)
+
+Built per the "LATER SESSION" section at the top of this file (migration 025).
+Original spec follows.
 
 Danny's request. NOT started — he flagged it as a whole system / large task, deliberately
 deferred. Current state for context: ONE global survey (migration 014 — survey_questions /
