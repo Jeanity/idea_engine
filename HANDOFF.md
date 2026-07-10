@@ -2,10 +2,27 @@
 
 Two builds, verified together (tsc/lint/build/211 tests clean). NOT click-tested (auth).
 
-## ⚠️ Migration 026 must be RUN in prod
-`supabase/migrations/026_local_day_graphs.sql` — local-day RPCs for the multi-day admin
-charts. Until it runs, those charts gracefully fall back to the old UTC-day behaviour
-(no 500s), so this is not urgent, just owed.
+## Migration 026 — RUN ✅ in prod (Danny confirmed 2026-07-10)
+Migrations current through **026 — ALL RUN in prod.** (027 in flight, see below.)
+
+## Decisions + queue changes (Danny, 2026-07-10 afternoon)
+- **Launch deferred ~3 weeks → early-to-mid August.** No rush on payments. Danny-side in
+  the meantime: logo (in progress today), then Google brand verification; new PayPal
+  business account (started looking now).
+- **Customer support Phase 1 IN FLIGHT** (Sonnet subagent, per model-economy rule):
+  billing contact category + admin flagging — see docs/plan/2026-07-10-customer-support.md.
+  Phase 2 (refund workflow, order emails, My purchases) stays blocked on payments.
+  Will take migration 027.
+- **Survey v2.1 PLANNED, not built** — docs/plan/2026-07-10-survey-v2.1-when-targeting.md
+  (date windows + account-age targeting + post-purchase surface). Danny decides
+  build timing based on usage.
+- **Multi-admin: all admins get complete control** — only candidates are fully-trusted
+  family; the is_admin mechanism can be a simple boolean/email-list, role-gating only if
+  ever needed. (Still needed before admin #2 exists at all.)
+- **Real stats for demo-stats.ts: wait until post-trial** (need real data first), but
+  build it behind an admin switch (app_settings, e.g. 'real_stats') so flipping from
+  demo numbers to live aggregates is a toggle, not a deploy.
+- **Teaser gating section-tuning**: Danny will look at it later — remind him.
 
 ## Teaser gating / blur — BUILT (approved spec below marked done), toggle is OFF
 When the **Initial-report gating** toggle in /app/admin/settings is ON, initial reports are
