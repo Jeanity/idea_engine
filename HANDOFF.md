@@ -9,10 +9,13 @@ Migrations current through **026 — ALL RUN in prod.** (027 in flight, see belo
 - **Launch deferred ~3 weeks → early-to-mid August.** No rush on payments. Danny-side in
   the meantime: logo (in progress today), then Google brand verification; new PayPal
   business account (started looking now).
-- **Customer support Phase 1 IN FLIGHT** (Sonnet subagent, per model-economy rule):
-  billing contact category + admin flagging — see docs/plan/2026-07-10-customer-support.md.
-  Phase 2 (refund workflow, order emails, My purchases) stays blocked on payments.
-  Will take migration 027.
+- **Customer support Phase 1 DONE** (Sonnet subagent, Fable-reviewed+merged):
+  "Billing & refunds" category on /contact (+ Terms refund-policy hint), rose-flagged rows
+  + filter chip in the admin queue, [Contact — BILLING] notification subject.
+  **⚠️ Migration 027 (contact billing category) must be RUN in prod** — until then a
+  billing submission gets a friendly "email us directly" 400, never a 500.
+  Phase 2 (refund workflow, order emails, My purchases) stays blocked on payments —
+  see docs/plan/2026-07-10-customer-support.md.
 - **Survey v2.1 PLANNED, not built** — docs/plan/2026-07-10-survey-v2.1-when-targeting.md
   (date windows + account-age targeting + post-purchase surface). Danny decides
   build timing based on usage.

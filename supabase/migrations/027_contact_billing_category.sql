@@ -11,7 +11,7 @@
 -- Graceful degradation: until this migration is run, a 'billing' submission
 -- fails the existing check constraint with Postgres error 23514
 -- (check_violation). POST /api/contact catches that specific case (see
--- isBillingCategoryUnsupported in src/app/api/contact/route.ts) and returns a
+-- isCheckViolation in src/app/api/contact/route.ts) and returns a
 -- friendly 400 pointing the submitter at hello@hadidea.com directly, rather
 -- than a 500 — the public form never crashes because of a pending migration.
 
