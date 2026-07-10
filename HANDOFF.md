@@ -56,6 +56,31 @@ place unread). Migrations current through **025 — ALL RUN in prod.**
 - Survey v2.1 ideas deliberately not built: "when" targeting (date windows / after-N-days),
   post-purchase render surface (needs payments).
 
+## TODO — Teaser gating / blur (Danny approved 2026-07-10, build BEFORE the $4.95 phase)
+Danny's read (agreed after pricing discussion): the initial report gives too much away — the
+FULL viability snapshot answers "is my idea any good?" for free, killing the reason to buy.
+Approved design:
+1. **Partially gate the verdict (biggest lever)**: headline score ring + one-line verdict stay
+   free; per-dimension sub-scores and their rationales are gated.
+2. **Locked content rendered as visible structure, not absence**: blurred cost-breakdown table
+   with realistic rows, "N more competitors" blurred rows, blurred marketing channels, next
+   steps = 1 visible + blurred numbered stubs. People pay to close a gap they can SEE.
+3. **Summary stays fully visible** (trust builder — proves the AI understood THEIR idea).
+4. **Admin on/off switch** (Danny's ask): app_settings key (e.g. 'teaser_gating'), toggle in
+   /app/admin/settings, so gating can be flipped without deploy — OFF during the free trial,
+   ON for the paid phase. Apply the gating at RENDER time (like affiliate rewrite /
+   essential services), NOT baked into stored sections — retroactive + toggleable.
+5. **Blur must be real, server-side** (Danny explicit): gated text NEVER ships to the client
+   (no CSS-blur over real text — devtools defeats it). Placeholders are structure-only.
+6. **Architectural constraint discovered**: the initial report's content IS preview_sections
+   (teaser pipeline); the full report doesn't exist until unlock generates it. So blurred
+   sections are honest STRUCTURAL previews of what the full report delivers (from
+   REPORT_SPEC), not redactions of real hidden text — do not fabricate specifics ("6 more
+   competitors found") unless the teaser step actually knows them. Optionally have the
+   teaser step cheaply capture real counts/names to make placeholders concrete.
+7. Use the launch survey's "most valuable section" answers to decide which sections get the
+   hardest gating. Track unlock CTR before/after the flip.
+
 ## TODO — Customer support feature (Danny's ask, 2026-07-10, build with/before payments)
 Stripe signup surfaced the requirement: customers must be able to reach us about a charge
 (support email is on Stripe receipts — hello@hadidea.com; phone kept private). What to build:
