@@ -2,9 +2,10 @@
   {
     "key": "invention_category",
     "text": "What kind of invention is it?",
+    "subtext": "Pick the closest fit for what you've created — the thing itself, not how you'd sell it.",
     "input_type": "select",
     "options": [
-      "Device / hardware",
+      "Physical product / device",
       "Process / method",
       "Composition / material",
       "Software algorithm",
@@ -12,9 +13,9 @@
     ],
     "required": true,
     "maps_to": "ip.category",
-    "why": "What kind of invention this is changes what protection is realistic — hardware, software and processes are treated differently under IP law.",
+    "why": "What kind of invention this is changes what protection is realistic — physical products, software and processes are treated differently under IP law.",
     "option_notes": {
-      "Device / hardware": "We'll look at utility patent routes, prototyping costs and manufacturing considerations.",
+      "Physical product / device": "A tangible item you'd make and sell — anything from a water bottle to electronics. We'll cover patent routes, prototyping and manufacturing costs.",
       "Process / method": "We'll look at whether a process patent is realistic and how you'd prove and defend the method.",
       "Composition / material": "We'll look at patent options for formulations or materials, and how you'd keep the recipe protected.",
       "Software algorithm": "We'll cover the tighter software patent rules and whether trade secret or copyright protection fits better.",
@@ -94,7 +95,7 @@
     "maps_to": "cost.production_location",
     "show_if": {
       "key": "invention_category",
-      "in": ["Device / hardware"]
+      "in": ["Physical product / device", "Design"]
     },
     "why": "Who makes it decides which cost questions follow, and whether your report covers your own build time or unit costs, minimum orders and compliance.",
     "option_notes": {
@@ -113,7 +114,7 @@
     "maps_to": "cost.unit_cost_estimate",
     "show_if": {
       "key": "invention_category",
-      "in": ["Device / hardware"]
+      "in": ["Physical product / device", "Design"]
     },
     "why": "Per-unit cost is the base of your margins. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
   },
@@ -126,7 +127,7 @@
     "maps_to": "cost.packaging_per_unit",
     "show_if": {
       "key": "invention_category",
-      "in": ["Device / hardware"]
+      "in": ["Physical product / device", "Design"]
     },
     "why": "Packaging and delivery are part of your per-unit cost. Rough numbers are fine — the report refines these with real local prices."
   },
