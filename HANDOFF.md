@@ -193,8 +193,10 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
 ## Decisions made today (bind future work)
 - **Payments LAST**, multi-processor (Stripe + PayPal + Afterpay — Danny researching). Don't
   suggest Stripe signup as a next action. Facts gathered 2026-07-10: Danny is ALREADY a
-  PayPal + Afterpay merchant via Jeanity — PayPal likely reusable (same-ABN account, new API
-  app, check buyer-facing display name isn't "Jeanity"); Afterpay is a DIRECT full
+  PayPal + Afterpay merchant via Jeanity — PayPal: Danny DECIDED (2026-07-10, supersedes the
+  earlier "likely reusable" note) to create a NEW PayPal business account for hadidea rather
+  than reuse Jeanity's — clean buyer-facing name, next task after the Stripe signup is done;
+  Afterpay is a DIRECT full
   merchant relationship (NOT Shopify-bound — corrected by Danny 2026-07-10), so hadidea has
   two Afterpay paths to weigh at build time: (a) add hadidea.com as an additional brand/site
   under the existing Afterpay merchant account (approval step, keeps his negotiated rate,
