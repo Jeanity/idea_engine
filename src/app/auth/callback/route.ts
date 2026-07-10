@@ -68,7 +68,8 @@ async function needsUsername(userId: string): Promise<boolean> {
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/app'
+  // Fallback mirrors sign-in-form.tsx's default: land on the account page.
+  const next = searchParams.get('next') ?? '/app/account'
 
   if (code) {
     const cookieStore = await cookies()

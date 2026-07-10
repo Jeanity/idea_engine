@@ -6,7 +6,9 @@ import { createBrowserClient } from '@supabase/ssr'
 
 export default function SignInForm() {
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') ?? '/app'
+  // Default landing after sign-in (Google AND magic link) is the account
+  // page ("My ideas") — a deep-linked redirectTo from the proxy still wins.
+  const redirectTo = searchParams.get('redirectTo') ?? '/app/account'
   const callbackError = searchParams.get('error')
 
   const [email, setEmail] = useState('')
