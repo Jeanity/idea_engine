@@ -166,30 +166,40 @@ const WHAT_WE_DO_STEPS = [
   },
 ]
 
+// Mirrors the actual report tabs (REPORT_TABS in the report viewer) plus the
+// funding section — update this list when report sections change.
 const REPORT_FEATURES = [
   {
-    title: 'Real competitors with links',
-    description: 'Live web research surfaces actual businesses in your space, not guesses.',
+    title: 'Viability snapshot',
+    description: 'A scored verdict up front — how viable it looks, what drives the score, and the honest rationale.',
   },
   {
-    title: 'Cost & profit breakdown',
-    description: 'Startup costs, ongoing expenses, and realistic margin estimates.',
+    title: 'Real competitors with links',
+    description: 'Live web research surfaces actual businesses in your space — with pricing and gap analysis, not guesses.',
+  },
+  {
+    title: 'Costs & pricing',
+    description: 'Startup costs, ongoing expenses, realistic margins, and a pricing strategy backed by market rates.',
+  },
+  {
+    title: 'Funding options',
+    description: 'Grants, loans, and low-capital paths matched to your idea and location.',
   },
   {
     title: 'Legal & compliance checklist',
     description: 'Official links to licences, permits, and regulations that apply to you.',
   },
   {
-    title: 'Funding options',
-    description: 'Grants, loans, and financing paths matched to your idea and location.',
+    title: 'Getting set up',
+    description: 'The accountants, banking, insurance, and online services every business needs, in one place.',
   },
   {
-    title: 'Things to consider',
-    description: 'Competitor density, costs, and effort factors named up front — each with how to handle it.',
+    title: 'Getting the word out',
+    description: 'A marketing playbook — the right channels for your customers, starter budgets, and ready-to-paste demand tests.',
   },
   {
-    title: 'Prioritised next steps',
-    description: 'A clear, ordered checklist so you know exactly what to do first.',
+    title: 'Considerations & next steps',
+    description: 'Risks named up front with how to handle each, a prioritised checklist, and your single highest-leverage action.',
   },
 ]
 
