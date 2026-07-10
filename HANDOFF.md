@@ -16,21 +16,30 @@ Fable-reviewed, 248 tests green):
   makers); dropship/POD capital subtext fixed; workshops monetisation option added;
   free-with-ads apps skip the target-price question; non-food examples added.
 
+## Also shipped same evening (Danny's live-testing feedback)
+- **Cost questions never required** (Danny: "no way to know that with no experience"):
+  unit-cost/packaging questions reframed "only if you already know" + AI cost fallback
+  (see resolved decision 1 above).
+- **Teaser morsels** (Danny: "no promises of any kind of valuable information"): the
+  teaser call now also writes 1–2 idea-specific hook sentences per locked section
+  (rendered fading into the blur) and a cost_preview whose AMOUNTS show while labels
+  are redacted server-side ("a true teaser"). Plus two teaser bugs fixed: the
+  next_steps_preview/next_steps key mismatch (the "Where to start" card never rendered
+  from real teasers), and truncation-prone maxTokens 1024→2048 with shape validation
+  (throw → Inngest retry instead of storing a malformed snapshot — the cause of Danny's
+  "Viability Snapshot unavailable" run). EXISTING teasers predate hooks — regenerate the
+  initial report to see the new gated view. Invention category renamed to "Physical
+  product / device" (+ Design gates manufacturing questions too).
+
 These need YOUR call — answer in any order:
 
-1. **Materials cost for self-made products (HIGH — worst finding).** The ingredient-list
-   answer ("500g oat flour, 2 eggs…") was being digit-mangled by the deterministic cost
-   calculator into garbage per-unit costs (billions) — physical_product/ecommerce reports
-   use that calculator as the PRIMARY cost path (no AI). An interim guard now treats
-   unparseable text as "not provided" (honest omission) — but materials then drop out of
-   COGS for self-made founders. Pick the real fix:
-   (a) change the question to a numeric "total ingredient/materials cost per batch" and
-       keep an OPTIONAL free-text ingredients question for report context — free, simple
-       (my recommendation);
-   (b) add the small Haiku parsing step the original docs/QUESTIONS.md design called for
-       (~a cent per report);
-   (c) route physical products through the AI cost estimator like other archetypes
-       (more tokens per report).
+1. ~~Materials cost for self-made products~~ **RESOLVED by Danny's later directive**
+   ("costs should be estimated by the report, not the user"): cost questions are now
+   optional "only if you already know" inputs, and generate-report falls back from the
+   free deterministic calculator to the AI estimate-costs step whenever materials/unit
+   cost inputs are blank or unparseable (`needsAiCostFallback`, path recorded in
+   _meta.section_status: live_ok vs fallback_inferred — watch that ratio in admin to
+   learn real COGS before the $4.95 phase).
 2. **Invention: license-only vs build-and-sell.** The invention bank treats every inventor
    as building a business. A commercialization-path question could branch: licensors get
    royalty/deal research instead of unit costs. Build it? (Hardware inventions DID just
