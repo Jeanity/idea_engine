@@ -68,7 +68,7 @@
   {
     "key": "product_materials",
     "text": "List your main ingredients or materials with rough quantities per batch.",
-    "subtext": "Free text is fine — e.g., '500g oat flour, 2 eggs, 400g pumpkin, 200g peanut butter'.",
+    "subtext": "Free text is fine — e.g., '500g oat flour, 2 eggs, 400g pumpkin, 200g peanut butter' or '500g soy wax, 200ml fragrance oil, 40 wicks'.",
     "input_type": "text",
     "required": true,
     "maps_to": "cost.materials",
@@ -91,7 +91,12 @@
       "Food processor",
       "Vacuum sealer / packaging machine",
       "Label printer",
-      "Refrigeration / cold storage"
+      "Refrigeration / cold storage",
+      "Wax melter / double boiler",
+      "3D printer",
+      "Sewing machine",
+      "Heat gun / soldering iron",
+      "None of these yet"
     ],
     "required": true,
     "maps_to": "cost.equipment_owned",
@@ -104,7 +109,7 @@
   {
     "key": "product_equipment_wattage",
     "text": "Total wattage of the main heat/power equipment you'll run per batch?",
-    "subtext": "Check the label on your oven or dehydrator. If unsure, a domestic oven is ~1800–2400W.",
+    "subtext": "Check the label on your oven, dehydrator or wax melter. If unsure, a domestic oven is ~1800–2400W.",
     "input_type": "number",
     "required": true,
     "maps_to": "cost.equipment_wattage",
@@ -130,7 +135,7 @@
   {
     "key": "product_batch_yield",
     "text": "How many finished units come out of one batch?",
-    "subtext": "e.g., '40 packs of treats', '24 bottles of sauce'.",
+    "subtext": "e.g., '40 packs of treats', '24 bottles of sauce', '24 candles'.",
     "input_type": "number",
     "required": true,
     "maps_to": "cost.batch_yield",

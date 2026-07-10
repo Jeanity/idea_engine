@@ -107,7 +107,7 @@
   {
     "key": "ecom_startup_capital",
     "text": "Roughly how much money do you have to start?",
-    "subtext": "For initial inventory, store setup, first ads.",
+    "subtext": "For store setup, first ads, and any upfront stock or samples your model needs.",
     "input_type": "select",
     "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
     "required": true,

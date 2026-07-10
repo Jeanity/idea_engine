@@ -18,6 +18,39 @@
     "why": "Clearly defining your demand side shapes the research into how you'll reach and convert them."
   },
   {
+    "key": "market_geographic_scope",
+    "text": "Where does the marketplace operate?",
+    "input_type": "select",
+    "options": [
+      "One city",
+      "One country",
+      "English-speaking countries",
+      "Global"
+    ],
+    "required": true,
+    "maps_to": "market.geographic_scope",
+    "why": "Where the marketplace operates changes how big a market we size, and what compliance and payments complexity you'll face.",
+    "option_notes": {
+      "One city": "We'll keep the market sizing tight and focus on local liquidity between supply and demand.",
+      "One country": "We'll size the market nationally and factor in a single set of compliance and payments rules.",
+      "English-speaking countries": "We'll widen the market sizing and flag the extra complexity of multiple countries' rules.",
+      "Global": "We'll size the market broadly and flag the compliance, currency and payments complexity of going worldwide."
+    }
+  },
+  {
+    "key": "founder_location_region",
+    "text": "Which city or region?",
+    "subtext": "Optional — helps us find local competitors and pricing. e.g. Brisbane, QLD.",
+    "input_type": "text",
+    "required": false,
+    "maps_to": "founder.location_region",
+    "show_if": {
+      "key": "market_geographic_scope",
+      "in": ["One city"]
+    },
+    "why": "Local pricing, permits and competitor research are sharper with a city or region than with just a country."
+  },
+  {
     "key": "market_monetisation_model",
     "text": "How do you make money on each transaction?",
     "input_type": "select",
@@ -56,26 +89,6 @@
     "required": false,
     "maps_to": "monetisation.free_tier_shape",
     "why": "Knowing which side is free helps us judge how you'll solve the chicken-and-egg problem most marketplaces face."
-  },
-  {
-    "key": "market_geographic_scope",
-    "text": "Where does the marketplace operate?",
-    "input_type": "select",
-    "options": [
-      "One city",
-      "One country",
-      "English-speaking countries",
-      "Global"
-    ],
-    "required": true,
-    "maps_to": "market.geographic_scope",
-    "why": "Where the marketplace operates changes how big a market we size, and what compliance and payments complexity you'll face.",
-    "option_notes": {
-      "One city": "We'll keep the market sizing tight and focus on local liquidity between supply and demand.",
-      "One country": "We'll size the market nationally and factor in a single set of compliance and payments rules.",
-      "English-speaking countries": "We'll widen the market sizing and flag the extra complexity of multiple countries' rules.",
-      "Global": "We'll size the market broadly and flag the compliance, currency and payments complexity of going worldwide."
-    }
   },
   {
     "key": "market_tech_capability",

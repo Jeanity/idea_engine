@@ -81,9 +81,59 @@
     }
   },
   {
+    "key": "invention_made_how",
+    "text": "Who would make it?",
+    "input_type": "select",
+    "options": [
+      "I'd make it myself",
+      "A local manufacturer",
+      "An overseas manufacturer",
+      "Not sure yet"
+    ],
+    "required": true,
+    "maps_to": "cost.production_location",
+    "show_if": {
+      "key": "invention_category",
+      "in": ["Device / hardware"]
+    },
+    "why": "Who makes it decides which cost questions follow, and whether your report covers your own build time or unit costs, minimum orders and compliance.",
+    "option_notes": {
+      "I'd make it myself": "We'll check home-business and safety rules for your area, and keep your cost base low with no manufacturer to pay.",
+      "A local manufacturer": "We'll cover per-unit costs, minimum order quantities, and getting samples made and quality-checked before a full production run.",
+      "An overseas manufacturer": "We'll cover per-unit costs, minimum order quantities, samples and quality control, plus freight and import duties to get stock to you.",
+      "Not sure yet": "We'll compare local vs overseas manufacturing for you, so you can see the trade-offs before deciding."
+    }
+  },
+  {
+    "key": "invention_unit_cost",
+    "text": "What do you expect it to cost to make per unit?",
+    "subtext": "A rough guess or a quote — either is fine.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "cost.unit_cost_estimate",
+    "show_if": {
+      "key": "invention_category",
+      "in": ["Device / hardware"]
+    },
+    "why": "Per-unit cost is the base of your margins. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
+  },
+  {
+    "key": "invention_packaging_shipping",
+    "text": "Roughly what will packaging and delivery cost per unit?",
+    "subtext": "Optional — leave blank if you're not sure yet.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "cost.packaging_per_unit",
+    "show_if": {
+      "key": "invention_category",
+      "in": ["Device / hardware"]
+    },
+    "why": "Packaging and delivery are part of your per-unit cost. Rough numbers are fine — the report refines these with real local prices."
+  },
+  {
     "key": "invention_startup_capital",
     "text": "Roughly how much money do you have available for this?",
-    "subtext": "For prototyping, filings, initial manufacturing.",
+    "subtext": "For prototyping, filings, and getting it made — or proven — for the first time.",
     "input_type": "select",
     "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
     "required": true,

@@ -38,6 +38,7 @@
       "Paid subscription",
       "Course sales",
       "Coaching / consulting",
+      "Workshops / group classes",
       "Affiliate",
       "Merch"
     ],
@@ -50,6 +51,7 @@
       "Paid subscription": "We'll cover subscription pricing benchmarks, churn and what it takes to keep paying members.",
       "Course sales": "We'll look at course pricing, launch strategies and what converts an audience into paying students.",
       "Coaching / consulting": "We'll focus on hourly or package pricing and how you'll find and convert one-on-one clients.",
+      "Workshops / group classes": "We'll look at group pricing and venue or space costs, and how filling seats compares to 1:1 rates.",
       "Affiliate": "We'll look at typical affiliate commission rates and how much traffic or audience you need to make it worthwhile.",
       "Merch": "We'll cover production costs, minimum order quantities and the margins on physical merchandise."
     }
@@ -142,6 +144,19 @@
         "A mix of content and live sessions"
       ]
     }
+  },
+  {
+    "key": "founder_location_region",
+    "text": "Which city or region?",
+    "subtext": "Optional — helps us find local competitors and pricing. e.g. Brisbane, QLD.",
+    "input_type": "text",
+    "required": false,
+    "maps_to": "founder.location_region",
+    "show_if": {
+      "key": "content_session_format",
+      "in": ["In person", "Both online and in person"]
+    },
+    "why": "Local pricing, permits and competitor research are sharper with a city or region than with just a country."
   },
   {
     "key": "content_session_pricing",

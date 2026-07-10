@@ -39,12 +39,16 @@ const COUNTRY_QUESTION: Question = {
   why: "Legal rules, permits, funding options and costs all depend on where you are — this makes sure your report is grounded in your country's rules, not generic advice.",
 }
 
-// Only asked for archetypes where the answer materially changes the research
-// (compliance jurisdiction, delivery/service radius, local competitor search).
-// physical_product is NOT here: its bank carries its own copy of the region
-// question (same key/maps_to), gated by the sales-channel answer via show_if —
-// online-only sellers never see it (Danny, 2026-07-10).
-const LOCATION_SENSITIVE_ARCHETYPES = ['local_service', 'marketplace', 'ecommerce_brand']
+// Only local_service is unconditional here — local services are inherently
+// local, so every founder in that archetype needs the region question.
+// ecommerce_brand is online-only by definition (docs/ARCHETYPES.md §1.4:
+// "An online-only product brand ... delivery is by post/courier — not
+// in-person") and never needs region, so it's excluded outright. marketplace
+// and physical_product both carry their own copy of the region question
+// (same key/maps_to) inside their banks, gated by their sales-channel /
+// geographic-scope answers via show_if — founders on national/global-only
+// paths never see it (Danny, 2026-07-10).
+const LOCATION_SENSITIVE_ARCHETYPES = ['local_service']
 
 const REGION_QUESTION: Question = {
   key: 'founder_location_region',
