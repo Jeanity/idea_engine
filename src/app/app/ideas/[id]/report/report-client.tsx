@@ -1571,6 +1571,41 @@ export function FullReportViewer({ report, essentialServices = [], onActiveTabCh
               </>
             )
             : null}
+
+        {/* Demand tests belong with the marketing playbook (Danny, 2026-07-10) —
+            rendered outside the marketing conditional so they survive a failed
+            marketing section. Older reports pre-date this section — render
+            nothing rather than "unavailable". */}
+        {isUnavailable(validationCopy)
+          ? <UnavailableSection title="Test the demand — copy, paste, post" reason={validationCopy.reason} />
+          : validationCopy?.poll_question
+            ? (
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+                <h2 className="font-semibold text-white light:text-gray-900 mb-1">Test the demand — copy, paste, post</h2>
+                <p className="text-xs text-slate-500 light:text-gray-400 mb-4">Ready to paste unchanged — no editing needed.</p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Poll question</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
+                      &ldquo;<CitedText text={validationCopy.poll_question} />&rdquo;
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Ad line</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
+                      &ldquo;<CitedText text={validationCopy.ad_line} />&rdquo;
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Forum post</p>
+                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
+                      &ldquo;<CitedText text={validationCopy.forum_post} />&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+            : null}
       </div>
 
       {/* Panel 7: Risks & Next Steps */}
@@ -1632,38 +1667,6 @@ export function FullReportViewer({ report, essentialServices = [], onActiveTabCh
               </div>
             )
             : <UnavailableSection title="Next Steps" />}
-
-        {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
-        {isUnavailable(validationCopy)
-          ? <UnavailableSection title="Test the demand — copy, paste, post" reason={validationCopy.reason} />
-          : validationCopy?.poll_question
-            ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
-                <h2 className="font-semibold text-white light:text-gray-900 mb-1">Test the demand — copy, paste, post</h2>
-                <p className="text-xs text-slate-500 light:text-gray-400 mb-4">Ready to paste unchanged — no editing needed.</p>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Poll question</p>
-                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
-                      &ldquo;<CitedText text={validationCopy.poll_question} />&rdquo;
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Ad line</p>
-                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed">
-                      &ldquo;<CitedText text={validationCopy.ad_line} />&rdquo;
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300 light:text-indigo-700 mb-1">Forum post</p>
-                    <p className="text-sm text-slate-200 light:text-gray-800 font-mono bg-white/5 light:bg-gray-50 border border-white/10 light:border-gray-200 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
-                      &ldquo;<CitedText text={validationCopy.forum_post} />&rdquo;
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )
-            : null}
 
         {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
         {isUnavailable(oneThingToDo)

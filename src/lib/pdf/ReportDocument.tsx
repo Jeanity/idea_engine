@@ -535,6 +535,20 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               {marketing.starter_budget.note && <Text style={[styles.caption, { marginTop: 8 }]}>{marketing.starter_budget.note}</Text>}
             </Card>
           )}
+
+          {/* Demand tests belong with the marketing playbook (Danny, 2026-07-10) — mirrors the web report order. */}
+          {validationCopy?.poll_question && !isUnavailable(validationCopy) && (
+            <Card>
+              <Text style={styles.h3}>Test the Demand — Copy, Paste, Post</Text>
+              <Text style={[styles.caption, { marginBottom: 8 }]}>Ready to paste unchanged</Text>
+              <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: COLORS.accent, marginBottom: 3 }}>POLL QUESTION</Text>
+              <QuoteBlock>&ldquo;{validationCopy.poll_question}&rdquo;</QuoteBlock>
+              <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: COLORS.accent, marginBottom: 3 }}>AD LINE</Text>
+              <QuoteBlock>&ldquo;{validationCopy.ad_line}&rdquo;</QuoteBlock>
+              <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: COLORS.accent, marginBottom: 3 }}>FORUM POST</Text>
+              <QuoteBlock>&ldquo;{validationCopy.forum_post}&rdquo;</QuoteBlock>
+            </Card>
+          )}
           <PageFooter reportTitle={data.reportTitle} />
         </Page>
       )}
@@ -580,7 +594,10 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
             </Card>
           )}
 
-          {validationCopy?.poll_question && !isUnavailable(validationCopy) && (
+          {/* Demand tests moved to the marketing page (web order parity) —
+              rendered here only when the marketing page didn't render at all,
+              so the copy is never lost. */}
+          {!hasMarketing && validationCopy?.poll_question && !isUnavailable(validationCopy) && (
             <Card>
               <Text style={styles.h3}>Test the Demand — Copy, Paste, Post</Text>
               <Text style={[styles.caption, { marginBottom: 8 }]}>Ready to paste unchanged</Text>
