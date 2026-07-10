@@ -34,6 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <body> before React hydrates (e.g. data-cjcrx), which is noise —
           this only silences attribute mismatches on this one element. */}
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-white text-gray-900">
+        {/* Smexy-mode roaming aurora blobs — display:none outside .smexy
+            (globals.css "Smexy mode" section). Four <i> wrappers animate X,
+            their ::before blobs animate Y. */}
+        <div className="smexy-aurora" aria-hidden="true">
+          <i /><i /><i /><i />
+        </div>
         <AnalyticsBeacon />
         {children}
         <CookieConsentBanner />

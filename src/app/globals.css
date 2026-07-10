@@ -234,29 +234,98 @@ select option {
   background-color: #06040f;
 }
 
-/* Aurora — huge blurred color fields drifting behind everything. The page
-   shells become translucent (below) so this glows through. */
-.smexy body::before {
-  content: '';
-  position: fixed;
-  inset: -22%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(30% 36% at 10% 12%, rgba(99, 102, 241, 0.28), transparent 64%),
-    radial-gradient(24% 30% at 92% 8%, rgba(217, 70, 239, 0.18), transparent 62%),
-    radial-gradient(32% 38% at 88% 90%, rgba(34, 211, 238, 0.14), transparent 66%),
-    radial-gradient(24% 30% at 12% 92%, rgba(139, 92, 246, 0.20), transparent 62%),
-    #06040f;
-  filter: blur(64px) saturate(125%);
-  animation: smexy-aurora 28s ease-in-out infinite alternate;
+/* Aurora — free-roaming color fields (the .smexy-aurora element in
+   layout.tsx) that wander the viewport and bounce off its edges. Each blob
+   runs TWO alternate animations — X on the wrapper <i>, Y on its ::before —
+   with co-prime durations, so the combined path is a slow Lissajous curve
+   that reads as random drifting and takes minutes to repeat. Transforms only,
+   so every blob stays on the compositor. Page shells become translucent
+   (below) so the roaming light glows through. */
+.smexy-aurora {
+  display: none;
 }
 
-@keyframes smexy-aurora {
-  0%   { transform: rotate(0deg) scale(1); }
-  50%  { transform: rotate(4deg) scale(1.09) translate(2%, -2%); }
-  100% { transform: rotate(-3deg) scale(1.05) translate(-2%, 2%); }
+.smexy .smexy-aurora {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
 }
+
+.smexy .smexy-aurora i {
+  position: absolute;
+  display: block;
+  will-change: transform;
+}
+
+.smexy .smexy-aurora i::before {
+  content: '';
+  display: block;
+  border-radius: 50%;
+  filter: blur(56px);
+  will-change: transform;
+}
+
+.smexy .smexy-aurora i:nth-child(1) {
+  top: -20vh;
+  left: -15vw;
+  animation: smexy-drift-x-1 43s ease-in-out infinite alternate;
+}
+.smexy .smexy-aurora i:nth-child(1)::before {
+  width: 52vw;
+  height: 52vw;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.42), transparent 70%);
+  animation: smexy-drift-y-1 31s ease-in-out infinite alternate;
+}
+
+.smexy .smexy-aurora i:nth-child(2) {
+  top: -12vh;
+  right: -14vw;
+  animation: smexy-drift-x-2 53s ease-in-out infinite alternate;
+}
+.smexy .smexy-aurora i:nth-child(2)::before {
+  width: 42vw;
+  height: 42vw;
+  background: radial-gradient(circle, rgba(217, 70, 239, 0.30), transparent 70%);
+  animation: smexy-drift-y-2 37s ease-in-out infinite alternate;
+}
+
+.smexy .smexy-aurora i:nth-child(3) {
+  bottom: -18vh;
+  right: -10vw;
+  animation: smexy-drift-x-3 47s ease-in-out infinite alternate;
+}
+.smexy .smexy-aurora i:nth-child(3)::before {
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.24), transparent 70%);
+  animation: smexy-drift-y-3 29s ease-in-out infinite alternate;
+}
+
+.smexy .smexy-aurora i:nth-child(4) {
+  bottom: -15vh;
+  left: -12vw;
+  animation: smexy-drift-x-4 61s ease-in-out infinite alternate;
+}
+.smexy .smexy-aurora i:nth-child(4)::before {
+  width: 38vw;
+  height: 38vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.36), transparent 70%);
+  animation: smexy-drift-y-4 41s ease-in-out infinite alternate;
+}
+
+/* X ranges are sized so each blob crosses most of the screen and reverses at
+   the far side (alternate = the "bounce"). */
+@keyframes smexy-drift-x-1 { from { transform: translateX(0); }    to { transform: translateX(70vw); } }
+@keyframes smexy-drift-y-1 { from { transform: translateY(0); }    to { transform: translateY(75vh); } }
+@keyframes smexy-drift-x-2 { from { transform: translateX(0); }    to { transform: translateX(-65vw); } }
+@keyframes smexy-drift-y-2 { from { transform: translateY(0); }    to { transform: translateY(80vh); } }
+@keyframes smexy-drift-x-3 { from { transform: translateX(0); }    to { transform: translateX(-72vw); } }
+@keyframes smexy-drift-y-3 { from { transform: translateY(0); }    to { transform: translateY(-70vh); } }
+@keyframes smexy-drift-x-4 { from { transform: translateX(0); }    to { transform: translateX(68vw); } }
+@keyframes smexy-drift-y-4 { from { transform: translateY(0); }    to { transform: translateY(-78vh); } }
 
 /* Film grain — fixed wash above content (below nothing interactive: it is
    pointer-transparent and near-invisible; it just kills flat digital color). */
@@ -387,7 +456,7 @@ select option {
   body { background: #fff !important; }
   /* Smexy is a screen-only veneer — no aurora/grain layers or gradient-text
      titles on paper. */
-  .smexy body::before,
+  .smexy .smexy-aurora,
   .smexy body::after { display: none !important; }
   .smexy h1 { background: none !important; color: #000 !important; }
   .print-force-light, .print-force-light * {
@@ -415,7 +484,8 @@ select option {
     animation: none !important;
   }
 
-  .smexy body::before {
+  .smexy .smexy-aurora i,
+  .smexy .smexy-aurora i::before {
     animation: none !important;
   }
 
