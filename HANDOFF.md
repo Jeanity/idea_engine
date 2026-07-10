@@ -1,3 +1,43 @@
+# ❓ DECISIONS NEEDED FROM DANNY — question-flow audit, 2026-07-10 evening
+
+Two-researcher user-simulation audit of the question flow (per Danny's ask after the
+bottle bugs). Mechanical fixes shipped same evening (see the audit section below once
+merged). These need YOUR call — answer in any order:
+
+1. **Materials cost for self-made products (HIGH — worst finding).** The ingredient-list
+   answer ("500g oat flour, 2 eggs…") was being digit-mangled by the deterministic cost
+   calculator into garbage per-unit costs (billions) — physical_product/ecommerce reports
+   use that calculator as the PRIMARY cost path (no AI). An interim guard now treats
+   unparseable text as "not provided" (honest omission) — but materials then drop out of
+   COGS for self-made founders. Pick the real fix:
+   (a) change the question to a numeric "total ingredient/materials cost per batch" and
+       keep an OPTIONAL free-text ingredients question for report context — free, simple
+       (my recommendation);
+   (b) add the small Haiku parsing step the original docs/QUESTIONS.md design called for
+       (~a cent per report);
+   (c) route physical products through the AI cost estimator like other archetypes
+       (more tokens per report).
+2. **Invention: license-only vs build-and-sell.** The invention bank treats every inventor
+   as building a business. A commercialization-path question could branch: licensors get
+   royalty/deal research instead of unit costs. Build it? (Hardware inventions DID just
+   get manufacturing cost questions — this is about the licensing path.)
+3. **Archetype confirm step.** The override dropdown gives no explanation of what each
+   archetype means (your bottle sat exactly on such a boundary), and overriding does NOT
+   regenerate the one-line restatement (written for the original archetype). Add short
+   descriptions + regenerate restatement on override (one extra small AI call)?
+4. **local_service assumes solo operators.** No staffing/headcount question exists (no
+   maps_to key for it), so an employee-based business (e.g. cleaning company with crews)
+   is priced on the founder's own hours. Add a staffing question + key?
+5. **marketplace never asks its differentiator.** Its demand-side question is wired into
+   the 'differentiator' slot the competitor research reads — so competitor research gets
+   a customer description instead of what makes the marketplace different. Add a real
+   differentiator question + dedicated key, and re-home the demand-side answer?
+6. **(FYI, no action needed)** physical_product's "which equipment do you own" answer is
+   collected but consumed by nothing in the deterministic path — worth wiring into
+   startup-cost logic during the materials fix (1), whichever option you pick.
+
+---
+
 # Handoff — 2026-07-10 AFTERNOON (Teaser gating + local-day charts)
 
 Two builds, verified together (tsc/lint/build/211 tests clean). NOT click-tested (auth).
