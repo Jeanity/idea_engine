@@ -1,3 +1,22 @@
+# Smexy mode — third theme (2026-07-11)
+
+Danny asked for a third "wow" theme next to dark/light. Shipped as `.smexy` on <html>
+(ThemeToggle cycles dark → light → smexy; sparkles icon): dark mode stays the base and a
+pure-CSS layer in globals.css ("Smexy mode" section) adds an animated aurora behind every
+page, liquid-glass cards (targets the app's own bg-slate-900/80 convention), gradient CTAs
+(bg-indigo-500), a silver-sheen gradient on h1s, film grain, and themed scrollbar/selection.
+No component markup changed except ThemeToggle + the layout init script.
+**Landing-page exception**: its dark sections sit on an opaque white wrapper (light lower
+half), so translucent shells there composite to grey — inside .bg-white wrappers the shells
+stay solid and the hero's own blobs get boosted (saturate/brightness) instead.
+**Kill switch (Danny's ask)**: app_settings 'smexy_theme' (default ON, src/lib/smexy.ts),
+card in Admin → Settings, /api/admin/smexy (GET/PATCH, admin-gated — 401 verified) +
+public /api/theme-modes read by ThemeToggle; when off, the mode leaves the cycle and saved
+'smexy' visitors demote to dark next load (click-verified via temporary route stub).
+Print/PDF and prefers-reduced-motion are handled; light + dark verified pixel-unchanged.
+Dev note: Turbopack's persistent .next cache in this Windows worktree silently served stale
+CSS across dev-server restarts — if edits don't show up, delete .next.
+
 # Rebrand: Idea Engine → HadIdea (2026-07-10)
 
 Product renamed **HadIdea** (camel case in text/titles, `HADIDEA` PDF wordmark) to match
