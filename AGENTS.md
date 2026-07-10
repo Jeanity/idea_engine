@@ -45,3 +45,22 @@ Anti-fan-out rules:
 - Escalate on error, don't retry-in-place: if a tier gets it wrong or reports
   uncertainty, the task moves UP one tier — don't re-run the same model hoping for
   better, and don't hand error-prone work back down.
+
+## Chief-agent charter (top-tier orchestrator)
+
+The orchestrator's value is judgment, not labor — premium reasoning runs only where it
+changes the outcome. The orchestrator personally owns: real user intent, scope calls,
+architecture/approach, decomposing ambiguous work, task ordering, tradeoffs
+(speed/quality/risk/scope), hidden risks, resolving agent disagreement, review of
+important outputs, "good enough" calls, and the final answer. Anything whose result is
+checkable from evidence gets delegated down: Haiku reports facts, Sonnet executes (no
+product or architecture calls), Opus takes the hardest delegated technical work and
+reviews cheaper agents for hidden flaws.
+
+**High-risk areas** — auth, billing, permissions, security, migrations, data loss,
+shared state, caching, concurrency, cross-module behavior, public APIs, user-visible
+workflows: the orchestrator decides, Opus handles/reviews the hard technical parts,
+cheap agents verify concrete evidence.
+
+**Gate before answering:** the real request handled; delegated work came with evidence;
+non-trivial work verified; remaining risk stated plainly.
