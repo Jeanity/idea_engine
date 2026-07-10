@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { parseUtmParams, enumerateUtcDays, fillDailySeries, fillHourlySeries, utcDay, utcHourLabel, UTC_HOUR_LABELS } from '@/lib/analytics'
+import {
+  parseUtmParams,
+  enumerateUtcDays,
+  fillDailySeries,
+  fillHourlySeries,
+  utcDay,
+  utcHourLabel,
+  UTC_HOUR_LABELS,
+  localDayLabel,
+} from '@/lib/analytics'
 
 describe('parseUtmParams', () => {
   it('returns null when no utm params are present', () => {
@@ -86,6 +95,23 @@ describe('fillDailySeries', () => {
       { day: '2026-07-06', count: 5 },
       { day: '2026-07-07', count: 0 },
     ])
+  })
+})
+
+describe('localDayLabel', () => {
+  it('is the identity of utcDay when tzOffsetMinutes is 0', () => {
+    const at = new Date('2026-07-10T23:30:00Z')
+    expect(localDayLabel(at, 0)).toBe(utcDay(at))
+  })
+
+  it('rolls a late-UTC instant into the next local day for a positive-UTC admin (e.g. Sydney, UTC+10 -> offset -600)', () => {
+    // 23:00 UTC on the 10th is 09:00 on the 11th in Sydney.
+    expect(localDayLabel(new Date('2026-07-10T23:00:00Z'), -600)).toBe('2026-07-11')
+  })
+
+  it('rolls an early-UTC instant into the previous local day for a negative-UTC admin (e.g. US Pacific, UTC-7 -> offset 420)', () => {
+    // 03:00 UTC on the 10th is 20:00 on the 9th in Pacific (UTC-7).
+    expect(localDayLabel(new Date('2026-07-10T03:00:00Z'), 420)).toBe('2026-07-09')
   })
 })
 

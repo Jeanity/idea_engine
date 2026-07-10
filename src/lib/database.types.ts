@@ -927,6 +927,22 @@ export type Database = {
         Args: { from_ts: string; to_ts: string }
         Returns: { day: string; count: number }[]
       }
+      // Migration 026 — local-day variants used by /api/admin/graphs for
+      // multi-day charts, bucketing by the admin's local calendar day instead
+      // of UTC. New function names (not overloads) so the route can fall back
+      // to the migration-005 versions above if 026 hasn't run yet.
+      analytics_sessions_per_local_day: {
+        Args: { from_ts: string; to_ts: string; tz_offset_minutes?: number }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_unique_visitors_per_local_day: {
+        Args: { from_ts: string; to_ts: string; tz_offset_minutes?: number }
+        Returns: { day: string; count: number }[]
+      }
+      analytics_returning_visitors_per_local_day: {
+        Args: { from_ts: string; to_ts: string; tz_offset_minutes?: number }
+        Returns: { day: string; count: number }[]
+      }
       analytics_top_referrers: {
         Args: { from_ts: string; to_ts: string; max_rows?: number }
         Returns: { referrer_host: string; count: number }[]

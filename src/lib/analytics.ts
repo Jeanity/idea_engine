@@ -1,8 +1,13 @@
 // Pure, side-effect-free analytics helpers shared by the tracking beacon and
 // (later) the admin dashboard. No DOM, no Supabase — safe to unit-test.
 //
-// Buckets are UTC calendar days to match the Postgres aggregation RPCs
-// (migration 005), which all group on `(occurred_at at time zone 'UTC')::date`.
+// `utcDay`/`enumerateUtcDays`/`fillDailySeries` deal in UTC calendar days,
+// matching the migration-005 Postgres aggregation RPCs (which group on
+// `(occurred_at at time zone 'UTC')::date`) and the day-LABEL sequence for a
+// range (labels are just the requested from/to dates verbatim — tz-agnostic).
+// `localDayLabel` is the admin-local-timezone variant used by
+// /api/admin/graphs (migration 026) to bucket individual events into those
+// labels using the admin's tz offset instead of raw UTC.
 
 /** First-party UTM parameters captured on the first page of a session. */
 export interface Utm {
@@ -43,6 +48,17 @@ const DAY_MS = 24 * 60 * 60 * 1000
 /** The UTC 'YYYY-MM-DD' date part of a timestamp. */
 export function utcDay(at: Date): string {
   return at.toISOString().slice(0, 10)
+}
+
+/**
+ * The 'YYYY-MM-DD' calendar-day label of a UTC instant in an admin's LOCAL
+ * timezone, given a `Date.getTimezoneOffset()`-style minute offset (UTC minus
+ * local — e.g. Sydney/UTC+10 is -600). Mirrors the admin/graphs route's
+ * `localHourLabel`: shift the instant by the offset, then read its UTC date
+ * part (identity when tzOffsetMinutes is 0).
+ */
+export function localDayLabel(at: Date, tzOffsetMinutes: number): string {
+  return utcDay(new Date(at.getTime() - tzOffsetMinutes * 60000))
 }
 
 /**

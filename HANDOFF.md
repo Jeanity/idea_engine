@@ -251,8 +251,13 @@ Surveys: paste the 10 questions + toggle on → Settings→Promo: set caps → S
 
 ## Next-up queue (nothing in flight)
 1. ~~SMTP wiring~~ DONE later this session (`b95fa62` — IONOS live, all email hooks wired).
-2. Multi-day admin charts still bucket UTC days (needs RPC migration for local-day grouping —
-   single-day/hourly is already local).
+2. ~~Multi-day admin charts bucket UTC days~~ DONE (migration
+   `026_local_day_graphs.sql` — NOT YET RUN in prod, run it in the Supabase SQL editor).
+   Adds `analytics_{sessions,unique_visitors,returning_visitors}_per_local_day` RPCs
+   (tz_offset_minutes param) alongside the migration-005 ones; /api/admin/graphs tries the
+   new RPCs first and falls back to the old UTC-day ones (42883/PGRST202) if 026 hasn't run
+   yet, so nothing breaks pre-migration — multi-day charts just stay UTC-bucketed until it's
+   applied, same as before this fix.
 3. Standing backlog: security/privacy workstream, 4B.3 cost/quality matrix, real stats for
    demo-stats.ts, viability-score calibration, fixtures re-capture, multi-admin roles
    (ADMIN_EMAIL is a single env var — needs an is_admin mechanism before admin #2 joins).

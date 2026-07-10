@@ -4,7 +4,7 @@ import {
   enumerateUtcDays,
   fillDailySeries,
   fillHourlySeries,
-  utcDay,
+  localDayLabel,
   utcHourLabel,
   UTC_HOUR_LABELS,
   type DailyCount,
@@ -16,9 +16,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 // route — every admin route re-checks isAdminEmail itself, then uses the
 // service-role client, per project ground rules.
 //
-// All day buckets are UTC calendar days (see period-picker.tsx / analytics.ts
-// notes) so this stays aligned with the dashboard stat tiles and the Block 2
-// aggregation RPCs, which group on `(occurred_at at time zone 'UTC')::date`.
+// Day/hour buckets are the ADMIN'S LOCAL calendar days/hours (tz param, see
+// parseTzParam below) — NOT UTC. The `from`/`to` request params are already
+// local calendar-day labels (period-picker.tsx builds them off the browser's
+// local Date fields), so the range and every bucket key line up with what
+// the admin actually picked. Reports/signups/sales bucket in JS here using
+// `bucketOf`. Sessions/unique-visitors/returning-visitors use per-day Postgres
+// RPCs (migration 026, `..._per_local_day`, taking a tz_offset_minutes arg)
+// that group on the shifted calendar date; if migration 026 hasn't run yet,
+// `perLocalDay` below falls back to the migration-005 UTC-day RPCs queried
+// over the literal UTC day range instead of 500ing (see isMissingFunction).
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const MAX_TOP_ROWS = 15
@@ -60,6 +67,13 @@ function isFullReport(sections: unknown): boolean {
 // been run in this environment yet.
 function isMissingColumn(error: { code?: string } | null | undefined): boolean {
   return error?.code === '42703' || error?.code === 'PGRST204'
+}
+
+// Postgres 42883 = undefined_function, PostgREST PGRST202 = "function not
+// found in schema cache" — both mean migration 026 (the `..._per_local_day`
+// RPCs) hasn't been run in this environment yet.
+function isMissingFunction(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42883' || error?.code === 'PGRST202'
 }
 
 interface ReportRow {
@@ -121,23 +135,36 @@ export async function GET(request: NextRequest) {
   // lonely day point. The `day` field name is kept in the payload for both
   // granularities so chart components need no data-shape changes.
   //
-  // Hourly mode runs in the BROWSER'S timezone (tz param): the day starts at
-  // the user's local midnight and buckets are local hours, so "today" reads
-  // 00:00 → 23:00 wall-clock instead of starting at whatever UTC midnight is
-  // locally. Multi-day mode stays on UTC calendar days — the per-day RPCs
-  // group on UTC dates and can't shift per-request.
+  // Every bucket — hourly or daily — runs in the ADMIN'S LOCAL timezone (tz
+  // param): a day starts at local midnight and buckets are local hours/days,
+  // so "today"/"yesterday" etc. read local wall-clock instead of whatever UTC
+  // midnight happens to be locally.
   const hourly = from === to
-  const tzShiftMs = hourly ? tz * 60000 : 0
+  const tzShiftMs = tz * 60000
 
-  const fromDate = new Date(Date.parse(`${from}T00:00:00.000Z`) + tzShiftMs)
-  const toDate = new Date(Date.parse(`${to}T00:00:00.000Z`) + tzShiftMs)
+  // Literal (UTC, tz-independent) day boundaries of the requested range. Day
+  // LABELS are just the from/to calendar dates verbatim — tz only decides
+  // which INSTANTS map into each label. Also doubles as the fallback query
+  // range for the migration-005 UTC-day RPCs (see perLocalDay below): querying
+  // this exact UTC-aligned range against a UTC-day-grouping RPC reproduces the
+  // pre-026 behaviour exactly, so the fallback rows line up with bucketKeys
+  // with no dropped/misattributed counts.
+  const fromDayLiteral = new Date(Date.parse(`${from}T00:00:00.000Z`))
+  const toDayLiteral = new Date(Date.parse(`${to}T00:00:00.000Z`))
+  const utcRangeStart = fromDayLiteral.toISOString()
+  const utcRangeEndExclusive = new Date(toDayLiteral.getTime() + 24 * 60 * 60 * 1000).toISOString()
+
+  // Instant range actually queried: shifted by tz so the hour/day boundaries
+  // align with the admin's local midnight.
+  const fromDate = new Date(fromDayLiteral.getTime() + tzShiftMs)
+  const toDate = new Date(toDayLiteral.getTime() + tzShiftMs)
   const rangeStart = fromDate.toISOString()
   const rangeEndExclusive = new Date(toDate.getTime() + 24 * 60 * 60 * 1000).toISOString()
 
-  /** Local-hour label of a UTC instant (identity when tz=0 / daily mode). */
+  /** Local-hour label of a UTC instant (identity when tz=0). */
   const localHourLabel = (at: Date) => utcHourLabel(new Date(at.getTime() - tz * 60000))
-  const bucketOf = (at: Date) => (hourly ? localHourLabel(at) : utcDay(at))
-  const bucketKeys = hourly ? UTC_HOUR_LABELS : enumerateUtcDays(fromDate, toDate)
+  const bucketOf = (at: Date) => (hourly ? localHourLabel(at) : localDayLabel(at, tz))
+  const bucketKeys = hourly ? UTC_HOUR_LABELS : enumerateUtcDays(fromDayLiteral, toDayLiteral)
 
   // Only used AFTER the isAdminEmail check above, per project ground rules.
   const service = createServiceClient()
@@ -146,6 +173,31 @@ export async function GET(request: NextRequest) {
   // aggregates page_events directly (below) — volumes for one day are small.
   const emptyDaily = () =>
     Promise.resolve({ data: [] as { day: string; count: number }[] | null, error: null })
+
+  // Calls the migration-026 local-day RPC (buckets by the admin's local
+  // calendar day via tz_offset_minutes). Falls back to the migration-005
+  // UTC-day RPC — queried over the LITERAL UTC day range, see utcRangeStart
+  // above — if 026 hasn't been run yet, so this route degrades to the
+  // pre-026 (UTC-day) behaviour for these three metrics instead of 500ing.
+  async function perLocalDay(
+    localFn:
+      | 'analytics_sessions_per_local_day'
+      | 'analytics_unique_visitors_per_local_day'
+      | 'analytics_returning_visitors_per_local_day',
+    utcFn: 'analytics_sessions_per_day' | 'analytics_unique_visitors_per_day' | 'analytics_returning_visitors_per_day'
+  ) {
+    const res = await service.rpc(localFn, {
+      from_ts: rangeStart,
+      to_ts: rangeEndExclusive,
+      tz_offset_minutes: tz,
+    })
+    if (isMissingFunction(res.error)) {
+      return service.rpc(utcFn, { from_ts: utcRangeStart, to_ts: utcRangeEndExclusive })
+    }
+    // Any other error is logged by the generic loop over Promise.all results
+    // below, same as every other query in this route.
+    return res
+  }
 
   // Broadened to EITHER timestamp landing in range: an upgraded row's
   // generation_completed_at moves to the full-report completion date, which
@@ -188,9 +240,9 @@ export async function GET(request: NextRequest) {
     signupsRes,
     purchasesRes,
   ] = await Promise.all([
-    hourly ? emptyDaily() : service.rpc('analytics_sessions_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
-    hourly ? emptyDaily() : service.rpc('analytics_unique_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
-    hourly ? emptyDaily() : service.rpc('analytics_returning_visitors_per_day', { from_ts: rangeStart, to_ts: rangeEndExclusive }),
+    hourly ? emptyDaily() : perLocalDay('analytics_sessions_per_local_day', 'analytics_sessions_per_day'),
+    hourly ? emptyDaily() : perLocalDay('analytics_unique_visitors_per_local_day', 'analytics_unique_visitors_per_day'),
+    hourly ? emptyDaily() : perLocalDay('analytics_returning_visitors_per_local_day', 'analytics_returning_visitors_per_day'),
     service.rpc('analytics_top_referrers', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
     service.rpc('analytics_top_utm_campaigns', { from_ts: rangeStart, to_ts: rangeEndExclusive, max_rows: MAX_TOP_ROWS }),
     fetchReportRows(),
@@ -276,20 +328,24 @@ export async function GET(request: NextRequest) {
     }
     returningVisitorsSeries = fillHourlySeries(returningByHour)
   } else {
+    // fromDayLiteral/toDayLiteral (not the tz-shifted fromDate/toDate) — the
+    // RPC rows are already keyed by calendar-day label (local via migration
+    // 026, or UTC-fallback-but-range-aligned via perLocalDay), matching
+    // bucketKeys, which is also built off the literal dates.
     sessionsSeries = fillDailySeries(
       (sessionsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-      fromDate,
-      toDate
+      fromDayLiteral,
+      toDayLiteral
     )
     uniqueVisitorsSeries = fillDailySeries(
       (uniqueVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-      fromDate,
-      toDate
+      fromDayLiteral,
+      toDayLiteral
     )
     returningVisitorsSeries = fillDailySeries(
       (returningVisitorsRes.data ?? []).map(r => ({ day: r.day, count: Number(r.count) })),
-      fromDate,
-      toDate
+      fromDayLiteral,
+      toDayLiteral
     )
   }
 
