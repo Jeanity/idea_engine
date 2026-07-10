@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gatePreviewSections, type GatedViabilitySnapshot } from '@/lib/teaser-gating'
+import { gatePreviewSections, type GatedViabilitySnapshot, type GatedCostPreview } from '@/lib/teaser-gating'
 
 const scores = {
   market_opportunity: { score: 4, rationale: 'Strong demand signals in the niche.' },
@@ -16,6 +16,20 @@ const preview = {
     { action: 'Price a second-hand van', timeframe: 'This month' },
     { action: 'Apply for the mobile vendor permit', timeframe: 'This month' },
   ],
+  section_hooks: {
+    competitors: 'The full report maps every van and kiosk within 500m of your top three stations.',
+    cost: 'Your setup costs hinge on whether you buy or lease the van — the full report prices both paths.',
+    pricing: 'Commuter coffee pricing runs tighter than café pricing — the full report benchmarks your corridor.',
+    legal_compliance: 'Mobile vendor permits vary by station operator — the full report lists exactly which ones apply.',
+    marketing: 'Commuter routines make morning visibility the highest-leverage channel — the full report plans it.',
+  },
+  cost_preview: {
+    rows: [
+      { label: 'Second-hand van', amount: 'A$8,000–12,000' },
+      { label: 'Vendor permit', amount: 'A$450' },
+      { label: 'First stock order', amount: 'A$600' },
+    ],
+  },
 }
 
 describe('gatePreviewSections', () => {
@@ -64,5 +78,42 @@ describe('gatePreviewSections', () => {
     const gated = gatePreviewSections({ next_steps: [preview.next_steps[0]] })
     expect(gated.next_steps).toHaveLength(1)
     expect(gated.locked_next_steps).toBe(0)
+  })
+
+  it('passes section_hooks through untouched — they are meant to show', () => {
+    const gated = gatePreviewSections(preview)
+    expect(gated.section_hooks).toEqual(preview.section_hooks)
+  })
+
+  it('cost_preview: strips labels entirely, keeps only real amounts + a row count', () => {
+    const gated = gatePreviewSections(preview)
+    const cp = gated.cost_preview as GatedCostPreview
+    expect(cp.rows).toEqual([
+      { amount: 'A$8,000–12,000' },
+      { amount: 'A$450' },
+      { amount: 'A$600' },
+    ])
+    expect(cp.row_count).toBe(3)
+    // The redaction is real — no label text survives anywhere in the output.
+    const json = JSON.stringify(gated)
+    expect(json).not.toContain('Second-hand van')
+    expect(json).not.toContain('Vendor permit')
+    expect(json).not.toContain('First stock order')
+    expect(json).not.toContain('"label"')
+    // Amounts are the whole point of the morsel — they must survive.
+    expect(json).toContain('A$8,000')
+    expect(json).toContain('A$450')
+    expect(json).toContain('A$600')
+  })
+
+  it('normalises legacy next_steps_preview to next_steps and never echoes the raw legacy key', () => {
+    const legacy = {
+      summary: preview.summary,
+      next_steps_preview: preview.next_steps,
+    }
+    const gated = gatePreviewSections(legacy)
+    expect(gated.next_steps).toEqual([preview.next_steps[0]])
+    expect(gated.locked_next_steps).toBe(2)
+    expect(gated.next_steps_preview).toBeUndefined()
   })
 })

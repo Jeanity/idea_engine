@@ -581,15 +581,17 @@ function GatedViabilitySnapshot({ vs }: {
 type LockedSkeleton = 'list' | 'table' | 'paragraphs' | 'checklist' | 'channels'
 
 /** What the full report contains, rendered as visible-but-locked structure.
- *  Copy is generic by design — the teaser genuinely doesn't know the
+ *  Descriptions are generic by design — the teaser genuinely doesn't know the
  *  specifics (the full report hasn't been generated yet), so nothing here
- *  claims counts or findings it can't back. */
-const LOCKED_SECTIONS: Array<{ title: string; description: string; skeleton: LockedSkeleton }> = [
-  { title: 'Competitors', description: '5–8 real competitors with pricing, positioning and the gaps you can exploit', skeleton: 'list' },
-  { title: 'Cost breakdown', description: 'Set-up and running costs for your idea — materials, labour, power, margin', skeleton: 'table' },
-  { title: 'Pricing strategy', description: 'What to charge, based on comparable market rates', skeleton: 'paragraphs' },
-  { title: 'Legal & compliance', description: 'The permits, registrations and rules for your location, with official links', skeleton: 'checklist' },
-  { title: 'Marketing playbook', description: 'The right channels for your customers, with starter budgets', skeleton: 'channels' },
+ *  claims counts or findings it can't back. `hookKey` matches a key in the
+ *  teaser's `section_hooks` (src/lib/prompts/teaser.ts), which — unlike the
+ *  description — IS idea-specific and real. */
+const LOCKED_SECTIONS: Array<{ title: string; description: string; skeleton: LockedSkeleton; hookKey: string }> = [
+  { title: 'Competitors', description: '5–8 real competitors with pricing, positioning and the gaps you can exploit', skeleton: 'list', hookKey: 'competitors' },
+  { title: 'Cost breakdown', description: 'Set-up and running costs for your idea — materials, labour, power, margin', skeleton: 'table', hookKey: 'cost' },
+  { title: 'Pricing strategy', description: 'What to charge, based on comparable market rates', skeleton: 'paragraphs', hookKey: 'pricing' },
+  { title: 'Legal & compliance', description: 'The permits, registrations and rules for your location, with official links', skeleton: 'checklist', hookKey: 'legal_compliance' },
+  { title: 'Marketing playbook', description: 'The right channels for your customers, with starter budgets', skeleton: 'channels', hookKey: 'marketing' },
 ]
 
 function LockedSectionSkeleton({ kind }: { kind: LockedSkeleton }) {
@@ -636,7 +638,34 @@ function LockedSectionSkeleton({ kind }: { kind: LockedSkeleton }) {
   )
 }
 
-function LockedSectionCard({ title, description, skeleton }: { title: string; description: string; skeleton: LockedSkeleton }) {
+/** Real dollar amounts (no labels — those are redacted server-side, see
+ *  src/lib/teaser-gating.ts GatedCostPreview) standing in for the cost table:
+ *  a blurred label bar next to the real figure it belongs to. */
+function CostPreviewRows({ rows }: { rows: Array<{ amount: string }> }) {
+  return (
+    <div className="space-y-2">
+      {rows.map((row, i) => (
+        <div key={i} className="flex items-center justify-between gap-6">
+          <SkeletonBar w="w-1/3" />
+          <span className="text-sm font-medium text-slate-200 light:text-gray-800">{row.amount}</span>
+        </div>
+      ))}
+      <p className="text-xs text-slate-500 light:text-gray-400 pt-1">
+        Full breakdown — including what each figure is — in the full report.
+      </p>
+    </div>
+  )
+}
+
+function LockedSectionCard({ title, description, skeleton, hook, costPreview }: {
+  title: string
+  description: string
+  skeleton: LockedSkeleton
+  /** Idea-specific teaser line from section_hooks — real text, shown above the skeleton. */
+  hook?: string
+  /** Real (label-redacted) cost figures — only ever passed for the Cost breakdown card. */
+  costPreview?: { rows: Array<{ amount: string }> }
+}) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/50 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4">
       <div className="flex items-center gap-2 mb-1">
@@ -644,7 +673,20 @@ function LockedSectionCard({ title, description, skeleton }: { title: string; de
         <span className="text-slate-500 light:text-gray-400"><LockIcon className="w-3.5 h-3.5" /></span>
       </div>
       <p className="text-xs text-slate-500 light:text-gray-400 mb-3">{description}</p>
-      <LockedSectionSkeleton kind={skeleton} />
+      {hook && (
+        // CSS-only fade from readable hook text into the blurred skeleton
+        // below — a mask-image gradient, no extra overlay markup needed.
+        <p
+          className="text-sm text-slate-300 light:text-gray-700 mb-3 [mask-image:linear-gradient(to_bottom,black_65%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_65%,transparent_100%)]"
+        >
+          {hook}
+        </p>
+      )}
+      {costPreview && costPreview.rows.length > 0 ? (
+        <CostPreviewRows rows={costPreview.rows} />
+      ) : (
+        <LockedSectionSkeleton kind={skeleton} />
+      )}
     </div>
   )
 }
@@ -714,8 +756,16 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
   const gatedVs = gated
     ? (p.viability_snapshot as { headline_score?: number; overall_verdict: string; locked_dimensions: string[] } | undefined)
     : undefined
-  const nextStepsPreview = (p.next_steps ?? []) as Array<{ action: string; timeframe: string }>
+  // `next_steps_preview` is the pre-rename key some already-stored teasers
+  // still use (src/lib/prompts/teaser.ts) — fall back to it so old rows
+  // still render "Where to start" instead of silently disappearing.
+  const nextStepsPreview = (p.next_steps ?? p.next_steps_preview ?? []) as Array<{ action: string; timeframe: string }>
   const lockedNextSteps = gated ? ((p.locked_next_steps as number | undefined) ?? 0) : 0
+  // Idea-specific teaser morsels (src/lib/prompts/teaser.ts section_hooks,
+  // src/lib/teaser-gating.ts GatedCostPreview) — only ever rendered on the
+  // gated locked cards below; the ungated view is unchanged.
+  const sectionHooks = gated ? (p.section_hooks as Record<string, string> | undefined) : undefined
+  const costPreview = gated ? (p.cost_preview as { rows: Array<{ amount: string }> } | undefined) : undefined
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
@@ -765,7 +815,14 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
       {gated && (
         <div className="space-y-4">
           {LOCKED_SECTIONS.map(section => (
-            <LockedSectionCard key={section.title} {...section} />
+            <LockedSectionCard
+              key={section.title}
+              title={section.title}
+              description={section.description}
+              skeleton={section.skeleton}
+              hook={sectionHooks?.[section.hookKey]}
+              costPreview={section.hookKey === 'cost' ? costPreview : undefined}
+            />
           ))}
         </div>
       )}

@@ -72,21 +72,43 @@ export const generateTeaser = inngest.createFunction(
         answers,
       }) }],
       system: TEASER_SYSTEM_PROMPT,
-      maxTokens: 1024,
+      maxTokens: 2048,
       tag: 'report:teaser',
       provider,
     })
 
-    const teaser = extractJson(text) as {
-      summary: unknown
-      viability_snapshot: unknown
-      next_steps_preview: unknown
+    const parsed = extractJson(text) as {
+      summary?: { text?: unknown }
+      viability_snapshot?: { scores?: unknown; overall_verdict?: unknown }
+      next_steps?: unknown
+      next_steps_preview?: unknown
+      [key: string]: unknown
     }
 
+    // The prompt's output key is `next_steps`, but tolerate an older/odd
+    // model response still using the pre-rename `next_steps_preview` key —
+    // normalise at the source rather than storing an unreadable teaser.
+    if (parsed.next_steps === undefined && parsed.next_steps_preview !== undefined) {
+      parsed.next_steps = parsed.next_steps_preview
+      delete parsed.next_steps_preview
+    }
+
+    // Shape validation: a truncated or malformed response (maxTokens cutoff,
+    // model drift) must not be stored as a "complete" teaser — throw so
+    // Inngest's retries: 2 regenerates it instead.
+    if (typeof parsed.summary?.text !== 'string' || !parsed.summary.text.trim()) {
+      throw new Error(`Teaser response missing summary.text: ${text.slice(0, 200)}`)
+    }
+    if (typeof parsed.viability_snapshot?.scores !== 'object' || parsed.viability_snapshot.scores === null) {
+      throw new Error(`Teaser response missing viability_snapshot.scores: ${text.slice(0, 200)}`)
+    }
+
+    const teaser = parsed
+
     // `teaser` is parsed from the model's JSON response, so its fields are
-    // typed `unknown` above for callers; here we're just storing the whole
-    // parsed object into the untyped `Json` column, which any JSON.parse
-    // result satisfies at runtime.
+    // typed `unknown`/optional above for callers; here we're just storing
+    // the whole parsed object into the untyped `Json` column, which any
+    // JSON.parse result satisfies at runtime.
     await supabase.from('reports').update({
       preview_sections: teaser as unknown as Json,
       sections: {},

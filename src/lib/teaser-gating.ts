@@ -51,6 +51,16 @@ export interface GatedViabilitySnapshot {
   locked_dimensions: string[]
 }
 
+/** cost_preview row with the label dropped — amount is the only real morsel that ships. */
+export interface GatedCostPreviewRow {
+  amount: string
+}
+
+export interface GatedCostPreview {
+  rows: GatedCostPreviewRow[]
+  row_count: number
+}
+
 /**
  * Redacts a teaser's preview_sections for delivery. Returns a NEW object —
  * never mutates (and never writes back to) the stored row:
@@ -59,7 +69,14 @@ export interface GatedViabilitySnapshot {
  *   and rationales are REMOVED (they answered "is my idea any good?" for
  *   free — the conversion leak this feature exists to close). The dimension
  *   KEYS ship so the UI can render labelled locked rows.
- * - next_steps: first step only, plus a count of hidden ones.
+ * - next_steps: first step only, plus a count of hidden ones. Legacy teasers
+ *   stored before the `next_steps_preview` → `next_steps` rename are read
+ *   with a fallback so old rows still gate correctly (and the raw legacy
+ *   key is never echoed back unredacted).
+ * - section_hooks: passed through untouched — these idea-specific teaser
+ *   lines are meant to show on the locked cards.
+ * - cost_preview: labels are dropped entirely (never ship), only the real
+ *   `amount` values and a row count survive.
  * - Unavailable-markers and unknown sections pass through untouched.
  */
 export function gatePreviewSections(preview: Record<string, unknown>): Record<string, unknown> {
@@ -78,10 +95,26 @@ export function gatePreviewSections(preview: Record<string, unknown>): Record<st
     }
   }
 
-  const steps = preview.next_steps
+  // `next_steps_preview` is the pre-rename key some already-stored teasers
+  // still use — never leak that raw (unredacted) field back out.
+  const steps = preview.next_steps ?? preview.next_steps_preview
+  delete gated.next_steps_preview
   if (Array.isArray(steps) && steps.length > 0) {
     gated.next_steps = steps.slice(0, 1)
     gated.locked_next_steps = steps.length - 1
+  }
+
+  const costPreview = preview.cost_preview
+  if (costPreview && typeof costPreview === 'object') {
+    const rows = (costPreview as { rows?: unknown }).rows
+    if (Array.isArray(rows)) {
+      const gatedRows: GatedCostPreviewRow[] = rows
+        .map(row => (row as { amount?: unknown } | null)?.amount)
+        .filter((amount): amount is string => typeof amount === 'string')
+        .map(amount => ({ amount }))
+      const gatedCostPreview: GatedCostPreview = { rows: gatedRows, row_count: gatedRows.length }
+      gated.cost_preview = gatedCostPreview
+    }
   }
 
   return gated
