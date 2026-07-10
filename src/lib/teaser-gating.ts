@@ -104,6 +104,10 @@ export function gatePreviewSections(preview: Record<string, unknown>): Record<st
     gated.locked_next_steps = steps.length - 1
   }
 
+  // Drop the raw cost_preview unconditionally first: if a malformed teaser
+  // stored an unexpected shape (no rows array), the shallow spread above
+  // would otherwise pass the ORIGINAL — labels included — straight through.
+  delete gated.cost_preview
   const costPreview = preview.cost_preview
   if (costPreview && typeof costPreview === 'object') {
     const rows = (costPreview as { rows?: unknown }).rows

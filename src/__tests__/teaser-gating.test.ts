@@ -106,6 +106,16 @@ describe('gatePreviewSections', () => {
     expect(json).toContain('A$600')
   })
 
+  it('a malformed cost_preview (no rows array) is dropped rather than passed through', () => {
+    const malformed = {
+      summary: preview.summary,
+      cost_preview: { note: 'Second-hand van A$8,000' },
+    }
+    const gated = gatePreviewSections(malformed)
+    expect(gated.cost_preview).toBeUndefined()
+    expect(JSON.stringify(gated)).not.toContain('Second-hand van')
+  })
+
   it('normalises legacy next_steps_preview to next_steps and never echoes the raw legacy key', () => {
     const legacy = {
       summary: preview.summary,
