@@ -15,7 +15,7 @@ export interface ContactReplyRow {
 
 export interface ContactRow {
   id: string
-  category: 'feedback' | 'complaint' | 'question' | 'partnership'
+  category: 'feedback' | 'complaint' | 'question' | 'partnership' | 'billing'
   name: string
   email: string
   message: string
@@ -101,6 +101,10 @@ function DeleteButton({ submissionId, onDeleted }: { submissionId: string; onDel
 }
 
 function categoryTone(category: ContactRow['category']): string {
+  // Billing gets its own rose accent, distinct from partnership's amber and
+  // complaint's red — unanswered billing mail becomes chargebacks, so it
+  // needs to be impossible to miss in the queue.
+  if (category === 'billing') return 'bg-rose-500/20 text-rose-300 light:bg-rose-100 light:text-rose-700'
   if (category === 'partnership') return 'bg-amber-500/15 text-amber-300 light:bg-amber-100 light:text-amber-700'
   if (category === 'complaint') return 'bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700'
   return 'bg-white/10 text-slate-300 light:bg-gray-100 light:text-gray-600'
@@ -333,13 +337,18 @@ function ContactItem({ row, onDeleted }: { row: ContactRow; onDeleted?: () => vo
   }
 
   const isPartnership = row.category === 'partnership'
+  const isBilling = row.category === 'billing'
 
   if (isDeleted) return null
 
   return (
     <div
       className={`px-5 py-4 ${
-        isPartnership ? 'bg-amber-500/5 light:bg-amber-50/60' : ''
+        isBilling
+          ? 'bg-rose-500/10 light:bg-rose-50/80 border-l-2 border-rose-500/60 light:border-rose-400'
+          : isPartnership
+            ? 'bg-amber-500/5 light:bg-amber-50/60'
+            : ''
       }`}
     >
       <div className="flex items-start justify-between gap-3 flex-wrap">

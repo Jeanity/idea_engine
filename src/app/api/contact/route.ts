@@ -4,7 +4,7 @@ import { buildBrandedEmail, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { ContactCategory } from '@/lib/database.types'
 
-const VALID_CATEGORIES: ContactCategory[] = ['feedback', 'complaint', 'question', 'partnership']
+const VALID_CATEGORIES: ContactCategory[] = ['feedback', 'complaint', 'question', 'partnership', 'billing']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Postgres 42P01 = undefined_table (the error code when a query somehow hits
@@ -14,6 +14,16 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // mean the same thing here: migration 012 hasn't been run.
 function isMissingTable(error: { code?: string } | null | undefined): boolean {
   return error?.code === '42P01' || error?.code === 'PGRST205'
+}
+
+// Postgres 23514 = check_violation. The only way a 'billing' submission hits
+// this is migration 027 (which adds 'billing' to the category check
+// constraint) not having been run yet in this environment — every other
+// field is already validated above. Not logged via logError as a genuine
+// error since it's an expected, self-resolving pending-migration state (same
+// spirit as isMissingTable), just a console.warn so it's still visible.
+function isCheckViolation(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '23514'
 }
 
 // Public contact form submission. Uses the per-request client (respects RLS)
@@ -68,6 +78,16 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+    if (category === 'billing' && isCheckViolation(error)) {
+      console.warn('Billing contact submission rejected — migration 027 not yet run:', error.message)
+      return NextResponse.json(
+        {
+          error:
+            "This topic isn't available right now — please email us directly at hello@hadidea.com.",
+        },
+        { status: 400 }
+      )
+    }
     console.error('Error inserting contact submission:', error)
     await logError({
       source: 'api:contact',
@@ -84,8 +104,12 @@ export async function POST(request: NextRequest) {
   // logError source 'mailer').
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL
   if (adminEmail) {
-    const isPartnership = category === 'partnership'
-    const subjectPrefix = isPartnership ? '[Contact — PARTNERSHIP]' : '[Contact]'
+    const subjectPrefix =
+      category === 'billing'
+        ? '[Contact — BILLING]'
+        : category === 'partnership'
+          ? '[Contact — PARTNERSHIP]'
+          : '[Contact]'
     const { html, text } = await buildBrandedEmail({
       bodyHtml: `<p><strong>Category:</strong> ${category}</p>
 <p><strong>Name:</strong> ${name}</p>

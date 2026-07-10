@@ -5,7 +5,7 @@ import { ContactForm } from './contact-form'
 
 export const metadata: Metadata = {
   title: 'Contact — Idea Engine',
-  description: 'Get in touch — feedback, questions, complaints, or partnerships.',
+  description: 'Get in touch — feedback, questions, complaints, billing, or partnerships.',
 }
 
 async function getPrefill(): Promise<{ name: string; email: string }> {
@@ -33,7 +33,7 @@ export default async function ContactPage() {
   return (
     <StaticPageShell
       title="Contact us"
-      intro="Feedback, questions, complaints, or partnership enquiries — we read everything."
+      intro="Feedback, questions, complaints, billing & refunds, or partnership enquiries — we read everything."
     >
       <ContactForm defaultName={prefill.name} defaultEmail={prefill.email} />
     </StaticPageShell>

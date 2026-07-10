@@ -16,7 +16,7 @@ export const metadata = { title: 'Contact — Admin — Idea Engine' }
 // (undefined_table) error is expected until Danny runs it, and the page must
 // show a friendly notice instead of crashing (same pattern as /app/admin/samples).
 
-const CATEGORIES = ['feedback', 'complaint', 'question', 'partnership'] as const
+const CATEGORIES = ['feedback', 'complaint', 'question', 'partnership', 'billing'] as const
 
 export default async function AdminContactPage({
   searchParams,
@@ -74,8 +74,9 @@ export default async function AdminContactPage({
       <MarkSeen section="contact" />
       <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">Contact</h1>
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8 max-w-2xl">
-        Messages submitted through the public contact form. Partnership enquiries are
-        commercially time-sensitive and highlighted below.
+        Messages submitted through the public contact form. Billing &amp; refund enquiries
+        are money-and-time-sensitive — unanswered ones become chargebacks — and partnership
+        enquiries are commercially time-sensitive; both are highlighted below.
       </p>
 
       {migrationMissing ? (
@@ -109,9 +110,11 @@ export default async function AdminContactPage({
                 href={`/app/admin/contact?category=${encodeURIComponent(cat)}`}
                 className={`text-xs px-2.5 py-1 rounded-full border capitalize ${
                   categoryFilter === cat
-                    ? cat === 'partnership'
-                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 light:bg-amber-100 light:text-amber-700 light:border-amber-200'
-                      : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 light:bg-indigo-100 light:text-indigo-700 light:border-indigo-200'
+                    ? cat === 'billing'
+                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30 light:bg-rose-100 light:text-rose-700 light:border-rose-200'
+                      : cat === 'partnership'
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 light:bg-amber-100 light:text-amber-700 light:border-amber-200'
+                        : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 light:bg-indigo-100 light:text-indigo-700 light:border-indigo-200'
                     : 'bg-white/5 text-slate-400 border-white/10 light:bg-gray-50 light:text-gray-500 light:border-gray-200'
                 }`}
               >

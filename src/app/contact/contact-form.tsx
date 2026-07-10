@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
-type Category = 'feedback' | 'complaint' | 'question' | 'partnership'
+type Category = 'feedback' | 'complaint' | 'question' | 'billing' | 'partnership'
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'feedback', label: 'Feedback' },
   { value: 'complaint', label: 'Complaint' },
+  { value: 'billing', label: 'Billing & refunds' },
   { value: 'question', label: 'General question' },
   { value: 'partnership', label: 'Partnership & advertising' },
 ]
@@ -118,6 +120,15 @@ export function ContactForm({ defaultName, defaultEmail }: { defaultName: string
             </label>
           ))}
         </div>
+        {category === 'billing' && (
+          <p className="mt-2 text-xs text-slate-400 light:text-gray-500">
+            Our refund policy is in the{' '}
+            <Link href="/terms" className="text-indigo-400 hover:text-indigo-300 light:text-indigo-600 light:hover:text-indigo-700 underline">
+              Terms
+            </Link>
+            .
+          </p>
+        )}
       </div>
 
       <div>
