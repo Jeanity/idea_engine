@@ -28,7 +28,14 @@ Fable-reviewed, 248 tests green):
   from real teasers), and truncation-prone maxTokens 1024→2048 with shape validation
   (throw → Inngest retry instead of storing a malformed snapshot — the cause of Danny's
   "Viability Snapshot unavailable" run). EXISTING teasers predate hooks — regenerate the
-  initial report to see the new gated view. Invention category renamed to "Physical
+  initial report to see the new gated view. **CLICK-VERIFIED by Danny on prod** (bottle
+  teaser: hooks + amount-only cost rows + constructive verdict all rendering; "would
+  certainly encourage a user to buy the full report"). Teaser prompt also now inherits
+  EXPERT_PARTNER_PREAMBLE (it was the only surface without the no-bad-ideas persona) +
+  a constructive-realism verdict rule — gaps must name the staged path the founder's
+  budget CAN fund. NOTE: the teaser-gating toggle is currently ON in prod from testing —
+  Danny to decide whether it stays on during the free trial (gated teaser + free unlock
+  may actually drive more full-report generations) or goes off per the original plan. Invention category renamed to "Physical
   product / device" (+ Design gates manufacturing questions too).
 
 These need YOUR call — answer in any order:
