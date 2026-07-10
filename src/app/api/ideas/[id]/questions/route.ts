@@ -39,7 +39,10 @@ const COUNTRY_QUESTION: Question = {
 
 // Only asked for archetypes where the answer materially changes the research
 // (compliance jurisdiction, delivery/service radius, local competitor search).
-const LOCATION_SENSITIVE_ARCHETYPES = ['local_service', 'physical_product', 'marketplace', 'ecommerce_brand']
+// physical_product is NOT here: its bank carries its own copy of the region
+// question (same key/maps_to), gated by the sales-channel answer via show_if —
+// online-only sellers never see it (Danny, 2026-07-10).
+const LOCATION_SENSITIVE_ARCHETYPES = ['local_service', 'marketplace', 'ecommerce_brand']
 
 const REGION_QUESTION: Question = {
   key: 'founder_location_region',

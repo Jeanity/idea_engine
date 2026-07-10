@@ -1,5 +1,32 @@
 [
   {
+    "key": "product_sales_channel",
+    "text": "How will you sell it?",
+    "subtext": "Pick the closest — this shapes which questions we ask next.",
+    "input_type": "select",
+    "options": [
+      "Weekend markets / pop-ups",
+      "Wholesale to local shops",
+      "Own online store",
+      "Marketplace (Etsy / eBay)",
+      "Mix of local + online"
+    ],
+    "required": true,
+    "maps_to": "idea.sales_channel"
+  },
+  {
+    "key": "founder_location_region",
+    "text": "Which city or region?",
+    "subtext": "Optional — helps us find local competitors, pricing and set-up costs for your area. e.g. Brisbane, QLD.",
+    "input_type": "text",
+    "required": false,
+    "maps_to": "founder.location_region",
+    "show_if": {
+      "key": "product_sales_channel",
+      "in": ["Weekend markets / pop-ups", "Wholesale to local shops", "Mix of local + online"]
+    }
+  },
+  {
     "key": "product_home_based",
     "text": "Where will you make and sell from?",
     "subtext": "Changes what permits you'll need and how your cost picture looks.",
@@ -78,19 +105,5 @@
     "input_type": "number",
     "required": true,
     "maps_to": "cost.hourly_rate"
-  },
-  {
-    "key": "product_sales_channel",
-    "text": "How will you sell it?",
-    "input_type": "select",
-    "options": [
-      "Weekend markets / pop-ups",
-      "Wholesale to local shops",
-      "Own online store",
-      "Marketplace (Etsy / eBay)",
-      "Mix of local + online"
-    ],
-    "required": true,
-    "maps_to": "idea.sales_channel"
   }
 ]
