@@ -19,8 +19,13 @@ genuinely requires more:
 
 # Delegation workflow (tiered — Danny, 2026-07-10)
 
-Fable orchestrates; agent definitions live in `.claude/agents/`.
+Fable orchestrates; agent definitions live in `.claude/agents/`. Always use the
+cheapest tier that can do the task WITHOUT mistakes — and downshift a run when the
+task allows it (the Agent tool's model override can run any definition on a cheaper
+model, e.g. `researcher` on Haiku for a mechanical sweep).
 
+- **Haiku tier** — `scout`: mechanical, zero-judgment lookups (find usages, list
+  migrations, run verification and report raw output). Never writes, never interprets.
 - **Sonnet tier** — `researcher` (read-only fact-finding) and `implementer` (one
   well-specced, self-contained build per run, verified + committed in its worktree,
   never pushed). Low-level tasks and research go here by default.
@@ -37,3 +42,6 @@ Anti-fan-out rules:
   (research → spec → implement → review → finalize) over parallel swarms.
 - Trivial changes (a default, copy, one-liner) skip the pipeline — Fable does them
   directly; spinning up an agent costs more than the task.
+- Escalate on error, don't retry-in-place: if a tier gets it wrong or reports
+  uncertainty, the task moves UP one tier — don't re-run the same model hoping for
+  better, and don't hand error-prone work back down.
