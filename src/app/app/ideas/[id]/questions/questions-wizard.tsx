@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { COUNTRIES, symbolForCountry } from '@/lib/countries'
 import { isQuestionVisible } from '@/lib/question-visibility'
+import { StartOverButton } from '@/components/start-over-button'
 
 interface Question {
   key: string
@@ -522,6 +523,10 @@ export default function QuestionsWizard({ ideaId, editKey }: { ideaId: string; e
             {isEditing ? 'Save & back to review' : isLast ? 'Generate Report →' : 'Continue →'}
           </button>
         </div>
+      </div>
+
+      <div className="flex justify-center">
+        <StartOverButton ideaId={ideaId} />
       </div>
     </div>
   )

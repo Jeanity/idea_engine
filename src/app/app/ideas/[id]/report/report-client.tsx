@@ -10,6 +10,7 @@ import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/e
 import { SectionLabel } from '@/components/admin/section-label'
 import { SurveyCard, type SurveyData } from '@/components/survey-card'
 import { BugReportWidget } from '@/components/bug-report-widget'
+import { StartOverButton } from '@/components/start-over-button'
 
 interface ReportData {
   id: string
@@ -1995,6 +1996,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
             Review / edit answers
           </Link>
           <BugReportWidget ideaId={ideaId} reportId={report.id} reportTab={null} />
+          <StartOverButton ideaId={ideaId} />
           <AffiliateDisclosure />
         </div>
         <div className="mb-8">

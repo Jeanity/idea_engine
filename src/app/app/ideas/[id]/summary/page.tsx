@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import { formatAnswer } from '@/lib/format-answer'
+import { StartOverButton } from '@/components/start-over-button'
 
 export const metadata = { title: 'Review Answers — Idea Engine' }
 
@@ -128,6 +129,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
               </Link>
             )
           )}
+        </div>
+
+        <div className="flex justify-center pt-6">
+          <StartOverButton ideaId={id} />
         </div>
       </div>
     </main>

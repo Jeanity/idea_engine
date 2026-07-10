@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { StartOverButton } from '@/components/start-over-button'
 
 interface Props {
   ideaId: string
@@ -76,6 +77,10 @@ export default function ConfirmForm({ ideaId, currentArchetype, archetypeLabels 
       >
         {isLoading ? 'Saving…' : 'Yes, that\'s right — continue →'}
       </button>
+
+      <div className="flex justify-center pt-2">
+        <StartOverButton ideaId={ideaId} />
+      </div>
     </div>
   )
 }
