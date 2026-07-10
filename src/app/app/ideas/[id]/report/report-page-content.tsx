@@ -6,6 +6,7 @@ import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { resolveEssentialServices } from '@/lib/essential-services'
 import { getPromoPublicStatus } from '@/lib/promo'
 import { pickSurveyFor } from '@/lib/survey'
+import { maybeGateReport } from '@/lib/teaser-gating'
 import ReportClient from './report-client'
 
 // Shared data-fetch + render for a report — used by both the standalone
@@ -120,13 +121,21 @@ export async function ReportPageContent({ id }: { id: string }) {
     }
   }
 
+  // Teaser gating LAST, after the affiliate rewrite — it strips fields, so
+  // anything it removes was rewritten in vain (harmless), but the reverse
+  // order would rewrite links inside content that never ships.
+  let gatedReport = deliveredReport
+  if (deliveredReport) {
+    gatedReport = await maybeGateReport(createServiceClient(), deliveredReport)
+  }
+
   return (
     <ReportClient
       ideaId={id}
       restatement={idea.restatement}
       archetype={idea.archetype}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      initialReport={deliveredReport ? (deliveredReport as any) : null}
+      initialReport={gatedReport ? (gatedReport as any) : null}
       initialFeedback={feedback ?? null}
       feedbackReplies={feedbackReplies}
       isAdmin={isAdmin}

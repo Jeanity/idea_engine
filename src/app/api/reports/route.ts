@@ -1,5 +1,6 @@
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
 import { inngest } from '@/lib/inngest'
+import { maybeGateReport } from '@/lib/teaser-gating'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -94,5 +95,10 @@ export async function GET(request: NextRequest) {
 
   if (!report) return NextResponse.json({ report: null })
 
-  return NextResponse.json({ report })
+  // This poll is the main delivery path for a fresh teaser — the redaction
+  // must happen here, not just in the page's server render, or the polled
+  // payload would overwrite the gated one with the full snapshot. The
+  // service client only reads the app-global toggle (app_settings has no
+  // RLS policies at all); the report row itself came through RLS above.
+  return NextResponse.json({ report: await maybeGateReport(createServiceClient(), report) })
 }

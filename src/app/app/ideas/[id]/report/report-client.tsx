@@ -17,6 +17,9 @@ interface ReportData {
   sections: Record<string, unknown>
   preview_sections: Record<string, unknown>
   error: string | null
+  /** Set by the server (src/lib/teaser-gating.ts) when preview_sections were
+   *  redacted at delivery — the teaser renders the locked-structure UI. */
+  teaser_gated?: boolean
 }
 
 interface FeedbackData {
@@ -518,6 +521,133 @@ function ViabilitySnapshot({ vs }: {
   )
 }
 
+// ── Gated teaser components (src/lib/teaser-gating.ts) ───────────────────
+// The locked visuals below are DECORATIVE ONLY — the gated fields never
+// reach the browser (redacted server-side), so the skeleton bars have
+// nothing underneath them. aria-hidden + select-none keeps them out of
+// screen readers and copy-paste.
+
+function LockIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={`inline-block shrink-0 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+    </svg>
+  )
+}
+
+/** A blurred placeholder bar — stands in for redacted text. */
+function SkeletonBar({ w = 'w-full' }: { w?: string }) {
+  return <div className={`h-2.5 rounded-full bg-white/15 light:bg-gray-200 blur-[1.5px] select-none ${w}`} aria-hidden="true" />
+}
+
+function GatedViabilitySnapshot({ vs }: {
+  vs: { headline_score: number; overall_verdict: string; locked_dimensions: string[] }
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
+      <div className="flex items-center gap-3 mb-4">
+        <ScoreRing score={vs.headline_score} label="" size={48} />
+        <h2 className="font-semibold text-white light:text-gray-900">Viability Snapshot</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {vs.locked_dimensions.map(key => (
+          <div key={key}>
+            <div className="flex justify-between items-center text-xs text-slate-400 light:text-gray-500 mb-1">
+              <span>{SCORE_LABELS[key] ?? key}</span>
+              <span className="text-slate-500 light:text-gray-400"><LockIcon className="w-3 h-3" /></span>
+            </div>
+            <div className="h-2 rounded-full bg-white/10 light:bg-gray-100 overflow-hidden" aria-hidden="true">
+              <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-indigo-400/40 to-indigo-400/10 blur-[1.5px]" />
+            </div>
+            <div className="mt-1.5 space-y-1">
+              <SkeletonBar />
+              <SkeletonBar w="w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 px-4 py-3">
+        <p className="text-sm text-indigo-200 light:text-indigo-900"><CitedText text={vs.overall_verdict} /></p>
+      </div>
+      <p className="mt-3 text-xs text-slate-500 light:text-gray-400 flex items-center gap-1.5">
+        <LockIcon className="w-3 h-3" />
+        The score breakdown — where your idea is strong and where it&rsquo;s weak, and why — is in the full report.
+      </p>
+    </div>
+  )
+}
+
+type LockedSkeleton = 'list' | 'table' | 'paragraphs' | 'checklist' | 'channels'
+
+/** What the full report contains, rendered as visible-but-locked structure.
+ *  Copy is generic by design — the teaser genuinely doesn't know the
+ *  specifics (the full report hasn't been generated yet), so nothing here
+ *  claims counts or findings it can't back. */
+const LOCKED_SECTIONS: Array<{ title: string; description: string; skeleton: LockedSkeleton }> = [
+  { title: 'Competitors', description: '5–8 real competitors with pricing, positioning and the gaps you can exploit', skeleton: 'list' },
+  { title: 'Cost breakdown', description: 'Set-up and running costs for your idea — materials, labour, power, margin', skeleton: 'table' },
+  { title: 'Pricing strategy', description: 'What to charge, based on comparable market rates', skeleton: 'paragraphs' },
+  { title: 'Legal & compliance', description: 'The permits, registrations and rules for your location, with official links', skeleton: 'checklist' },
+  { title: 'Marketing playbook', description: 'The right channels for your customers, with starter budgets', skeleton: 'channels' },
+]
+
+function LockedSectionSkeleton({ kind }: { kind: LockedSkeleton }) {
+  if (kind === 'table') {
+    return (
+      <div className="space-y-2" aria-hidden="true">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center justify-between gap-6">
+            <SkeletonBar w={i === 1 ? 'w-2/5' : 'w-1/3'} />
+            <SkeletonBar w="w-12" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (kind === 'list' || kind === 'checklist') {
+    return (
+      <div className="space-y-2" aria-hidden="true">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="h-3 w-3 shrink-0 rounded-sm bg-white/15 light:bg-gray-200 blur-[1px]" />
+            <SkeletonBar w={i === 0 ? 'w-3/4' : i === 1 ? 'w-2/3' : 'w-4/5'} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (kind === 'channels') {
+    return (
+      <div className="flex flex-wrap gap-2" aria-hidden="true">
+        {['w-20', 'w-16', 'w-24', 'w-14', 'w-20'].map((w, i) => (
+          <div key={i} className={`h-6 rounded-full bg-white/15 light:bg-gray-200 blur-[1.5px] select-none ${w}`} />
+        ))}
+      </div>
+    )
+  }
+  // paragraphs
+  return (
+    <div className="space-y-1.5" aria-hidden="true">
+      <SkeletonBar />
+      <SkeletonBar w="w-11/12" />
+      <SkeletonBar w="w-3/5" />
+    </div>
+  )
+}
+
+function LockedSectionCard({ title, description, skeleton }: { title: string; description: string; skeleton: LockedSkeleton }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-900/50 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-4">
+      <div className="flex items-center gap-2 mb-1">
+        <h2 className="font-semibold text-slate-300 light:text-gray-700 text-sm">{title}</h2>
+        <span className="text-slate-500 light:text-gray-400"><LockIcon className="w-3.5 h-3.5" /></span>
+      </div>
+      <p className="text-xs text-slate-500 light:text-gray-400 mb-3">{description}</p>
+      <LockedSectionSkeleton kind={skeleton} />
+    </div>
+  )
+}
+
 // ── Teaser viewer ─────────────────────────────────────────────
 
 // Free-during-launch unlock button for regular users when promo mode is
@@ -572,12 +702,19 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
   onGenerateFull: () => void
 }) {
   const p = report.preview_sections
+  const gated = report.teaser_gated === true
   const summary = p.summary as { text: string } | undefined
   const vs = p.viability_snapshot as {
     scores: Record<string, { score: number; rationale: string }>
     overall_verdict: string
   } | undefined
+  // Server-redacted snapshot shape (src/lib/teaser-gating.ts) — only ever
+  // present when `gated`; the two shapes never coexist.
+  const gatedVs = gated
+    ? (p.viability_snapshot as { headline_score?: number; overall_verdict: string; locked_dimensions: string[] } | undefined)
+    : undefined
   const nextStepsPreview = (p.next_steps ?? []) as Array<{ action: string; timeframe: string }>
+  const lockedNextSteps = gated ? ((p.locked_next_steps as number | undefined) ?? 0) : 0
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-6 print:py-4">
@@ -589,13 +726,23 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
         </div>
       ) : <UnavailableSection title="Summary" />}
 
-      {vs?.scores ? <ViabilitySnapshot vs={vs} /> : <UnavailableSection title="Viability Snapshot" />}
+      {gated && typeof gatedVs?.headline_score === 'number' ? (
+        <GatedViabilitySnapshot vs={{ ...gatedVs, headline_score: gatedVs.headline_score }} />
+      ) : vs?.scores ? (
+        <ViabilitySnapshot vs={vs} />
+      ) : (
+        <UnavailableSection title="Viability Snapshot" />
+      )}
 
       {nextStepsPreview.length > 0 && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-white/10 light:border-gray-200">
             <h2 className="font-semibold text-white light:text-gray-900">Where to start</h2>
-            <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">2 of your personalised next steps</p>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-0.5">
+              {gated
+                ? `Your first personalised step${lockedNextSteps > 0 ? ` — ${lockedNextSteps} more in the full report` : ''}`
+                : '2 of your personalised next steps'}
+            </p>
           </div>
           <div className="divide-y divide-white/10 light:divide-gray-100">
             {nextStepsPreview.map((step, i) => (
@@ -604,7 +751,21 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
                 <p className="text-sm text-slate-300 light:text-gray-700">{step.action}</p>
               </div>
             ))}
+            {gated && Array.from({ length: Math.min(lockedNextSteps, 3) }).map((_, i) => (
+              <div key={`locked-${i}`} className="px-5 py-3 flex gap-3 items-center">
+                <span className="flex-shrink-0 text-slate-500 light:text-gray-400"><LockIcon className="w-3 h-3" /></span>
+                <SkeletonBar w={i % 2 === 0 ? 'w-3/4' : 'w-3/5'} />
+              </div>
+            ))}
           </div>
+        </div>
+      )}
+
+      {gated && (
+        <div className="space-y-4">
+          {LOCKED_SECTIONS.map(section => (
+            <LockedSectionCard key={section.title} {...section} />
+          ))}
         </div>
       )}
 

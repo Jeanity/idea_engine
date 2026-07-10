@@ -1,5 +1,6 @@
 import { renderToBuffer } from '@react-pdf/renderer'
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
+import { readTeaserGatingConfig, gatePreviewSections } from '@/lib/teaser-gating'
 import { ReportDocument, type ReportPdfInput } from '@/lib/pdf/ReportDocument'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { resolveEssentialServices, absolutizeEssentialServices } from '@/lib/essential-services'
@@ -47,7 +48,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (report?.status !== 'complete' || (!hasFullSections && !hasTeaserOnly)) {
     return NextResponse.json({ error: 'Nothing has been generated for this idea yet.' }, { status: 409 })
   }
-  const rawSections = hasFullSections ? fullSections : previewSections
+  let rawSections = hasFullSections ? fullSections : previewSections
+
+  // Teaser gating (src/lib/teaser-gating.ts) applies to the PDF too — the
+  // download must not hand out the sub-scores the web page just redacted.
+  // The gated snapshot shape isn't a renderable PDF section (and the locked
+  // skeletons are a web-only treatment), so the teaser PDF becomes summary +
+  // first next step; ReportDocument already hides keys it doesn't find.
+  if (hasTeaserOnly) {
+    const gatingConfig = await readTeaserGatingConfig(createServiceClient())
+    if (gatingConfig.enabled) {
+      const gated = gatePreviewSections(previewSections)
+      delete gated.viability_snapshot
+      delete gated.locked_next_steps
+      rawSections = gated
+    }
+  }
 
   // Affiliate rewrite at DELIVERY time (mirrors the web report page): swap any
   // report URL on a partner's match_domain for a /go/<slug> tracking link.
