@@ -1906,29 +1906,44 @@ function DownloadPdfButton({ ideaId }: { ideaId: string }) {
 
 function RegenerateButton({ ideaId, label, onStart }: { ideaId: string; label: string; onStart: () => void }) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleClick() {
     setLoading(true)
+    setError('')
     try {
-      await fetch('/api/reports', {
+      const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idea_id: ideaId, force: true }),
       })
+      if (!res.ok) {
+        // Rate-limited (or otherwise rejected) — surface the reason instead
+        // of switching to the progress screen, which would poll forever for
+        // a run that was never queued.
+        const d = await res.json().catch(() => ({}))
+        setError(d.error ?? 'Could not start regeneration. Please try again.')
+        return
+      }
       onStart()
+    } catch {
+      setError('Could not start regeneration. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className="text-xs text-slate-500 hover:text-slate-300 light:text-gray-400 light:hover:text-gray-700 disabled:opacity-40 underline underline-offset-2"
-    >
-      {loading ? 'Starting…' : label}
-    </button>
+    <div className="flex flex-col items-center gap-1">
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="text-xs text-slate-500 hover:text-slate-300 light:text-gray-400 light:hover:text-gray-700 disabled:opacity-40 underline underline-offset-2"
+      >
+        {loading ? 'Starting…' : label}
+      </button>
+      {error && <p className="text-xs text-red-300 light:text-red-600">{error}</p>}
+    </div>
   )
 }
 

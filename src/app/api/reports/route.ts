@@ -1,6 +1,13 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { inngest } from '@/lib/inngest'
 import { maybeGateReport } from '@/lib/teaser-gating'
+import { isAdminEmail } from '@/lib/admin'
+import {
+  countRecentIdeas,
+  evaluateGenerationLimit,
+  isPayingCustomer,
+  GENERATION_LIMIT_MESSAGE,
+} from '@/lib/generation-limit'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -47,6 +54,32 @@ export async function POST(request: NextRequest) {
     existing != null &&
     ((existing.status === 'queued' && existing.generation_started_at === null && age > STALE_MS) ||
       (existing.status === 'running' && startedAge !== null && startedAge > STALE_MS))
+
+  // Abuse-resistant generation limit (src/lib/generation-limit.ts) — only a
+  // fresh generation (no report yet) or an explicit forced regeneration can
+  // possibly be blocked, so the common "just return the existing report"
+  // path below never pays for the extra DB reads this needs.
+  const isFreshGeneration = !existing
+  const isForcedRegeneration = force && existing != null
+  if (isFreshGeneration || isForcedRegeneration) {
+    // Bypasses checked cheapest-first: admin is a free header check; paying
+    // customer needs a query, but skips the (also billable-in-latency)
+    // new-idea count query below when it already applies.
+    const isBypass = isAdminEmail(user.email) || (await isPayingCustomer(supabase, user.id))
+    const newIdeaCount = !isBypass && isFreshGeneration ? await countRecentIdeas(supabase, user.id, Date.now()) : 0
+    const limit = evaluateGenerationLimit({
+      isBypass,
+      isFreshGeneration,
+      newIdeaCount,
+      isForcedRegeneration,
+      isStaleRescue: stale,
+      generationStartedAt: existing?.generation_started_at ? new Date(existing.generation_started_at) : null,
+      now: Date.now(),
+    })
+    if (!limit.allowed) {
+      return NextResponse.json({ error: GENERATION_LIMIT_MESSAGE }, { status: 429 })
+    }
+  }
 
   if (existing && existing.status !== 'failed' && !force && !stale) {
     return NextResponse.json({ reportId: existing.id, status: existing.status })
