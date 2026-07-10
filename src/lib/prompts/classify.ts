@@ -18,7 +18,7 @@ Archetype definitions (memorize these — they are the only allowed values):
 - ecommerce_brand: An online-only product brand — dropship, print-on-demand, white-label, DTC. The operator sources or designs but does not personally manufacture at scale, and there is no local/in-person delivery. Store-first, not maker-first.
 - content_education: A one-to-many content or teaching business — YouTube channel, newsletter, podcast, online course, scaled coaching program, paid community. Revenue comes from audience reach: ads, sponsorships, subscriptions, or course sales. If the teaching is delivered mainly as personal sessions the operator runs (one-on-one or small group, in person or remote), that is local_service, not content_education — the tell is selling the operator's session time vs selling reach/content.
 - marketplace: A platform connecting two or more distinct sides (buyers + sellers, hosts + guests, freelancers + clients, walkers + owners). The operator does not deliver the underlying service themselves — they broker it. Two-sided or multi-sided by design.
-- invention: A novel, potentially patentable device, process, or technology that is not yet a shipping product or service. Signal words: "patented", "novel mechanism", "prototype", "new kind of". If the same idea is already a normal product category, prefer physical_product or software_app.
+- invention: A novel, potentially patentable device, process, or technology that is not yet a shipping product or service. An existing product category described with a claimed mechanism or feature that category can't normally do also counts as invention — when the engineering novelty is the selling point, not just an incremental variant. Signal words: "patented", "novel mechanism", "prototype", "new kind of". If it's a normal product category with no novelty claim, prefer physical_product or software_app.
 - other: Explicit fallback. Use ONLY when no archetype above fits at all, or when the input is empty, nonsense, or non-idea text. It is NOT a catch-all for uncertainty. If you are torn between two real archetypes, pick the better fit and set confidence accordingly.
 
 Signal keywords (use these as tells, not as rules):
@@ -29,7 +29,7 @@ Signal keywords (use these as tells, not as rules):
 - ecommerce_brand: "online store", "Shopify", "dropship", "print on demand", "DTC", "sell X online", no manufacturing signal, no location-bound delivery.
 - content_education: "YouTube", "newsletter", "podcast", "course", "coaching", "community", "teach", "audience".
 - marketplace: "connects X with Y", "platform for X and Y", "two-sided", "matches", "Uber for", "Airbnb for".
-- invention: "patented", "novel", "new mechanism", "prototype of", "invented", "haven't seen anything like it".
+- invention: "patented", "novel", "new mechanism", "prototype of", "invented", "haven't seen anything like it", "a feature the existing category doesn't have", "you normally can't".
 - other: "asdf", empty-ish input, off-topic ("my cat is cute"), unclassifiable.
 
 Classification rules (apply in order):
@@ -108,6 +108,10 @@ Output: {"archetype":"ecommerce_brand","confidence":0.86,"one_line_restatement":
 Example 11
 Input: idea="teach seniors to use essential apps safely through personalized one-on-one remote or in-person coaching sessions", location="Sydney, Australia"
 Output: {"archetype":"local_service","confidence":0.90,"one_line_restatement":"Offer one-on-one coaching sessions teaching Sydney seniors to use essential apps safely and confidently.","detected_signals":["one-on-one sessions — operator's time is the product","personalized coaching, not published content","remote or in-person delivery both named","'teach' present but delivery is per-client sessions"]}
+
+Example 12
+Input: idea="Create an insulated stainless steel water bottle featuring a glass window showing liquid content level.", location="Seattle, Washington, USA"
+Output: {"archetype":"invention","confidence":0.70,"one_line_restatement":"Create an insulated stainless steel water bottle with a novel see-through liquid-level window feature.","detected_signals":["novel mechanism claim on an existing category — a see-through window in a vacuum-insulated bottle","engineering novelty is the selling point","existing product category — insulated water bottle","feature the category doesn't normally have"]}
 
 Remember: output STRICT JSON only, no other characters before or after the closing brace.`
 

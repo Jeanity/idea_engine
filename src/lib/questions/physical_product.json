@@ -36,24 +36,24 @@
     "why": "Local pricing, permits and competitor research are sharper with a city or region than with just a country."
   },
   {
-    "key": "product_home_based",
-    "text": "Where will you make and sell from?",
-    "subtext": "Changes what permits you'll need and how your cost picture looks.",
+    "key": "product_made_how",
+    "text": "Who will make your product?",
+    "subtext": "This decides which cost questions we ask next — self-made and manufactured routes are priced very differently.",
     "input_type": "select",
     "options": [
-      "Home kitchen / workshop only",
-      "Home workshop plus market stall / pop-up",
-      "Rented commercial space",
-      "Online only (fulfilled from home)"
+      "I'll make it myself at home",
+      "I'll make it in a rented commercial space",
+      "A local manufacturer will make it for me",
+      "An overseas manufacturer will make it for me"
     ],
     "required": true,
     "maps_to": "cost.production_location",
-    "why": "Where you make and sell from changes what permits and inspections you'll need, and how big your cost base is.",
+    "why": "Who makes your product decides which cost questions follow, and whether your report covers permits and home-business rules or unit costs, minimum orders and compliance.",
     "option_notes": {
-      "Home kitchen / workshop only": "We'll check home-business and food/safety permit rules for your area, and keep your cost base low.",
-      "Home workshop plus market stall / pop-up": "We'll cover home production rules plus stall fees and any extra permits for selling in public.",
-      "Rented commercial space": "We'll factor in rent, commercial fit-out and the compliance rules that come with a dedicated premises.",
-      "Online only (fulfilled from home)": "We'll skip market and retail permits and focus on shipping, packaging and online set-up costs."
+      "I'll make it myself at home": "We'll check home-business and food/safety permit rules for your area, and keep your cost base low with no rent or fit-out to budget for.",
+      "I'll make it in a rented commercial space": "We'll factor in commercial rent, fit-out costs and the compliance rules that come with a dedicated premises — a bigger cost base than home.",
+      "A local manufacturer will make it for me": "We'll cover per-unit costs, minimum order quantities, and getting samples made and quality-checked before a full production run.",
+      "An overseas manufacturer will make it for me": "We'll cover per-unit costs, minimum order quantities, samples and quality control, plus freight and import duties to get stock to you."
     }
   },
   {
@@ -72,6 +72,10 @@
     "input_type": "text",
     "required": true,
     "maps_to": "cost.materials",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "Your ingredient list drives the cost-per-batch numbers in your report. Rough numbers are fine — the report refines these with real local prices."
   },
   {
@@ -91,6 +95,10 @@
     ],
     "required": true,
     "maps_to": "cost.equipment_owned",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "This tells us your realistic starting costs — equipment you already own doesn't need to be bought again."
   },
   {
@@ -100,6 +108,10 @@
     "input_type": "number",
     "required": true,
     "maps_to": "cost.equipment_wattage",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "Power draw feeds your running-cost estimate per batch. Rough numbers are fine — the report refines these with real local prices."
   },
   {
@@ -109,6 +121,10 @@
     "input_type": "number",
     "required": true,
     "maps_to": "cost.active_minutes_per_batch",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "Hands-on time is what your hourly rate gets multiplied by — it's a core input to your unit economics."
   },
   {
@@ -118,6 +134,10 @@
     "input_type": "number",
     "required": true,
     "maps_to": "cost.batch_yield",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "How many units come out of a batch is what spreads your costs across — it's central to your per-unit price."
   },
   {
@@ -127,6 +147,74 @@
     "input_type": "number",
     "required": true,
     "maps_to": "cost.hourly_rate",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["I'll make it myself at home", "I'll make it in a rented commercial space"]
+    },
     "why": "What you pay yourself per hour is a core input to your numbers. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
+  },
+  {
+    "key": "product_unit_cost",
+    "text": "What do you expect to pay the manufacturer per unit?",
+    "subtext": "A rough guess or a real quote — either is fine.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.unit_cost_estimate",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["A local manufacturer will make it for me", "An overseas manufacturer will make it for me"]
+    },
+    "why": "Per-unit cost is the base of your margins. Example figures here are just examples — your report prices everything in your own currency, using costs for your country."
+  },
+  {
+    "key": "product_first_run_budget",
+    "text": "How much can you put into your first production run?",
+    "subtext": "Include minimum order quantities, samples and any tooling costs.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["A local manufacturer will make it for me", "An overseas manufacturer will make it for me"]
+    },
+    "why": "This covers minimum order quantities, samples and tooling, and sets what scale of first run the report recommends. Figures are just examples — priced in your own currency."
+  },
+  {
+    "key": "product_stage",
+    "text": "How far along are you?",
+    "subtext": "This changes what your report budgets for and what it assumes you've already paid for.",
+    "input_type": "select",
+    "options": [
+      "Just the idea",
+      "Sketches or a 3D design",
+      "A prototype or sample in hand",
+      "I already have a manufacturer quote"
+    ],
+    "required": true,
+    "maps_to": "idea.stage",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["A local manufacturer will make it for me", "An overseas manufacturer will make it for me"]
+    },
+    "why": "How far along you are changes what your report budgets for next — from design and prototyping costs through to quotes you already have in hand.",
+    "option_notes": {
+      "Just the idea": "We'll budget for design, prototyping and getting your first sample made from scratch.",
+      "Sketches or a 3D design": "We'll budget for turning your design into a physical prototype or sample, then production.",
+      "A prototype or sample in hand": "We won't charge you again for prototyping — your report picks up from getting it manufactured at scale.",
+      "I already have a manufacturer quote": "We'll use your quote as the cost baseline and focus the report on margins, first-run budget and launch."
+    }
+  },
+  {
+    "key": "product_packaging_shipping",
+    "text": "Roughly what will packaging and delivery cost per unit?",
+    "subtext": "Optional — leave blank if you're not sure yet.",
+    "input_type": "number",
+    "required": false,
+    "maps_to": "cost.packaging_per_unit",
+    "show_if": {
+      "key": "product_made_how",
+      "in": ["A local manufacturer will make it for me", "An overseas manufacturer will make it for me"]
+    },
+    "why": "Packaging and delivery are part of your per-unit cost. Rough numbers are fine — the report refines these with real local prices."
   }
 ]

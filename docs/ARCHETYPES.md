@@ -149,7 +149,7 @@ Apply these in order. The first rule that fires wins. This is the same order the
    Empty, "asdf", off-topic, or too vague to say anything about. Confidence <= 0.30.
 
 2. **Explicit novelty / patent language → `invention`.**
-   "Patented", "novel mechanism", "I invented", "prototype of a new kind of…". If the same idea is a normal existing product category without novelty language, skip this rule.
+   "Patented", "novel mechanism", "I invented", "prototype of a new kind of…". This also covers an existing product category described with a mechanism or feature claim that category can't normally do, when the engineering novelty is presented as the selling point. If the same idea is a normal existing product category without novelty language, skip this rule.
 
 3. **Two distinct user sides being connected → `marketplace`.**
    "Platform connecting X with Y". Both sides are separately targeted users. The operator does not perform the underlying transaction. Uber, Airbnb, TaskRabbit patterns.
