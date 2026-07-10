@@ -8,9 +8,11 @@ export const metadata = { title: 'Samples — Admin — Idea Engine' }
 // sample_reports via createServiceClient here is safe BECAUSE that gate already
 // ran — never fetch with the service client before it.
 //
-// migration 011 may not have been run yet in this environment — a 42P01
-// (undefined_table) error is expected until Danny runs it, and the page must
-// show a friendly notice instead of crashing.
+// migration 011 may not have been run yet in this environment — Postgres
+// 42P01 (undefined_table) or PostgREST PGRST205 ("table not found in schema
+// cache", what Supabase's REST layer actually returns in practice) is
+// expected until Danny runs it, and the page must show a friendly notice
+// instead of crashing.
 
 export default async function AdminSamplesPage() {
   const service = createServiceClient()
@@ -20,7 +22,7 @@ export default async function AdminSamplesPage() {
     .select('id, title, archetype, restatement, headline_score, source_report_id, active, sort_order, created_at, updated_at')
     .order('sort_order', { ascending: true })
 
-  const migrationMissing = error?.code === '42P01'
+  const migrationMissing = error?.code === '42P01' || error?.code === 'PGRST205'
   const rows: SampleRow[] = samples ?? []
 
   return (

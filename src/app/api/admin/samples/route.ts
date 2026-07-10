@@ -19,9 +19,13 @@ async function requireAdmin(): Promise<{ email: string } | NextResponse> {
   return { email: user.email! }
 }
 
-/** Postgres 42P01 = undefined_table — the tell-tale sign migration 011 hasn't run yet. */
+/**
+ * Postgres 42P01 = undefined_table, PostgREST PGRST205 = "table not found in
+ * schema cache" (what Supabase's REST layer actually returns in practice) —
+ * either one means migration 011 hasn't run yet.
+ */
 function isMissingTable(error: { code?: string } | null | undefined): boolean {
-  return error?.code === '42P01'
+  return error?.code === '42P01' || error?.code === 'PGRST205'
 }
 
 // ── List (incl. inactive) ────────────────────────────────────────────────
