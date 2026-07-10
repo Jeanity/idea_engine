@@ -44,10 +44,12 @@ place unread). Migrations current through **025 — ALL RUN in prod.**
 - **Stripe**: application COMPLETE (2026-07-10) — live account created as sole trader (own
   ABN), category "Other digital goods", statement descriptor HADIDEA.COM / short HADIDEA,
   support phone kept off receipts (email support via hello@hadidea.com). Declined: Managed
-  Payments (3.5% add-on), Stripe Tax (under GST threshold), Invoicing, Climate. Verification
-  may still be pending Stripe review — watch email. The payments build is still LAST per the
-  standing decision — signup was merchant-side runway only. Next merchant task: NEW PayPal
-  business account (see decision above).
+  Payments (3.5% add-on), Stripe Tax (under GST threshold), Invoicing, Climate. Account is
+  CLEARED to accept payments while under review (Stripe email confirmed). 2FA + passkey
+  enabled; payout bank confirmed; receipt emails ON for successful payments AND refunds.
+  Logo/branding still pending (Danny hasn't settled on a logo). The payments build is still
+  LAST per the standing decision — signup was merchant-side runway only. Next merchant task:
+  NEW PayPal business account (see decision above).
 - Launch runway now: create/verify the Launch survey questions in the new UI → promo caps →
   Start. The v1 10-question draft still applies (chat 2026-07-09).
 - Survey v2.1 ideas deliberately not built: "when" targeting (date windows / after-N-days),
