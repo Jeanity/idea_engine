@@ -1,8 +1,22 @@
 # ❓ DECISIONS NEEDED FROM DANNY — question-flow audit, 2026-07-10 evening
 
 Two-researcher user-simulation audit of the question flow (per Danny's ask after the
-bottle bugs). Mechanical fixes shipped same evening (see the audit section below once
-merged). These need YOUR call — answer in any order:
+bottle bugs). ALL mechanical fixes SHIPPED same evening (2 Sonnet implementers,
+Fable-reviewed, 248 tests green):
+- **Stale hidden-branch answers no longer reach reports** (report gen, teaser, PDF
+  appendix, summary — new src/lib/question-bank.ts filterVisibleAnswers).
+- **parseNumber hardened**: free-text like an ingredient list can no longer become a
+  billion-dollar materials cost in the deterministic calculator (now honest omission).
+- **Region gating extended**: ecommerce_brand never asks region (online-only by
+  definition); marketplace asks only for "One city" scope; in-person content_education
+  teachers now DO get asked (their option notes promised local research).
+- **Invention hardware branch**: device inventions now collect who-will-make/unit-cost/
+  packaging (the classifier sends manufactured-novelty ideas here now).
+- Equipment list de-fooded + "None of these yet" escape (was a hard block for candle
+  makers); dropship/POD capital subtext fixed; workshops monetisation option added;
+  free-with-ads apps skip the target-price question; non-food examples added.
+
+These need YOUR call — answer in any order:
 
 1. **Materials cost for self-made products (HIGH — worst finding).** The ingredient-list
    answer ("500g oat flour, 2 eggs…") was being digit-mangled by the deterministic cost
