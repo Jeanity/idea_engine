@@ -1,7 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
-import { buildEmail, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Admin-only "add account" action. The /app/admin layout gates the PAGE, but
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 </p>
 <p style="color:#64748b;font-size:13px;margin-top:16px;">Or paste this link into your browser: ${actionLink}</p>`
   const bodyText = `${message}\n\nAccept your invitation: ${actionLink}`
-  const { html, text } = buildEmail({ bodyHtml, bodyText })
+  const { html, text } = await buildBrandedEmail({ bodyHtml, bodyText })
 
   let sendResult: { sent: boolean }
   try {

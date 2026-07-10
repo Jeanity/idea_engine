@@ -1,5 +1,5 @@
 import { createDbClient } from '@/lib/db'
-import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Owner-gated upsert of the signed-in user's own feedback for their report.
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (adminEmail) {
     const feedbackUrl = `${getSiteUrl()}/app/admin/feedback`
     const stars = '★'.repeat(rating)
-    const { html, text } = buildEmail({
+    const { html, text } = await buildBrandedEmail({
       bodyHtml: `<p><strong>Rating:</strong> ${stars} (${rating}/5)</p>
 <p><strong>Comment:</strong></p>
 <p>${trimmedComment ? trimmedComment.replace(/\n/g, '<br />') : '(no comment)'}</p>

@@ -150,3 +150,58 @@ describe('sendMail — no-op guard when unconfigured', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('buildEmail with custom chrome', () => {
+  const chrome = {
+    header_title: 'hadidea',
+    signature: '— Danny at hadidea',
+    footer_note: 'You asked us to email you this report.',
+  }
+
+  it('renders the custom header title in the wordmark and © line', () => {
+    const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' }, chrome)
+    expect(html).toContain('>hadidea</a>')
+    expect(html).toMatch(/© \d{4} hadidea/)
+    expect(html).not.toContain('Idea Engine')
+    expect(text.startsWith('hadidea\n')).toBe(true)
+  })
+
+  it('renders the custom signature and footer note in both versions', () => {
+    const { html, text } = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' }, chrome)
+    expect(html).toContain('— Danny at hadidea')
+    expect(html).toContain('You asked us to email you this report.')
+    expect(text).toContain('— Danny at hadidea')
+    expect(text).toContain('You asked us to email you this report.')
+  })
+
+  it('omits the signature and footer note lines when empty', () => {
+    const { html, text } = buildEmail(
+      { bodyHtml: '<p>x</p>', bodyText: 'x' },
+      { header_title: 'hadidea', signature: '', footer_note: '' }
+    )
+    expect(html).not.toContain('— The Idea Engine team')
+    expect(text).not.toContain('— The Idea Engine team')
+    expect(html).not.toContain("You're receiving this")
+    expect(text).not.toContain("You're receiving this")
+  })
+
+  it('HTML-escapes chrome text but leaves the plain-text version raw', () => {
+    const { html, text } = buildEmail(
+      { bodyHtml: '<p>x</p>', bodyText: 'x' },
+      { header_title: 'A & B <Co>', signature: '', footer_note: '' }
+    )
+    expect(html).toContain('A &amp; B &lt;Co&gt;')
+    expect(html).not.toContain('<Co>')
+    expect(text).toContain('A & B <Co>')
+  })
+
+  it('defaults produce the same output as calling without chrome', () => {
+    const a = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' })
+    const b = buildEmail({ bodyHtml: '<p>x</p>', bodyText: 'x' }, {
+      header_title: 'Idea Engine',
+      signature: '— The Idea Engine team',
+      footer_note: "You're receiving this because of activity on your Idea Engine account.",
+    })
+    expect(a).toEqual(b)
+  })
+})

@@ -18,7 +18,7 @@ import {
 } from '@/lib/prompts/compliance-fallback'
 import { staticComplianceBaseline } from '@/lib/compliance-baseline'
 import { logError } from '@/lib/log-error'
-import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import {
   SYNTHESIS_SYSTEM_PROMPT,
   buildSynthesisMessage,
@@ -728,7 +728,7 @@ export const generateReport = inngest.createFunction(
 
         const reportUrl = `${getSiteUrl()}/app/ideas/${ideaId}/report`
         const ideaSummary = idea.restatement ?? idea.raw_text
-        const { html, text } = buildEmail({
+        const { html, text } = await buildBrandedEmail({
           bodyHtml: `<p>Your full report is ready for:</p>
 <p><strong>${ideaSummary}</strong></p>
 <p><a href="${reportUrl}">View your report</a></p>

@@ -1,7 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
-import { buildEmail, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Admin-only: reply to a /app/admin/contact submission from the reply modal.
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
   const adminReplyTo = process.env.ADMIN_NOTIFY_EMAIL
 
   const quotedDate = new Date(submission.created_at).toLocaleString()
-  const { html, text } = buildEmail({
+  const { html, text } = await buildBrandedEmail({
     bodyHtml: `<p>${replyBody.replace(/\n/g, '<br />')}</p>
 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
 <p style="color:#64748b;font-size:13px;">Your original message (${quotedDate}, ${submission.category}):</p>

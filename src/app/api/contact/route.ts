@@ -1,6 +1,6 @@
 import { createDbClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
-import { buildEmail, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { ContactCategory } from '@/lib/database.types'
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   if (adminEmail) {
     const isPartnership = category === 'partnership'
     const subjectPrefix = isPartnership ? '[Contact — PARTNERSHIP]' : '[Contact]'
-    const { html, text } = buildEmail({
+    const { html, text } = await buildBrandedEmail({
       bodyHtml: `<p><strong>Category:</strong> ${category}</p>
 <p><strong>Name:</strong> ${name}</p>
 <p><strong>Email:</strong> ${email}</p>

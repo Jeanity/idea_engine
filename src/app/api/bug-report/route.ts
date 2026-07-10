@@ -1,6 +1,6 @@
 import { createDbClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
-import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Signed-in users only — flags a bug from inside a report viewer (initial or
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const adminEmail = process.env.ADMIN_NOTIFY_EMAIL
   if (adminEmail) {
     const bugsUrl = `${getSiteUrl()}/app/admin/bugs`
-    const { html, text } = buildEmail({
+    const { html, text } = await buildBrandedEmail({
       bodyHtml: `<p><strong>Description:</strong></p>
 <p>${description.replace(/\n/g, '<br />')}</p>
 <p><strong>Page:</strong> ${pageUrl ?? 'unknown'}</p>

@@ -1,5 +1,7 @@
 import nodemailer, { type Transporter } from 'nodemailer'
 import { logError } from '@/lib/log-error'
+import { createServiceClient } from '@/lib/db'
+import { DEFAULT_EMAIL_CHROME, readEmailChrome, escapeHtml, type EmailChrome } from '@/lib/email-chrome'
 
 export interface SendMailInput {
   to: string
@@ -49,25 +51,33 @@ export function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL || 'https://hadidea.com'
 }
 
-const FOOTER_TEXT = "You're receiving this because of activity on your Idea Engine account."
-
 /**
  * Pure — wraps a content block in the branded Idea Engine shell (wordmark +
  * content + muted footer) and produces the matching text fallback. Table-free
  * HTML so it renders consistently across mail clients. Exported standalone so
  * it can be unit-tested without touching SMTP.
+ *
+ * The header/footer TEXT comes from `chrome` (admin-editable via the
+ * Templates page — src/lib/email-chrome.ts); the shell layout, links row and
+ * © year stay fixed here. Chrome values are plain text (escaped below); an
+ * empty signature/footer note omits that line. Send paths should use
+ * buildBrandedEmail(), which loads the admin's saved chrome first.
  */
-export function buildEmail(input: { bodyHtml: string; bodyText: string }): { html: string; text: string } {
+export function buildEmail(
+  input: { bodyHtml: string; bodyText: string },
+  chrome: EmailChrome = DEFAULT_EMAIL_CHROME
+): { html: string; text: string } {
   const currentYear = new Date().getFullYear()
   const siteUrl = getSiteUrl()
   const contactUrl = `${siteUrl}/contact`
   const privacyUrl = `${siteUrl}/privacy`
+  const title = escapeHtml(chrome.header_title)
 
   // HTML version with branded header and footer
   const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #f8fafc; padding: 32px 24px;">
   <!-- Header wordmark + accent line -->
   <div style="margin-bottom: 32px;">
-    <a href="${siteUrl}" style="font-size: 20px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-block; margin-bottom: 12px;">Idea Engine</a>
+    <a href="${siteUrl}" style="font-size: 20px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-block; margin-bottom: 12px;">${title}</a>
     <!-- Wordmark PNG can replace text here in future (email clients don't render SVG reliably) -->
     <div style="height: 3px; background: #6366f1; width: 100%;"></div>
   </div>
@@ -79,25 +89,40 @@ export function buildEmail(input: { bodyHtml: string; bodyText: string }): { htm
   <div style="height: 1px; background: #e2e8f0; margin: 24px 0;"></div>
   <!-- Footer: signature, links, copyright -->
   <div style="color: #64748b; font-size: 13px; line-height: 1.6;">
-    <div style="margin-bottom: 12px;">— The Idea Engine team</div>
-    <div style="margin-bottom: 12px;">
-      <a href="${siteUrl}" style="color: #64748b; text-decoration: none;">Idea Engine</a>
+    ${chrome.signature ? `<div style="margin-bottom: 12px;">${escapeHtml(chrome.signature)}</div>\n    ` : ''}<div style="margin-bottom: 12px;">
+      <a href="${siteUrl}" style="color: #64748b; text-decoration: none;">${title}</a>
       <span style="color: #cbd5e1;">·</span>
       <a href="${contactUrl}" style="color: #64748b; text-decoration: none;">Contact</a>
       <span style="color: #cbd5e1;">·</span>
       <a href="${privacyUrl}" style="color: #64748b; text-decoration: none;">Privacy</a>
     </div>
-    <div style="margin-bottom: 16px;">© ${currentYear} Idea Engine</div>
+    <div style="margin-bottom: 16px;">© ${currentYear} ${title}</div>${chrome.footer_note ? `
     <div style="color: #94a3b8; font-size: 12px;">
-      ${FOOTER_TEXT}
-    </div>
+      ${escapeHtml(chrome.footer_note)}
+    </div>` : ''}
   </div>
 </div>`
 
   // Text version with simple equivalent
-  const text = `Idea Engine\n\n${input.bodyText}\n\n— The Idea Engine team\n${siteUrl} · © ${currentYear}\n\n${FOOTER_TEXT}`
+  const text = `${chrome.header_title}\n\n${input.bodyText}\n\n${chrome.signature ? `${chrome.signature}\n` : ''}${siteUrl} · © ${currentYear}${chrome.footer_note ? `\n\n${chrome.footer_note}` : ''}`
 
   return { html, text }
+}
+
+/**
+ * buildEmail with the admin's saved header/footer text applied — the wrapper
+ * every real send path uses. Any settings-read failure (missing table, bad
+ * row, network) silently falls back to the defaults: email must never break
+ * because of chrome.
+ */
+export async function buildBrandedEmail(input: { bodyHtml: string; bodyText: string }): Promise<{ html: string; text: string }> {
+  let chrome = DEFAULT_EMAIL_CHROME
+  try {
+    chrome = await readEmailChrome(createServiceClient())
+  } catch {
+    /* defaults */
+  }
+  return buildEmail(input, chrome)
 }
 
 let cachedTransport: Transporter | null = null

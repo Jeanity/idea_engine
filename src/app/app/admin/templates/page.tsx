@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/db'
 import { TemplatesClient, type TemplateRow } from './templates-client'
+import { EmailChromeCard } from './email-chrome-card'
 
 export const metadata = { title: 'Templates — Admin — Idea Engine' }
 
@@ -35,6 +36,10 @@ export default async function AdminTemplatesPage() {
         Each kind can have one default, which pre-fills the compose box — still fully editable
         before sending.
       </p>
+
+      {/* Header/footer editor is independent of migration 024 (app_settings) —
+          shown even when the templates table is missing. */}
+      <EmailChromeCard />
 
       {migrationMissing ? (
         <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-5 py-5">

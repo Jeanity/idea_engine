@@ -1,7 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
-import { buildEmail, getSiteUrl, sendMail } from '@/lib/mailer'
+import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Postgres 42P01 = undefined_table, PostgREST PGRST205 = "table not found in
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         ? '\n(This reply was posted publicly on the Idea Engine homepage.)'
         : ''
 
-      const { html, text } = buildEmail({
+      const { html, text } = await buildBrandedEmail({
         bodyHtml: `<p>You have a reply on your Idea Engine feedback:</p>
 <p>${trimmed.replace(/\n/g, '<br />')}</p>
 ${publicNote}

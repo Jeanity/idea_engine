@@ -20,6 +20,15 @@ needed). src/lib/teaser-gating.ts + tests. **Toggle stays OFF for the free trial
 for the $4.95 phase.** Section-level tuning (which sections gate hardest) still owed once
 survey data lands.
 
+## Editable email header/footer — BUILT (Danny's ask, same day)
+The branded shell every email gets (wordmark, signature, footer note) is now admin-editable:
+**Templates page → "Email header & footer" card** (header title / signature / footer note;
+blank signature or footer note hides that line; links row + © year stay fixed for
+email-client safety). Stored in app_settings 'email_chrome' (no migration), HTML-escaped,
+any read failure falls back to the hardcoded defaults so sending can never break. All six
+send paths now use buildBrandedEmail(); buildEmail stays pure for tests. Template bodies
+remain pure message text — the shell still wraps them automatically.
+
 ## Multi-day charts now bucket by admin-local days — BUILT (Sonnet subagent, Fable-reviewed)
 /api/admin/graphs shifts the query range and all JS bucketing by the tz param in daily mode
 too (was hourly-only); traffic/returning-visitor series use new migration-026
