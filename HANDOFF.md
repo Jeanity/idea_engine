@@ -16,6 +16,24 @@ Fable-reviewed, 248 tests green):
   makers); dropship/POD capital subtext fixed; workshops monetisation option added;
   free-with-ads apps skip the target-price question; non-food examples added.
 
+## Capacity hardening (Danny's launch-capacity questions, same evening)
+- **Generation rate limiting SHIPPED** (Sonnet implementer, Fable-reviewed): max 5 new
+  ideas/hour per account + 10-min cooldown between forced regenerations of the same idea
+  (per-account teaser spend ceiling ~US$1/hour). **Admins and paying customers (any
+  completed purchase) bypass entirely** — Danny: "if they pay for 5 reports they can do
+  5 in 2 minutes". Stale-rescue path preserved; friendly 429. Also fixed a PRE-EXISTING
+  bug: RegenerateButton ignored POST failures → infinite "Generating…" spinner.
+  Known gap (accepted): retrying a FAILED report hits neither guard — failures aren't
+  user-inducible cheaply; revisit in the security audit if needed.
+- **Email ceiling researched**: IONOS caps sends PER HOUR by mailbox age — 50/h (first
+  week) → 100/h → 400/h → 500/h after 30 days. Mailboxes created 2026-07-10, so full
+  rate lands ~Aug 10 (≈ launch). sendMail failures already logError → admin Errors red
+  badge, so a hit ceiling is visible. Transactional provider only needed at real scale.
+- **Anthropic capacity** (per current docs): Start tier = US$500/month spend cap (the
+  real wall — pauses API until next month), 1,000 RPM / 2M ITPM per model (non-issue).
+  Pre-launch: check tier on Console→Limits, enable credit auto-reload + low-balance
+  alerts; request Build tier if trial pace outgrows $500/month.
+
 ## Also shipped same evening (Danny's live-testing feedback)
 - **Cost questions never required** (Danny: "no way to know that with no experience"):
   unit-cost/packaging questions reframed "only if you already know" + AI cost fallback
