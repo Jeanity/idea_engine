@@ -47,7 +47,8 @@ place unread). Migrations current through **025 — ALL RUN in prod.**
   Payments (3.5% add-on), Stripe Tax (under GST threshold), Invoicing, Climate. Account is
   CLEARED to accept payments while under review (Stripe email confirmed). 2FA + passkey
   enabled; payout bank confirmed; receipt emails ON for successful payments AND refunds.
-  Logo/branding still pending (Danny hasn't settled on a logo). The payments build is still
+  Public details: support email hello@hadidea.com (login stays me@), website + terms/privacy/
+  support links added. Logo/branding still pending (Danny hasn't settled on a logo). The payments build is still
   LAST per the standing decision — signup was merchant-side runway only. Next merchant task:
   NEW PayPal business account (see decision above).
 - Launch runway now: create/verify the Launch survey questions in the new UI → promo caps →
