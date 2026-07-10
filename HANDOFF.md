@@ -1,3 +1,34 @@
+# Handoff — 2026-07-10 AFTERNOON (Teaser gating + local-day charts)
+
+Two builds, verified together (tsc/lint/build/211 tests clean). NOT click-tested (auth).
+
+## ⚠️ Migration 026 must be RUN in prod
+`supabase/migrations/026_local_day_graphs.sql` — local-day RPCs for the multi-day admin
+charts. Until it runs, those charts gracefully fall back to the old UTC-day behaviour
+(no 500s), so this is not urgent, just owed.
+
+## Teaser gating / blur — BUILT (approved spec below marked done), toggle is OFF
+When the **Initial-report gating** toggle in /app/admin/settings is ON, initial reports are
+redacted at delivery time on every path (report page SSR, the /api/reports poll — the main
+teaser delivery path — and the teaser PDF): viability snapshot keeps headline score +
+verdict, loses per-dimension scores/rationales (dimension labels render as locked rows);
+next steps cut to 1 (+ blurred stubs); five locked full-report sections render as decorative
+skeleton structure (competitors/costs/pricing/compliance/marketing). Redaction is REAL —
+gated fields never leave the server; the skeletons have nothing underneath. Stored rows are
+never modified → retroactive + reversible. app_settings key 'teaser_gating' (no migration
+needed). src/lib/teaser-gating.ts + tests. **Toggle stays OFF for the free trial; flip ON
+for the $4.95 phase.** Section-level tuning (which sections gate hardest) still owed once
+survey data lands.
+
+## Multi-day charts now bucket by admin-local days — BUILT (Sonnet subagent, Fable-reviewed)
+/api/admin/graphs shifts the query range and all JS bucketing by the tz param in daily mode
+too (was hourly-only); traffic/returning-visitor series use new migration-026
+`*_per_local_day` RPCs (SECURITY DEFINER, new function names — the 005 functions are
+untouched) with a graceful UTC-day fallback pre-migration. localDayLabel() + tests in
+src/lib/analytics.ts.
+
+---
+
 # Handoff — 2026-07-10 LATER SESSION (Survey system v2 — multi-survey + groups + targeting)
 
 The big deferred build from the spec below ("NEXT UP — Survey system v2") is **BUILT — see
@@ -56,7 +87,7 @@ place unread). Migrations current through **025 — ALL RUN in prod.**
 - Survey v2.1 ideas deliberately not built: "when" targeting (date windows / after-N-days),
   post-purchase render surface (needs payments).
 
-## TODO — Teaser gating / blur (Danny approved 2026-07-10, build BEFORE the $4.95 phase)
+## Teaser gating / blur — **DONE 2026-07-10 afternoon** (spec kept for context)
 Danny's read (agreed after pricing discussion): the initial report gives too much away — the
 FULL viability snapshot answers "is my idea any good?" for free, killing the reason to buy.
 Approved design:
