@@ -3,12 +3,11 @@
 The big deferred build from the spec below ("NEXT UP — Survey system v2") is **BUILT — see
 docs/plan/2026-07-10-survey-v2.md**. tsc/lint/build/201 tests all clean. NOT click-tested (auth).
 
-## ⚠️ Migration 025 must run IMMEDIATELY after deploy
-`supabase/migrations/025_survey_v2.sql`. Until it runs, no survey renders anywhere (graceful
-degradation) — **if the v1 launch survey is live at deploy time it vanishes until 025 runs.**
-The migration carries the v1 question bank + responses into a default **"Launch survey"**
-(placement full_report_end, audience all) and preserves its on/off state from the old
-app_settings 'survey' flag (that key is now retired, left in place unread).
+## Migration 025 — RUN ✅ in prod (Danny confirmed 2026-07-10, admin verified working)
+`supabase/migrations/025_survey_v2.sql`. It carried the v1 question bank + responses into a
+default **"Launch survey"** (placement full_report_end, audience all) and preserved its
+on/off state from the old app_settings 'survey' flag (that key is now retired, left in
+place unread). Migrations current through **025 — ALL RUN in prod.**
 
 ## What shipped
 1. **Data model**: `survey_groups`, `surveys` (group_id, active, placement, audience,
