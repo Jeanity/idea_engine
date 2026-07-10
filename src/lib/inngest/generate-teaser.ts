@@ -5,20 +5,7 @@ import { providerOverrideForUser } from '@/lib/demo-mode'
 import { TEASER_SYSTEM_PROMPT, buildTeaserMessage } from '@/lib/prompts/teaser'
 import { logError, errorMessage } from '@/lib/log-error'
 import type { Json } from '@/lib/database.types'
-
-interface Question {
-  key: string
-  maps_to: string
-}
-
-function loadBank(archetype: string): Question[] {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(`@/lib/questions/${archetype}.json`) as Question[]
-  } catch {
-    return []
-  }
-}
+import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 
 function extractJson(text: string): unknown {
   const objectMatch = text.match(/\{[\s\S]*\}/)
@@ -51,8 +38,12 @@ export const generateTeaser = inngest.createFunction(
       .select('question_key, answer_text')
       .eq('idea_id', ideaId)
 
-    const bank = loadBank(idea.archetype)
-    const answers = (answersRows ?? []).flatMap(row => {
+    // Stale hidden-branch answers (show_if no longer matches after the
+    // founder changed a controlling answer) are dropped before they reach
+    // the teaser prompt — see src/lib/question-bank.ts.
+    const bank = loadQuestionBank(idea.archetype)
+    const visibleAnswersRows = filterVisibleAnswers(bank, answersRows ?? [])
+    const answers = visibleAnswersRows.flatMap(row => {
       const bankQ = bank.find(q => q.key === row.question_key)
       return bankQ ? [{ maps_to: bankQ.maps_to, answer: row.answer_text }] : []
     })

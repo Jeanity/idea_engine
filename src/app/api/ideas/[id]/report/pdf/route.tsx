@@ -6,6 +6,7 @@ import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { resolveEssentialServices, absolutizeEssentialServices } from '@/lib/essential-services'
 import { deepStripCites } from '@/lib/cite'
 import { formatAnswer } from '@/lib/format-answer'
+import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // react-pdf renders via a Node canvas/font pipeline that the Edge runtime
@@ -93,6 +94,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .eq('idea_id', id)
     .order('position')
 
+  // Stale hidden-branch answers (show_if no longer matches after the founder
+  // changed a controlling answer) are excluded from the appendix — mirrors
+  // the filtering applied before report generation (src/lib/question-bank.ts).
+  const visibleAnswers = filterVisibleAnswers(loadQuestionBank(idea.archetype), answers ?? [])
+
   // Render-time "Your support team" block, mirroring the web report page.
   // PDF hrefs must be absolute — the affiliate /go/ hop only works against
   // this request's origin, so absolutize after resolving.
@@ -113,7 +119,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     generatedAt: report?.generation_completed_at ?? new Date().toISOString(),
     preparedFor: profile?.display_name || user.email || 'Founder',
     sections,
-    answers: (answers ?? []).map(a => ({ question: a.question_text, answer: formatAnswer(a.answer_text, a.question_key) })),
+    answers: visibleAnswers.map(a => ({ question: a.question_text, answer: formatAnswer(a.answer_text, a.question_key) })),
     editAnswersUrl: `${request.nextUrl.origin}/app/ideas/${id}/summary`,
     essentialServices,
   }

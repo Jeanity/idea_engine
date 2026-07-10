@@ -132,8 +132,43 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+// A leading/trailing currency symbol or ISO-style code — "$", "€", "£", "¥",
+// a one/two-letter country prefix + "$" ("A$", "US$", "NZ$"), or a bare
+// 3-letter code ("AUD", "USD"). Only stripped when it sits directly against
+// the number (i.e. the very next/previous character across any whitespace is
+// a digit) — that's what stops this from eating the first or last word of
+// free text like "500g oat flour, 2 eggs…" or "…peanut butter".
+const CURRENCY_TOKEN = '(?:[A-Za-z]{1,2}\\$|[$€£¥]|[A-Za-z]{3})'
+const LEADING_CURRENCY = new RegExp(`^${CURRENCY_TOKEN}\\s*(?=-?\\d)`)
+const TRAILING_CURRENCY = new RegExp(`(?<=\\d)\\s*${CURRENCY_TOKEN}$`)
+
+// Thousands-separated plain number, e.g. "1,200" or "12,000.50" — every
+// comma group after the first must be exactly 3 digits.
+const THOUSANDS_FORMATTED = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/
+
+// Strict on purpose: this feeds the deterministic cost calculator, so a
+// free-text answer like "500g oat flour, 2 eggs, 400g pumpkin, 200g peanut
+// butter" must degrade to null (which calculateCosts already handles
+// honestly — it flags the field 'estimated' and notes the omission) rather
+// than being mangled into a garbage number like 5002400200. Only a currency
+// symbol/code and thousands-separator commas are stripped before the
+// remainder is required to be a single plain number.
 export function parseNumber(s: string | undefined | null): number | null {
   if (!s) return null
-  const n = parseFloat(s.replace(/[^0-9.-]/g, ''))
-  return isNaN(n) ? null : n
+  let t = s.trim()
+  if (t === '') return null
+
+  const leading = t.match(LEADING_CURRENCY)
+  if (leading) t = t.slice(leading[0].length)
+
+  const trailing = t.match(TRAILING_CURRENCY)
+  if (trailing) t = t.slice(0, t.length - trailing[0].length)
+
+  t = t.trim()
+  if (t === '') return null
+
+  if (THOUSANDS_FORMATTED.test(t)) t = t.replace(/,/g, '')
+
+  return PLAIN_NUMBER.test(t) ? parseFloat(t) : null
 }

@@ -4,6 +4,7 @@ import { createDbClient } from '@/lib/db'
 import { AppHeader } from '@/components/app-header'
 import { formatAnswer } from '@/lib/format-answer'
 import { StartOverButton } from '@/components/start-over-button'
+import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 
 export const metadata = { title: 'Review Answers — Idea Engine' }
 
@@ -40,7 +41,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
     .eq('idea_id', id)
     .order('position')
 
-  const rows = answers ?? []
+  // Stale hidden-branch answers (show_if no longer matches after the founder
+  // changed a controlling answer) are excluded from the review list — mirrors
+  // the filtering applied before report generation (src/lib/question-bank.ts).
+  const rows = filterVisibleAnswers(loadQuestionBank(idea.archetype), answers ?? [])
 
   return (
     <main className="min-h-screen bg-slate-950 light:bg-gray-50">

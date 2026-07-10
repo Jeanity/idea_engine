@@ -30,11 +30,7 @@ import {
 } from '@/lib/prompts/cost-estimation'
 import { FINANCING_SYSTEM_PROMPT, buildFinancingMessage } from '@/lib/prompts/financing'
 import { MARKETING_SYSTEM_PROMPT, buildMarketingMessage } from '@/lib/prompts/marketing'
-
-interface Question {
-  key: string
-  maps_to: string
-}
+import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 
 // NOTE on <cite index="…">…</cite> markers: web-search responses interleave
 // the model's citation tags into the text. The index is meaningless once
@@ -66,15 +62,6 @@ function parseJsonObject(r: AIResult): Record<string, unknown> {
     throw new Error('Response not a JSON object')
   }
   return parsed as Record<string, unknown>
-}
-
-function loadBank(archetype: string): Question[] {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(`@/lib/questions/${archetype}.json`) as Question[]
-  } catch {
-    return []
-  }
 }
 
 const UNAVAILABLE = (reason: string) => ({ status: 'unavailable', reason })
@@ -274,10 +261,14 @@ export const generateReport = inngest.createFunction(
       .select('question_key, answer_text')
       .eq('idea_id', ideaId)
 
-    // Build maps_to → answer_text lookup from static bank
-    const bank = loadBank(idea.archetype)
+    // Build maps_to → answer_text lookup from static bank. Stale hidden-
+    // branch answers — rows left over from before the founder changed a
+    // controlling answer, so their show_if no longer matches — are dropped
+    // here before they can reach the report.
+    const bank = loadQuestionBank(idea.archetype)
+    const visibleAnswersRows = filterVisibleAnswers(bank, answersRows ?? [])
     const mapsTo: Record<string, string> = {}
-    for (const row of answersRows ?? []) {
+    for (const row of visibleAnswersRows) {
       const bankQ = bank.find(q => q.key === row.question_key)
       if (bankQ) mapsTo[bankQ.maps_to] = row.answer_text
     }
@@ -290,7 +281,7 @@ export const generateReport = inngest.createFunction(
       founder_location_country: 'founder.location_country',
       founder_location_region: 'founder.location_region',
     }
-    for (const row of answersRows ?? []) {
+    for (const row of visibleAnswersRows) {
       const injected = INJECTED_QUESTION_MAPS[row.question_key]
       if (injected) mapsTo[injected] = row.answer_text
     }
