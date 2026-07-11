@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   CONSENT_OPEN_MANAGE_EVENT,
   deleteCookie,
@@ -26,6 +27,10 @@ type Visibility = 'hidden' | 'banner' | 'manage'
 export function CookieConsentBanner() {
   const [visibility, setVisibility] = useState<Visibility>('hidden')
   const [analyticsChoice, setAnalyticsChoice] = useState(false)
+  // Internal ad-production frames (/ad/*) are screenshotted for video — the
+  // banner would end up baked into every capture. No analytics decision is
+  // being made on those pages, so suppressing the prompt loses nothing.
+  const isAdStudio = usePathname()?.startsWith('/ad') ?? false
 
   useEffect(() => {
     const existing = readConsent()
@@ -68,7 +73,7 @@ export function CookieConsentBanner() {
     setVisibility('hidden')
   }
 
-  if (visibility === 'hidden') return null
+  if (visibility === 'hidden' || isAdStudio) return null
 
   return (
     <div
