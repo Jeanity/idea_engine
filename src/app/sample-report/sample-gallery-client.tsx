@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ScoreRing } from '@/components/score-ring'
 import { SampleReportView } from '@/components/sample-report-view'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+import type { CapitalRange } from '@/lib/derived-metrics'
 
 export interface GalleryCard {
   id: string
@@ -17,12 +18,16 @@ export interface GalleryCard {
 // DB-backed cards are fetched lazily on click from /api/sample-reports/[id].
 export interface FallbackCard extends GalleryCard {
   sections: Record<string, unknown>
+  /** The fallback sample's founder capital band for the budget-fit tile.
+   *  DB-backed samples never get one — a cloned report's founder band isn't
+   *  stored, and borrowing another idea's band would contradict the report text. */
+  statedCapital: CapitalRange | null
 }
 
 type ModalState =
   | { status: 'closed' }
   | { status: 'loading'; title: string; restatement: string; archetype: string }
-  | { status: 'loaded'; title: string; restatement: string; archetype: string; sections: Record<string, unknown> }
+  | { status: 'loaded'; title: string; restatement: string; archetype: string; sections: Record<string, unknown>; statedCapital: CapitalRange | null }
   | { status: 'error'; message: string }
 
 function SampleCard({ card, onOpen }: { card: GalleryCard; onOpen: () => void }) {
@@ -95,6 +100,7 @@ function ReportModal({ state, onClose }: { state: ModalState; onClose: () => voi
             restatement={state.restatement}
             archetype={state.archetype}
             sections={state.sections}
+            statedCapital={state.statedCapital}
           />
         )}
       </div>
@@ -111,7 +117,7 @@ export function SampleGallery({ cards, fallback }: { cards: GalleryCard[]; fallb
 
   async function openCard(card: GalleryCard) {
     if (card.id === fallback.id) {
-      setModal({ status: 'loaded', title: fallback.title, restatement: fallback.restatement, archetype: fallback.archetype, sections: fallback.sections })
+      setModal({ status: 'loaded', title: fallback.title, restatement: fallback.restatement, archetype: fallback.archetype, sections: fallback.sections, statedCapital: fallback.statedCapital })
       return
     }
     setModal({ status: 'loading', title: card.title, restatement: card.restatement, archetype: card.archetype })
@@ -122,7 +128,7 @@ export function SampleGallery({ cards, fallback }: { cards: GalleryCard[]; fallb
         setModal({ status: 'error', message: data.error ?? 'Could not load this sample report.' })
         return
       }
-      setModal({ status: 'loaded', title: data.title, restatement: data.restatement, archetype: data.archetype, sections: data.sections })
+      setModal({ status: 'loaded', title: data.title, restatement: data.restatement, archetype: data.archetype, sections: data.sections, statedCapital: null })
     } catch {
       setModal({ status: 'error', message: 'Could not load this sample report.' })
     }

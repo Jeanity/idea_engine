@@ -2,6 +2,7 @@
 
 import { FullReportViewer } from '@/app/app/ideas/[id]/report/report-client'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
+import type { CapitalRange } from '@/lib/derived-metrics'
 
 /**
  * Shared renderer for sample-report content — used by both the public
@@ -16,11 +17,16 @@ export function SampleReportView({
   restatement,
   archetype,
   sections,
+  statedCapital = null,
 }: {
   title?: string
   restatement: string
   archetype?: string
   sections: Record<string, unknown>
+  /** Only the built-in fallback sample supplies this — DB-cloned samples
+   *  don't know their source founder's capital band, and showing another
+   *  founder's band would contradict the cloned report's own text. */
+  statedCapital?: CapitalRange | null
 }) {
   return (
     <div>
@@ -63,7 +69,7 @@ export function SampleReportView({
             preview_sections: {},
             error: null,
           }}
-          statedCapital={{ low: 2000, high: 10000 }}
+          statedCapital={statedCapital}
         />
       </div>
     </div>

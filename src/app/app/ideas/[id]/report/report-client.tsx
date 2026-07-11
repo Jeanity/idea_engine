@@ -619,7 +619,7 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
             <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= meta.segments ? meta.barClass : 'bg-white/10 light:bg-gray-200'}`} />
           ))}
         </div>
-        <span className="text-xs text-slate-500 light:text-gray-400 whitespace-nowrap w-full overflow-x-auto">your {capitalStr} vs {startupStr} est.</span>
+        <span className="text-xs text-slate-500 light:text-gray-400 text-center break-words w-full">your {capitalStr} vs {startupStr} est.</span>
       </div>
     )
   }

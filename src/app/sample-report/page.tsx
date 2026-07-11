@@ -23,6 +23,10 @@ const FALLBACK_CARD: FallbackCard = {
     (SAMPLE_REPORT_SECTIONS.viability_snapshot as { scores: Record<string, { score: number }> }).scores
   ),
   sections: SAMPLE_REPORT_SECTIONS,
+  // "$10,000+" band — reads as "Partway there" against the sample's
+  // $14,700–$63,000 startup range, consistent with its cart-first-pilot
+  // narrative (the van comes later, funded by proven revenue).
+  statedCapital: { low: 10_000, high: null },
 }
 
 // Server component: reads active samples with the per-request anon client so

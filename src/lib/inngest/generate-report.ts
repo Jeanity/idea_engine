@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/db'
 import { callAI, HAIKU_MODEL, DEFAULT_MODEL, type AIResult } from '@/lib/ai'
 import { providerOverrideForUser, reportModelForUser } from '@/lib/demo-mode'
 import { calculateCosts, parseNumber, needsAiCostFallback } from '@/lib/cost-calculator'
+import { parseCapitalRange } from '@/lib/derived-metrics'
 import {
   COMPETITOR_RESEARCH_SYSTEM_PROMPT,
   buildCompetitorResearchMessage,
@@ -479,7 +480,13 @@ export const generateReport = inngest.createFunction(
     // ── Step 2b: Financing bridge (conditional, optional) ──────
     // Only runs when the founder's stated available capital falls short of
     // the estimated startup cost range — otherwise there's no gap to bridge.
-    const statedCapital = parseNumber(mapsTo['cost.startup_capital'])
+    // Most archetypes answer cost.startup_capital as a select BAND
+    // ("$500–$2,000"), which parseNumber rejects — so this step never fired
+    // for them until parseCapitalRange (2026-07-11). The gap test uses the
+    // band's top: a shortfall is only certain when even the founder's
+    // maximum stated capital can't reach the low startup estimate. An
+    // open-ended band ("$10,000+", high: null) can never prove a gap.
+    const statedCapital = parseCapitalRange(mapsTo['cost.startup_capital'])
     const cb = costBreakdown as { startup_costs?: Array<{ estimate_low: number; estimate_high: number }>; currency?: string } | null
     const startupLow = Array.isArray(cb?.startup_costs) && cb.startup_costs.length > 0
       ? cb.startup_costs.reduce((sum, item) => sum + item.estimate_low, 0)
@@ -488,7 +495,7 @@ export const generateReport = inngest.createFunction(
       ? cb.startup_costs.reduce((sum, item) => sum + item.estimate_high, 0)
       : null
 
-    if (statedCapital !== null && startupLow !== null && statedCapital < startupLow) {
+    if (statedCapital !== null && statedCapital.high !== null && startupLow !== null && statedCapital.high < startupLow) {
       const financingOutcome = await aiStep(
         step,
         'financing-bridge',
