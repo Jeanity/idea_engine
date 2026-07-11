@@ -495,12 +495,19 @@ const SCORE_LABELS: Record<string, string> = {
 }
 
 function ViabilitySnapshot({ vs }: {
-  vs: { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string }
+  vs: { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string; success_outlook?: { score: number; rationale: string } }
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
       <div className="flex items-center gap-3 mb-4">
-        <ScoreRing score={deriveHeadlineScore(vs.scores)} label="" size={48} />
+        {vs.success_outlook ? (
+          <>
+            <ScoreRing score={deriveHeadlineScore(vs.scores)} label="Viability" size={48} />
+            <ScoreRing score={vs.success_outlook.score} label="Success outlook" size={48} />
+          </>
+        ) : (
+          <ScoreRing score={deriveHeadlineScore(vs.scores)} label="" size={48} />
+        )}
         <h2 className="font-semibold text-white light:text-gray-900">Viability Snapshot</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -518,6 +525,9 @@ function ViabilitySnapshot({ vs }: {
       <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 light:bg-indigo-50 light:border-indigo-100 px-4 py-3">
         <p className="text-sm text-indigo-200 light:text-indigo-900"><CitedText text={vs.overall_verdict} /></p>
       </div>
+      {vs.success_outlook && (
+        <p className="mt-3 text-xs text-slate-400 light:text-gray-500">Success outlook — <CitedText text={vs.success_outlook.rationale} /></p>
+      )}
     </div>
   )
 }
@@ -750,6 +760,7 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
   const vs = p.viability_snapshot as {
     scores: Record<string, { score: number; rationale: string }>
     overall_verdict: string
+    success_outlook?: { score: number; rationale: string }
   } | undefined
   // Server-redacted snapshot shape (src/lib/teaser-gating.ts) — only ever
   // present when `gated`; the two shapes never coexist.
@@ -1081,7 +1092,7 @@ export function FullReportViewer({ report, essentialServices = [], onActiveTabCh
   const complianceInferred = meta?.section_status?.legal_compliance === 'fallback_inferred'
 
   const summary = s.summary
-  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
+  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string; success_outlook?: { score: number; rationale: string } } | undefined
   const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
   const competitors = s.competitors
   const costBreakdown = s.cost_breakdown

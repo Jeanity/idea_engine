@@ -51,6 +51,23 @@ describe('gatePreviewSections', () => {
     expect(json).not.toContain('"score"')
   })
 
+  it('strips success_outlook from the gated snapshot — it is rebuilt from scratch', () => {
+    const withOutlook = {
+      ...preview,
+      viability_snapshot: {
+        scores,
+        overall_verdict: 'Promising with caveats.',
+        success_outlook: { score: 72, rationale: 'Your prior experience running markets narrows the execution risk.' },
+      },
+    }
+    const gated = gatePreviewSections(withOutlook)
+    const vs = gated.viability_snapshot as GatedViabilitySnapshot
+    expect(vs).not.toHaveProperty('success_outlook')
+    const json = JSON.stringify(vs)
+    expect(json).not.toContain('success_outlook')
+    expect(json).not.toContain('prior experience')
+  })
+
   it('cuts next steps to one and counts the hidden ones', () => {
     const gated = gatePreviewSections(preview)
     expect(gated.next_steps).toEqual([preview.next_steps[0]])

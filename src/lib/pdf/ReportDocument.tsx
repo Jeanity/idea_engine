@@ -71,7 +71,7 @@ export interface ReportPdfInput {
 export function ReportDocument({ data }: { data: ReportPdfInput }) {
   const s = data.sections
   const summary = s.summary as { text: string } | undefined
-  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string } | undefined
+  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string; success_outlook?: { score: number; rationale: string } } | undefined
   const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
   const competitors = s.competitors
   const costBreakdown = s.cost_breakdown as {
@@ -196,7 +196,20 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
           {vs?.scores && !isUnavailable(vs) && (
             <View style={{ marginBottom: 18 }} wrap={false}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <ScoreDonut score={deriveHeadlineScore(vs.scores)} size={40} />
+                {typeof vs.success_outlook?.score === 'number' ? (
+                  <>
+                    <View style={{ alignItems: 'center', marginRight: 14 }}>
+                      <ScoreDonut score={deriveHeadlineScore(vs.scores)} size={40} />
+                      <Text style={[styles.caption, { marginTop: 2 }]}>Viability</Text>
+                    </View>
+                    <View style={{ alignItems: 'center', marginRight: 10 }}>
+                      <ScoreDonut score={vs.success_outlook.score} size={40} />
+                      <Text style={[styles.caption, { marginTop: 2 }]}>Success outlook</Text>
+                    </View>
+                  </>
+                ) : (
+                  <ScoreDonut score={deriveHeadlineScore(vs.scores)} size={40} />
+                )}
                 <Text style={[styles.h3, { marginLeft: 10 }]}>Viability Snapshot</Text>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
@@ -209,6 +222,9 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
                   {vs.scores.time_to_revenue && <ScoreBar label="Time to Revenue" score={vs.scores.time_to_revenue.score} rationale={vs.scores.time_to_revenue.rationale} />}
                 </View>
               </View>
+              {typeof vs.success_outlook?.score === 'number' && (
+                <Text style={[styles.caption, { marginTop: 8 }]}>Success outlook — {vs.success_outlook.rationale}</Text>
+              )}
             </View>
           )}
 

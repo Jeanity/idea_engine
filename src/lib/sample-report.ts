@@ -46,6 +46,11 @@ export const SAMPLE_REPORT_SECTIONS: Record<string, unknown> = {
     },
     overall_verdict:
       'This idea works if you treat it as a site-acquisition business that happens to sell coffee. Demand and margins are proven; the operators who struggle are the ones who bought the van before securing anywhere to park it. Pilot with a cart at one venue, prove the numbers, then scale into the van with revenue behind you.',
+    success_outlook: {
+      score: 72,
+      rationale:
+        'Your plan to prove venues with a low-cost cart before buying the van meaningfully de-risks the capital and execution scores, and your stated goal of replacing a part-time income is comfortably covered by the unit economics even at modest weekend volume.',
+    },
   },
 
   competitors: [
