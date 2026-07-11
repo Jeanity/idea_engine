@@ -421,8 +421,8 @@ export default async function LandingPage() {
 
           <p className="mt-6 max-w-xl text-lg text-slate-400 light:text-gray-500">
             Describe your business idea. We classify it, ask the right questions, research your
-            market with live web search, and deliver a structured report — competitors, costs,
-            legal, and funding included.
+            market with live web search, and deliver a structured report covering competitors,
+            costs, legal, and funding options.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
