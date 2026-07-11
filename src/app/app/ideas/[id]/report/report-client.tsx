@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
+import { deriveBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
 import { SectionLabel } from '@/components/admin/section-label'
@@ -53,6 +54,10 @@ interface Props {
   promoStatus: PromoStatus
   surveyData: SurveyData
   essentialServices: ResolvedEssentialService[]
+  /** Founder's stated startup-capital band (src/lib/derived-metrics.ts), used
+   *  for the "At a glance" budget-fit tile. null when unanswered/unparseable
+   *  — the tile simply doesn't render. */
+  statedCapital?: CapitalRange | null
 }
 
 // ── Progress screen ───────────────────────────────────────────
@@ -532,6 +537,106 @@ function ViabilitySnapshot({ vs }: {
   )
 }
 
+const BUDGET_FIT_META: Record<BudgetFitBand, { label: string; textClass: string; barClass: string; segments: number }> = {
+  covered: { label: 'Fully covered', textClass: 'text-emerald-300 light:text-emerald-600', barClass: 'bg-emerald-400', segments: 4 },
+  lean_covered: { label: 'Covers a lean start', textClass: 'text-emerald-300 light:text-emerald-600', barClass: 'bg-emerald-400', segments: 3 },
+  partial: { label: 'Partway there', textClass: 'text-amber-300 light:text-amber-600', barClass: 'bg-amber-400', segments: 2 },
+  short: { label: 'Short — see funding options', textClass: 'text-rose-300 light:text-rose-600', barClass: 'bg-rose-400', segments: 1 },
+}
+
+/** Renders a CapitalRange as "under X", "X+", "X–Y", or a bare "X" when the
+ *  band collapses to a single figure (physical_product's free-number answer). */
+function formatCapitalRange(range: CapitalRange, sym: string): string {
+  if (range.high === null) return `${fmt0(sym, range.low)}+`
+  if (range.low === 0) return `under ${fmt0(sym, range.high)}`
+  if (range.low === range.high) return fmt0(sym, range.low)
+  return `${fmt0(sym, range.low)}–${fmt0(sym, range.high)}`
+}
+
+// min-w-0 lets a grid item shrink below its content's intrinsic width (same
+// fix used for the flex rows elsewhere in this file) — without it, the
+// budget-fit tile's one-line comparison caption would force its whole grid
+// column wider, pushing the strip into horizontal overflow on narrow screens.
+const AT_A_GLANCE_TILE_CLASS = 'min-w-0 rounded-xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-3 py-3 flex flex-col items-center gap-1'
+
+/** Four instant-read tiles under the Viability Snapshot — every tile is
+ *  conditional on the data existing, so old reports (which lack demand_evidence
+ *  / edge_strength, and reports with no cost/capital data) render unchanged. */
+function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
+  vs?: { demand_evidence?: { score: number; rationale: string }; edge_strength?: { score: number; rationale: string } }
+  costBreakdown: unknown
+  statedCapital: CapitalRange | null
+}) {
+  const cb = costBreakdown as { gross_margin_pct?: unknown; currency?: string } | null | undefined
+  const grossMarginPct = cb && typeof cb.gross_margin_pct === 'number' && Number.isFinite(cb.gross_margin_pct)
+    ? cb.gross_margin_pct
+    : null
+
+  const startup = sumStartupCosts(costBreakdown)
+  const budgetFitBand = statedCapital !== null && startup !== null ? deriveBudgetFit(statedCapital, startup) : null
+
+  const tiles: ReactNode[] = []
+
+  if (vs?.demand_evidence) {
+    tiles.push(
+      <div key="demand" className={AT_A_GLANCE_TILE_CLASS} title={vs.demand_evidence.rationale}>
+        <ScoreRing score={vs.demand_evidence.score} label="" size={44} />
+        <span className="text-xs text-slate-400 light:text-gray-500 text-center">Demand evidence</span>
+      </div>
+    )
+  }
+
+  if (vs?.edge_strength) {
+    tiles.push(
+      <div key="edge" className={AT_A_GLANCE_TILE_CLASS} title={vs.edge_strength.rationale}>
+        <ScoreRing score={vs.edge_strength.score} label="" size={44} />
+        <span className="text-xs text-slate-400 light:text-gray-500 text-center">Edge strength</span>
+      </div>
+    )
+  }
+
+  if (grossMarginPct !== null) {
+    tiles.push(
+      <div key="margin" className={AT_A_GLANCE_TILE_CLASS}>
+        <ScoreRing score={Math.round(grossMarginPct)} label="" size={44} />
+        <span className="text-xs text-slate-400 light:text-gray-500 text-center">Gross margin</span>
+        <span className="text-[10px] text-slate-500 light:text-gray-400 -mt-1">per unit</span>
+      </div>
+    )
+  }
+
+  if (budgetFitBand && startup) {
+    const meta = BUDGET_FIT_META[budgetFitBand]
+    const sym = currencySymbol(cb?.currency ?? 'USD')
+    const capitalStr = formatCapitalRange(statedCapital as CapitalRange, sym)
+    const startupStr = `${fmt0(sym, startup.low)}–${fmt0(sym, startup.high)}`
+    tiles.push(
+      <div key="budget" className={`${AT_A_GLANCE_TILE_CLASS} text-center`}>
+        <span className="text-xs text-slate-400 light:text-gray-500">Budget fit</span>
+        <span className={`text-sm font-semibold ${meta.textClass}`}>{meta.label}</span>
+        <div className="flex gap-1 w-full max-w-[88px]">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= meta.segments ? meta.barClass : 'bg-white/10 light:bg-gray-200'}`} />
+          ))}
+        </div>
+        <span className="text-xs text-slate-500 light:text-gray-400 whitespace-nowrap w-full overflow-x-auto">your {capitalStr} vs {startupStr} est.</span>
+      </div>
+    )
+  }
+
+  if (tiles.length === 0) return null
+
+  const gridColsClass = tiles.length >= 4
+    ? 'grid-cols-2 sm:grid-cols-4'
+    : tiles.length === 3
+      ? 'grid-cols-3'
+      : tiles.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-1'
+
+  return <div className={`grid ${gridColsClass} gap-3`}>{tiles}</div>
+}
+
 // ── Gated teaser components (src/lib/teaser-gating.ts) ───────────────────
 // The locked visuals below are DECORATIVE ONLY — the gated fields never
 // reach the browser (redacted server-side), so the skeleton bars have
@@ -761,6 +866,8 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
     scores: Record<string, { score: number; rationale: string }>
     overall_verdict: string
     success_outlook?: { score: number; rationale: string }
+    demand_evidence?: { score: number; rationale: string }
+    edge_strength?: { score: number; rationale: string }
   } | undefined
   // Server-redacted snapshot shape (src/lib/teaser-gating.ts) — only ever
   // present when `gated`; the two shapes never coexist.
@@ -1076,7 +1183,7 @@ const REPORT_TABS = [
 
 type ReportTabKey = typeof REPORT_TABS[number]['key']
 
-export function FullReportViewer({ report, essentialServices = [], onActiveTabChange }: { report: ReportData; essentialServices?: ResolvedEssentialService[]; onActiveTabChange?: (tab: ReportTabKey) => void }) {
+export function FullReportViewer({ report, essentialServices = [], onActiveTabChange, statedCapital = null }: { report: ReportData; essentialServices?: ResolvedEssentialService[]; onActiveTabChange?: (tab: ReportTabKey) => void; statedCapital?: CapitalRange | null }) {
   const s = report.sections
   const [activeTab, setActiveTab] = useState<ReportTabKey>('overview')
 
@@ -1092,7 +1199,13 @@ export function FullReportViewer({ report, essentialServices = [], onActiveTabCh
   const complianceInferred = meta?.section_status?.legal_compliance === 'fallback_inferred'
 
   const summary = s.summary
-  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string; success_outlook?: { score: number; rationale: string } } | undefined
+  const vs = s.viability_snapshot as {
+    scores: Record<string, { score: number; rationale: string }>
+    overall_verdict: string
+    success_outlook?: { score: number; rationale: string }
+    demand_evidence?: { score: number; rationale: string }
+    edge_strength?: { score: number; rationale: string }
+  } | undefined
   const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
   const competitors = s.competitors
   const costBreakdown = s.cost_breakdown
@@ -1175,6 +1288,8 @@ export function FullReportViewer({ report, essentialServices = [], onActiveTabCh
           : vs?.scores
             ? <ViabilitySnapshot vs={vs} />
             : <UnavailableSection title="Viability Snapshot" />}
+
+        <AtAGlanceStrip vs={!isUnavailable(vs) ? vs : undefined} costBreakdown={s.cost_breakdown} statedCapital={statedCapital} />
 
         {/* Older reports pre-date this section — render nothing rather than "unavailable" */}
         {isUnavailable(whyProceed)
@@ -2021,7 +2136,7 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, essentialServices }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, essentialServices, statedCapital = null }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
   const [fullReportTab, setFullReportTab] = useState<string | undefined>(undefined)
@@ -2034,7 +2149,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   if (hasFullSections && !regenerating) {
     return (
       <div>
-        <FullReportViewer report={report!} essentialServices={essentialServices} onActiveTabChange={setFullReportTab} />
+        <FullReportViewer report={report!} essentialServices={essentialServices} onActiveTabChange={setFullReportTab} statedCapital={statedCapital} />
         <div className="mb-8">
           <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} feedbackReplies={feedbackReplies} />
         </div>

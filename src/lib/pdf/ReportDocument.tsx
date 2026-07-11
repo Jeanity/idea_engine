@@ -17,6 +17,7 @@ import {
 import { symbolForCurrency } from '@/lib/countries'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
+import { deriveBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
 
 // Duplicated from the three other copies in the app (confirm/summary/my-ideas
 // pages) — no shared module for this yet, matching existing pattern.
@@ -53,6 +54,25 @@ function fmt0(sym: string, n: number) {
   return `${sym}${Math.round(n).toLocaleString()}`
 }
 
+/** Renders a CapitalRange as "under X", "X+", "X–Y", or a bare "X" when the
+ *  band collapses to a single figure (physical_product's free-number answer)
+ *  — mirrors formatCapitalRange in report-client.tsx (no shared module for
+ *  this small presentational helper yet, matching this file's existing
+ *  duplicate-rather-than-share pattern, see the ARCHETYPE_LABELS comment above). */
+function formatCapitalRange(range: CapitalRange, sym: string): string {
+  if (range.high === null) return `${fmt0(sym, range.low)}+`
+  if (range.low === 0) return `under ${fmt0(sym, range.high)}`
+  if (range.low === range.high) return fmt0(sym, range.low)
+  return `${fmt0(sym, range.low)}–${fmt0(sym, range.high)}`
+}
+
+const BUDGET_FIT_LABELS: Record<BudgetFitBand, string> = {
+  covered: 'Fully covered',
+  lean_covered: 'Covers a lean start',
+  partial: 'Partway there',
+  short: 'Short — see funding options',
+}
+
 export interface ReportPdfInput {
   reportTitle: string // used in the running footer
   restatement: string | null
@@ -66,12 +86,22 @@ export interface ReportPdfInput {
   answers: { question: string; answer: string }[]
   editAnswersUrl: string
   essentialServices: ResolvedEssentialService[]
+  /** Founder's stated startup-capital band (src/lib/derived-metrics.ts), used
+   *  for the "At a glance" budget-fit line. null/absent when unanswered or
+   *  unparseable — the line simply doesn't render. */
+  statedCapital?: CapitalRange | null
 }
 
 export function ReportDocument({ data }: { data: ReportPdfInput }) {
   const s = data.sections
   const summary = s.summary as { text: string } | undefined
-  const vs = s.viability_snapshot as { scores: Record<string, { score: number; rationale: string }>; overall_verdict: string; success_outlook?: { score: number; rationale: string } } | undefined
+  const vs = s.viability_snapshot as {
+    scores: Record<string, { score: number; rationale: string }>
+    overall_verdict: string
+    success_outlook?: { score: number; rationale: string }
+    demand_evidence?: { score: number; rationale: string }
+    edge_strength?: { score: number; rationale: string }
+  } | undefined
   const whyProceed = s.why_this_can_work as { market_proof: string; your_edge: string; upside: string } | undefined
   const competitors = s.competitors
   const costBreakdown = s.cost_breakdown as {
@@ -111,6 +141,20 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
   const generatedDate = new Date(data.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
   const cb = costBreakdown
   const sym = cb ? symbolForCurrency(cb.currency ?? 'USD') : '$'
+
+  // "At a glance" strip (Executive Summary page) — mirrors the web report's
+  // AtAGlanceStrip (report-client.tsx): every metric is independently
+  // conditional so old reports (missing demand_evidence/edge_strength) and
+  // reports with no cost/capital data render unchanged.
+  const demandEvidence = vs && !isUnavailable(vs) ? vs.demand_evidence : undefined
+  const edgeStrength = vs && !isUnavailable(vs) ? vs.edge_strength : undefined
+  const grossMarginPct = cb && !isUnavailable(cb) && typeof cb.gross_margin_pct === 'number' && Number.isFinite(cb.gross_margin_pct)
+    ? cb.gross_margin_pct
+    : null
+  const statedCapital = data.statedCapital ?? null
+  const startupSum = sumStartupCosts(cb)
+  const budgetFitBand = statedCapital && startupSum ? deriveBudgetFit(statedCapital, startupSum) : null
+  const hasAtAGlance = !!demandEvidence || !!edgeStrength || grossMarginPct !== null || !!budgetFitBand
 
   const toc: Array<{ id: string; label: string; show: boolean }> = [
     { id: 'summary', label: 'Executive Summary', show: !!hasSummarySection },
@@ -224,6 +268,37 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               </View>
               {typeof vs.success_outlook?.score === 'number' && (
                 <Text style={[styles.caption, { marginTop: 8 }]}>Success outlook — {vs.success_outlook.rationale}</Text>
+              )}
+            </View>
+          )}
+
+          {hasAtAGlance && (
+            <View style={{ marginBottom: 18 }} wrap={false}>
+              <Text style={[styles.h3, { marginBottom: 8 }]}>At a Glance</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+                {demandEvidence && (
+                  <View style={{ alignItems: 'center' }}>
+                    <ScoreDonut score={demandEvidence.score} size={40} />
+                    <Text style={[styles.caption, { marginTop: 2 }]}>Demand evidence</Text>
+                  </View>
+                )}
+                {edgeStrength && (
+                  <View style={{ alignItems: 'center' }}>
+                    <ScoreDonut score={edgeStrength.score} size={40} />
+                    <Text style={[styles.caption, { marginTop: 2 }]}>Edge strength</Text>
+                  </View>
+                )}
+                {grossMarginPct !== null && (
+                  <View style={{ alignItems: 'center' }}>
+                    <ScoreDonut score={Math.round(grossMarginPct)} size={40} />
+                    <Text style={[styles.caption, { marginTop: 2 }]}>Gross margin</Text>
+                  </View>
+                )}
+              </View>
+              {budgetFitBand && startupSum && statedCapital && (
+                <Text style={[styles.caption, { marginTop: 8 }]}>
+                  Budget fit: {BUDGET_FIT_LABELS[budgetFitBand]} — your {formatCapitalRange(statedCapital, sym)} vs {fmt0(sym, startupSum.low)}–{fmt0(sym, startupSum.high)} estimated startup
+                </Text>
               )}
             </View>
           )}

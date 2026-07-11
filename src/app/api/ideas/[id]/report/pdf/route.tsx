@@ -7,6 +7,7 @@ import { resolveEssentialServices, absolutizeEssentialServices } from '@/lib/ess
 import { deepStripCites } from '@/lib/cite'
 import { formatAnswer } from '@/lib/format-answer'
 import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
+import { parseCapitalRange } from '@/lib/derived-metrics'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // react-pdf renders via a Node canvas/font pipeline that the Edge runtime
@@ -97,7 +98,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // Stale hidden-branch answers (show_if no longer matches after the founder
   // changed a controlling answer) are excluded from the appendix — mirrors
   // the filtering applied before report generation (src/lib/question-bank.ts).
-  const visibleAnswers = filterVisibleAnswers(loadQuestionBank(idea.archetype), answers ?? [])
+  const questionBank = loadQuestionBank(idea.archetype)
+  const visibleAnswers = filterVisibleAnswers(questionBank, answers ?? [])
+
+  // "At a glance" budget-fit metric (src/lib/derived-metrics.ts) — reuses the
+  // answers/bank already loaded above for the appendix, no extra query.
+  const capitalAnswer = visibleAnswers.find(
+    a => questionBank.find(q => q.key === a.question_key)?.maps_to === 'cost.startup_capital'
+  )
+  const statedCapital = parseCapitalRange(capitalAnswer?.answer_text ?? null)
 
   // Render-time "Your support team" block, mirroring the web report page.
   // PDF hrefs must be absolute — the affiliate /go/ hop only works against
@@ -122,6 +131,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     answers: visibleAnswers.map(a => ({ question: a.question_text, answer: formatAnswer(a.answer_text, a.question_key) })),
     editAnswersUrl: `${request.nextUrl.origin}/app/ideas/${id}/summary`,
     essentialServices,
+    statedCapital,
   }
 
   const buffer = await renderToBuffer(<ReportDocument data={data} />)

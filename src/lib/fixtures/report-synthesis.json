@@ -25,6 +25,14 @@
     "success_outlook": {
       "score": 66,
       "rationale": "Your evening-and-weekend-only availability caps this at a solid part-time income rather than the growth trajectory the dimension scores alone would suggest, which is exactly what you set out to build."
+    },
+    "demand_evidence": {
+      "score": 78,
+      "rationale": "NG1 City Cleaners publishes a live £50 starting price and Ovenu/Ovenclean report average order values around £100, confirming people already pay for exactly this service in and around Nottingham."
+    },
+    "edge_strength": {
+      "score": 62,
+      "rationale": "Every dedicated Nottingham competitor operates daytime or weekday hours only, and the one evening/weekend operator is a Derbyshire-based generalist — a clear scheduling gap, though not yet defended against a direct copycat."
     }
   },
   "why_this_can_work": {

@@ -68,6 +68,31 @@ describe('gatePreviewSections', () => {
     expect(json).not.toContain('prior experience')
   })
 
+  it('strips demand_evidence and edge_strength from the gated snapshot — the whole snapshot is rebuilt from scratch', () => {
+    const withExtras = {
+      ...preview,
+      viability_snapshot: {
+        scores,
+        overall_verdict: 'Promising with caveats.',
+        success_outlook: { score: 72, rationale: 'Your prior experience running markets narrows the execution risk.' },
+        demand_evidence: { score: 84, rationale: 'Six active operators routinely charge $5.50 for a flat white.' },
+        edge_strength: { score: 68, rationale: 'Dawn junior-sport venues are structurally ignored by fitted-van operators.' },
+      },
+    }
+    const gated = gatePreviewSections(withExtras)
+    const vs = gated.viability_snapshot as GatedViabilitySnapshot
+    expect(vs).not.toHaveProperty('success_outlook')
+    expect(vs).not.toHaveProperty('demand_evidence')
+    expect(vs).not.toHaveProperty('edge_strength')
+    const json = JSON.stringify(vs)
+    expect(json).not.toContain('success_outlook')
+    expect(json).not.toContain('demand_evidence')
+    expect(json).not.toContain('edge_strength')
+    expect(json).not.toContain('prior experience')
+    expect(json).not.toContain('flat white')
+    expect(json).not.toContain('junior-sport')
+  })
+
   it('cuts next steps to one and counts the hidden ones', () => {
     const gated = gatePreviewSections(preview)
     expect(gated.next_steps).toEqual([preview.next_steps[0]])

@@ -63,6 +63,7 @@ export function SampleReportView({
             preview_sections: {},
             error: null,
           }}
+          statedCapital={{ low: 2000, high: 10000 }}
         />
       </div>
     </div>

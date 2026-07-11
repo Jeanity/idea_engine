@@ -25,12 +25,16 @@ All sections are stored in the `reports.sections` JSONB column. The `reports.pre
     "time_to_revenue":       { "score": 1–5, "rationale": "string — 1 sentence" }
   },
   "overall_verdict": "string — 2–3 sentences synthesising the four scores into a plain-language verdict.",
-  "success_outlook": { "score": "0–100 integer", "rationale": "string — 1 sentence" }
+  "success_outlook": { "score": "0–100 integer", "rationale": "string — 1 sentence" },
+  "demand_evidence": { "score": "0–100 integer", "rationale": "string — 1 sentence" }, // anchored to competitors' section_status: fallback_inferred caps at 55, failed/none found caps at 35 — demand can't be scored "proven" off inferred or missing data
+  "edge_strength": { "score": "0–100 integer", "rationale": "string — 1 sentence" }    // same honesty rule as why_this_can_work.your_edge — below 40 when the idea matches existing products with no genuine advantage
 }
 ```
 Score conventions: 1 = very low / very easy, 5 = very high / very hard. `capital_required` 1 = minimal capital needed, 5 = heavy capital required.
 
 `success_outlook` is the founder-specific outlook that THIS founder makes the idea work in THEIR market (0–100, distinct from the four 1–5 dimensions above) — it folds in factors the four dimensions don't capture: available capital vs estimated startup costs, the founder's own answers, competitive saturation, and risk severity. Added 2026-07-11 — reports generated before this date lack the field; consumers must guard for its absence and render unchanged when missing.
+
+`demand_evidence` and `edge_strength` (also 0–100 integers, also added 2026-07-11) back the "At a glance" metrics strip rendered under the Viability Snapshot (web + PDF, src/lib/derived-metrics.ts and the AtAGlanceStrip component). Reports generated before this date lack both fields; consumers must guard for their absence and render unchanged when missing — the strip itself is fully tile-by-tile conditional and disappears entirely when no tile has data.
 
 ### 1.3 `competitors`
 ```jsonc

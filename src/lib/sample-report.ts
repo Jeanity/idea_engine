@@ -51,6 +51,16 @@ export const SAMPLE_REPORT_SECTIONS: Record<string, unknown> = {
       rationale:
         'Your plan to prove venues with a low-cost cart before buying the van meaningfully de-risks the capital and execution scores, and your stated goal of replacing a part-time income is comfortably covered by the unit economics even at modest weekend volume.',
     },
+    demand_evidence: {
+      score: 84,
+      rationale:
+        'Six active mobile coffee operators already routinely charge and collect $5.50 for a flat white at Sydney weekend venues — that is proof of payment, not just interest.',
+    },
+    edge_strength: {
+      score: 68,
+      rationale:
+        'Dawn junior-sport and parkrun venues are structurally ignored by every fitted-van operator found — a clear underserved niche, though it is not yet defended against a copycat cart.',
+    },
   },
 
   competitors: [

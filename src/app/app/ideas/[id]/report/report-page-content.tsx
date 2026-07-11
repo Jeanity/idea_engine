@@ -7,6 +7,8 @@ import { resolveEssentialServices } from '@/lib/essential-services'
 import { getPromoPublicStatus } from '@/lib/promo'
 import { pickSurveyFor } from '@/lib/survey'
 import { maybeGateReport } from '@/lib/teaser-gating'
+import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
+import { parseCapitalRange } from '@/lib/derived-metrics'
 import ReportClient from './report-client'
 
 // Shared data-fetch + render for a report — used by both the standalone
@@ -36,6 +38,21 @@ export async function ReportPageContent({ id }: { id: string }) {
     .select('id, status, sections, preview_sections, error')
     .eq('idea_id', id)
     .single()
+
+  // "At a glance" budget-fit tile (src/lib/derived-metrics.ts) needs the
+  // founder's stated capital band alongside the report — one extra query,
+  // computed server-side so the client component stays free of
+  // question-bank knowledge.
+  const { data: answerRows } = await supabase
+    .from('answers')
+    .select('question_key, answer_text')
+    .eq('idea_id', id)
+  const questionBank = loadQuestionBank(idea.archetype)
+  const visibleAnswerRows = filterVisibleAnswers(questionBank, answerRows ?? [])
+  const capitalAnswer = visibleAnswerRows.find(
+    a => questionBank.find(q => q.key === a.question_key)?.maps_to === 'cost.startup_capital'
+  )
+  const statedCapital = parseCapitalRange(capitalAnswer?.answer_text ?? null)
 
   // RLS ("report_feedback: select own") already scopes this to the caller's
   // own row — .maybeSingle() because a report may not have feedback yet.
@@ -142,6 +159,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       promoStatus={promoStatus}
       surveyData={surveyData}
       essentialServices={essentialServices}
+      statedCapital={statedCapital}
     />
   )
 }
