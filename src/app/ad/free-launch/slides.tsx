@@ -153,7 +153,7 @@ export const SLIDES: Array<{ title: string; node: ReactNode }> = [
           </h2>
           <div className="mt-20 rounded-3xl border border-white/15 bg-slate-900/90 p-12 shadow-2xl shadow-black/40">
             <p className="text-[36px] leading-relaxed text-slate-200">
-              &ldquo;I want to sell homemade pet treats at weekend markets in Brisbane&rdquo;
+              &ldquo;I want to sell homemade pet treats at weekend markets in my hometown&rdquo;
             </p>
             <div className="mt-10 flex justify-end">
               <span className="rounded-xl bg-indigo-500 px-10 py-5 text-[30px] font-semibold text-white shadow-lg shadow-indigo-500/40">
@@ -219,7 +219,7 @@ export const SLIDES: Array<{ title: string; node: ReactNode }> = [
               <p className="text-[38px] font-semibold">Viability Snapshot</p>
             </div>
             <div className="mt-12 space-y-10">
-              <DimensionBar label="Market opportunity" score={4} note="14 competitors selling out at Brisbane weekend markets proves people already pay for this." />
+              <DimensionBar label="Market opportunity" score={4} note="14 competitors selling out at local weekend markets proves people already pay for this." />
               <DimensionBar label="Time to revenue" score={2} note="With council registration done, first sales are weeks away — not months." />
             </div>
           </div>
