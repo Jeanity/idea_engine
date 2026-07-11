@@ -2,6 +2,7 @@ import { ScoreRing } from '@/components/score-ring'
 import {
   AdRing,
   CheckRow,
+  CtaSlide,
   DimensionBar,
   GlanceTile,
   SlideShell,
@@ -104,7 +105,7 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[84px] font-bold leading-tight tracking-tight">
               Then we research it. <span className="gradient-text">For real.</span>
             </h2>
-            <div className="mt-20 space-y-12">
+            <div className="mt-20 space-y-12 wide:mt-12 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-9 wide:space-y-0">
               <CheckRow title="Live web search" detail="Not a canned template — research runs when you ask." />
               <CheckRow title="Real competitors and their prices" detail="Who already does this near you, and what they charge." />
               <CheckRow title="Startup and running costs" detail="What it takes to open the doors, and to keep them open." />
@@ -136,33 +137,35 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               Inside your <span className="gradient-text">report.</span>
             </h2>
-            <div className="mt-16 rounded-3xl border border-white/10 bg-slate-900/90 p-12">
-              <div className="flex items-center gap-8">
-                <div className="flex items-start gap-8">
-                  <AdRing score={78} label="Viability" size={140} />
-                  <AdRing score={72} label="Success outlook" size={140} />
-                </div>
-                <p className="text-[38px] font-semibold">Viability Snapshot</p>
-              </div>
-              <div className="mt-12 space-y-10">
-                <DimensionBar label="Market opportunity" score={4} note="14 competitors selling out at local weekend markets proves people already pay for this." />
-                <DimensionBar label="Time to revenue" score={2} note="With council registration done, first sales are weeks away — not months." />
-              </div>
-            </div>
-            <div className="mt-10 grid grid-cols-4 gap-6">
-              <GlanceTile label="Demand evidence"><ScoreRing score={84} label="" size={110} /></GlanceTile>
-              <GlanceTile label="Edge strength"><ScoreRing score={68} label="" size={110} /></GlanceTile>
-              <GlanceTile label="Gross margin"><ScoreRing score={73} label="" size={110} /></GlanceTile>
-              <GlanceTile label="Budget fit">
-                <div className="flex h-[110px] flex-col items-center justify-center gap-4">
-                  <span className="text-[30px] font-semibold text-amber-300">Partway there</span>
-                  <div className="flex w-[120px] gap-1.5">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={`h-3 flex-1 rounded-full ${i <= 2 ? 'bg-amber-400' : 'bg-white/10'}`} />
-                    ))}
+            <div className="wide:mt-8 wide:flex wide:items-stretch wide:gap-8">
+              <div className="mt-16 rounded-3xl border border-white/10 bg-slate-900/90 p-12 wide:mt-0 wide:flex-1 wide:p-10">
+                <div className="flex items-center gap-8">
+                  <div className="flex items-start gap-8">
+                    <AdRing score={78} label="Viability" size={140} />
+                    <AdRing score={72} label="Success outlook" size={140} />
                   </div>
+                  <p className="text-[38px] font-semibold">Viability Snapshot</p>
                 </div>
-              </GlanceTile>
+                <div className="mt-12 space-y-10 wide:mt-8 wide:space-y-6">
+                  <DimensionBar label="Market opportunity" score={4} note="14 competitors selling out at local weekend markets proves people already pay for this." />
+                  <DimensionBar label="Time to revenue" score={2} note="With council registration done, first sales are weeks away — not months." />
+                </div>
+              </div>
+              <div className="mt-10 grid grid-cols-4 gap-6 wide:mt-0 wide:w-[540px] wide:shrink-0 wide:grid-cols-2">
+                <GlanceTile label="Demand evidence"><ScoreRing score={84} label="" size={110} /></GlanceTile>
+                <GlanceTile label="Edge strength"><ScoreRing score={68} label="" size={110} /></GlanceTile>
+                <GlanceTile label="Gross margin"><ScoreRing score={73} label="" size={110} /></GlanceTile>
+                <GlanceTile label="Budget fit">
+                  <div className="flex h-[110px] flex-col items-center justify-center gap-4">
+                    <span className="text-[30px] font-semibold text-amber-300">Partway there</span>
+                    <div className="flex w-[120px] gap-1.5">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={`h-3 flex-1 rounded-full ${i <= 2 ? 'bg-amber-400' : 'bg-white/10'}`} />
+                      ))}
+                    </div>
+                  </div>
+                </GlanceTile>
+              </div>
             </div>
           </div>
         </SlideShell>
@@ -176,7 +179,7 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               One report. <span className="gradient-text">Everything you need.</span>
             </h2>
-            <div className="mt-16 space-y-10">
+            <div className="mt-16 space-y-10 wide:mt-10 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-8 wide:space-y-0">
               <CheckRow title="Competitor breakdown" detail="Real businesses, real prices, and the gap you can own." />
               <CheckRow title="Cost and margin math" detail="Startup costs, running costs, and what each sale really earns." />
               <CheckRow title="Legal and permit checklist" detail="Specific to your country — with links to official sources." />
@@ -211,19 +214,11 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
     {
       title: 'CTA',
       node: (
-        <SlideShell footer={false}>
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="text-[64px] font-bold tracking-tight">HadIdea</p>
-            <h2 className="mt-14 text-[92px] font-bold leading-[1.1] tracking-tight">
-              From raw idea to <span className="gradient-text">real-world plan.</span>
-            </h2>
-            <span className="mt-24 rounded-2xl bg-indigo-500 px-16 py-8 text-[40px] font-semibold text-white shadow-2xl shadow-indigo-500/40">
-              Get your free plan
-            </span>
-            <p className="mt-10 text-[34px] text-slate-400">Free for the first 1,000 founders</p>
-            <p className="mt-24 text-[52px] font-semibold tracking-tight text-slate-200">hadidea.com</p>
-          </div>
-        </SlideShell>
+        <CtaSlide
+          headline={<>From raw idea to <span className="gradient-text">real-world plan.</span></>}
+          button="Get your free plan"
+          sub="Free for the first 1,000 founders"
+        />
       ),
     },
   ],

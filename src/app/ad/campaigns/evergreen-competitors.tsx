@@ -1,5 +1,6 @@
 import {
   AdRing,
+  CtaSlide,
   RedactedCompetitorRow,
   SlideShell,
   type Slide,
@@ -82,13 +83,13 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               We map every competitor&rsquo;s <span className="gradient-text">weak spot.</span>
             </h2>
-            <div className="mt-16 space-y-6">
+            <div className="mt-16 space-y-6 wide:mt-9 wide:space-y-5">
               <RedactedCompetitorRow price="$34/box" gap="no delivery" />
               <RedactedCompetitorRow price="$79/mo" gap="daytime hours only" />
               <RedactedCompetitorRow price="$50/job" gap="books out 3 weeks" />
               <RedactedCompetitorRow price="$120/session" gap="no beginner tier" />
             </div>
-            <p className="mt-12 text-[32px] leading-snug text-slate-400">
+            <p className="mt-12 text-[32px] leading-snug text-slate-400 wide:mt-7">
               Names, prices, and positioning — from live research on your actual market, not a template.
             </p>
           </div>
@@ -103,7 +104,7 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               Then we score <span className="gradient-text">your edge.</span>
             </h2>
-            <div className="mt-16 flex items-center gap-12 rounded-3xl border border-white/10 bg-slate-900/90 p-12">
+            <div className="mt-16 flex items-center gap-12 rounded-3xl border border-white/10 bg-slate-900/90 p-12 wide:mt-9 wide:p-10">
               <AdRing score={68} label="Edge strength" size={170} />
               <p className="flex-1 text-[30px] leading-normal text-slate-300">
                 &ldquo;Dawn junior-sport and parkrun venues are structurally ignored by every
@@ -111,7 +112,7 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
                 defended against a copycat cart.&rdquo;
               </p>
             </div>
-            <p className="mt-12 text-[34px] leading-snug text-slate-400">
+            <p className="mt-12 text-[34px] leading-snug text-slate-400 wide:mt-7">
               And if your idea has no real edge yet, the report says so — and names the smallest
               change that would create one.
             </p>
@@ -122,18 +123,10 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
     {
       title: 'CTA',
       node: (
-        <SlideShell footer={false}>
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="text-[64px] font-bold tracking-tight">HadIdea</p>
-            <h2 className="mt-14 text-[92px] font-bold leading-[1.1] tracking-tight">
-              Find the gap <span className="gradient-text">you can own.</span>
-            </h2>
-            <span className="mt-24 rounded-2xl bg-indigo-500 px-16 py-8 text-[40px] font-semibold text-white shadow-2xl shadow-indigo-500/40">
-              Analyse my idea
-            </span>
-            <p className="mt-24 text-[52px] font-semibold tracking-tight text-slate-200">hadidea.com</p>
-          </div>
-        </SlideShell>
+        <CtaSlide
+          headline={<>Find the gap <span className="gradient-text">you can own.</span></>}
+          button="Analyse my idea"
+        />
       ),
     },
   ],
