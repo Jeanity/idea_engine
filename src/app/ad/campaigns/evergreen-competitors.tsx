@@ -12,10 +12,10 @@ import {
 
 export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Slide[] } = {
   name: 'Evergreen — “it already exists”',
-  purpose: 'Competitor reframe for founders who found their idea "already taken". No offer — runs forever.',
+  purpose: 'Competitor reframe for founders who found their idea "already taken". No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut.',
   slides: [
     {
-      title: 'Hook',
+      title: 'Hook A — good.',
       node: (
         <SlideShell>
           <div className="flex flex-1 flex-col justify-center">
@@ -23,6 +23,34 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
             <p className="mt-2 text-[46px] font-medium text-slate-400">someone already doing it?</p>
             <h1 className="mt-16 text-[130px] font-bold leading-none tracking-tight">
               <span className="gradient-text">Good.</span>
+            </h1>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook B — the idea killer',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <h1 className="text-[92px] font-bold leading-[1.12] tracking-tight">
+              &ldquo;It&rsquo;s already been done&rdquo; has killed more good ideas than <span className="gradient-text">competition ever has.</span>
+            </h1>
+            <p className="mt-16 text-[40px] leading-snug text-slate-300">
+              Competitors are proof of demand — not a closed door.
+            </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook C — every market has a gap',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-[50px] font-medium text-slate-400">Every crowded market has a gap.</p>
+            <h1 className="mt-14 text-[96px] font-bold leading-[1.1] tracking-tight">
+              The winners are the ones who <span className="gradient-text">know where it is.</span>
             </h1>
           </div>
         </SlideShell>

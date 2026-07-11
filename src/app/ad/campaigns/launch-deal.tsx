@@ -21,10 +21,10 @@ const CARDS: [AdCard, AdCard, AdCard] = [
 
 export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
   name: '$4.95 launch pricing',
-  purpose: 'Paid launch — discounted reports for the first 1,000 users. Offer slide comes in price-shown and price-teased variants (use one).',
+  purpose: 'Paid launch — discounted reports for the first 1,000 users. Slides 1–3 are HOOK VARIANTS (use one per cut); the offer slide also comes in price-shown and price-teased variants (use one). Note: hooks B and C name the price — pair them with the price-shown offer.',
   slides: [
     {
-      title: 'Hook',
+      title: 'Hook A — nobody tells you how',
       node: (
         <SlideShell>
           <div className="flex flex-1 flex-col justify-center">
@@ -35,6 +35,37 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
             <p className="mt-16 text-[52px] font-medium leading-snug text-slate-300">
               Nobody tells you <span className="gradient-text font-bold">how.</span>
             </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook B — the price is the hook',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <h1 className="text-[200px] font-bold leading-none tracking-tight">
+              <span className="gradient-text">$4.95</span>
+            </h1>
+            <p className="mt-14 text-[48px] font-medium leading-snug text-slate-200">
+              That&rsquo;s what it now costs to find out if your business idea works.
+            </p>
+            <p className="mt-12 text-[36px] text-slate-400">Launch pricing — first 1,000 reports.</p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook C — thousands vs five bucks',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-[50px] font-medium leading-snug text-slate-400">
+              You&rsquo;ll spend thousands starting it.
+            </p>
+            <h1 className="mt-14 text-[100px] font-bold leading-[1.08] tracking-tight">
+              Spend <span className="gradient-text">five bucks</span> checking it first.
+            </h1>
           </div>
         </SlideShell>
       ),

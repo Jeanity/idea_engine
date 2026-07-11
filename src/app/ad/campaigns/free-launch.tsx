@@ -22,10 +22,10 @@ const CARDS: [AdCard, AdCard, AdCard] = [
 
 export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
   name: 'First 1,000 plans free',
-  purpose: 'Launch feedback drive — free generations for the first 1,000 users.',
+  purpose: 'Launch feedback drive — free generations for the first 1,000 users. Slides 1–3 are HOOK VARIANTS for split testing: use exactly one per cut.',
   slides: [
     {
-      title: 'Hook',
+      title: 'Hook A — the idea you keep thinking about',
       node: (
         <SlideShell>
           <div className="flex flex-1 flex-col justify-center">
@@ -36,6 +36,38 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             </h1>
             <p className="mt-16 text-[40px] leading-snug text-slate-300">
               Before you spend a dollar on it.
+            </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook B — nobody checked',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-[46px] font-medium text-slate-400">Most business ideas die as a thought.</p>
+            <h1 className="mt-14 text-[96px] font-bold leading-[1.1] tracking-tight">
+              Not because they were bad — <span className="gradient-text">because nobody checked.</span>
+            </h1>
+            <p className="mt-16 text-[40px] leading-snug text-slate-300">
+              Checking takes minutes now. Not months.
+            </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook C — costs $0 to find out',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-[46px] font-medium text-slate-400">For the first 1,000 people —</p>
+            <h1 className="mt-14 text-[102px] font-bold leading-[1.08] tracking-tight">
+              it costs <span className="gradient-text">$0</span> to find out if your idea works.
+            </h1>
+            <p className="mt-16 text-[40px] leading-snug text-slate-300">
+              Real research. Real numbers. Free.
             </p>
           </div>
         </SlideShell>

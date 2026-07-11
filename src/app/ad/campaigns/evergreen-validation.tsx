@@ -12,10 +12,10 @@ import {
 
 export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slide[] } = {
   name: 'Evergreen — test it on paper',
-  purpose: 'Validation angle — know the numbers before you spend. No offer — runs forever.',
+  purpose: 'Validation angle — know the numbers before you spend. No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut.',
   slides: [
     {
-      title: 'Hook',
+      title: 'Hook A — don’t quit your job',
       node: (
         <SlideShell>
           <div className="flex flex-1 flex-col justify-center">
@@ -24,6 +24,37 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
             </h1>
             <p className="mt-16 text-[42px] leading-snug text-slate-300">
               The cheapest time to find out is <span className="font-semibold text-white">before</span> you start.
+            </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook B — the most expensive words',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-[46px] font-medium text-slate-400">The most expensive words in business:</p>
+            <h1 className="mt-14 text-[104px] font-bold leading-[1.08] tracking-tight">
+              &ldquo;I&rsquo;ll figure it out <span className="gradient-text">as I go.&rdquo;</span>
+            </h1>
+            <p className="mt-16 text-[42px] leading-snug text-slate-300">
+              The numbers are knowable before you start.
+            </p>
+          </div>
+        </SlideShell>
+      ),
+    },
+    {
+      title: 'Hook C — confidence vs numbers',
+      node: (
+        <SlideShell>
+          <div className="flex flex-1 flex-col justify-center">
+            <h1 className="text-[96px] font-bold leading-[1.1] tracking-tight">
+              You don&rsquo;t need more confidence. You need <span className="gradient-text">the numbers.</span>
+            </h1>
+            <p className="mt-16 text-[42px] leading-snug text-slate-300">
+              Costs, competitors, demand — researched before you commit.
             </p>
           </div>
         </SlideShell>
