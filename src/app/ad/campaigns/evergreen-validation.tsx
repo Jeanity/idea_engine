@@ -69,7 +69,7 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
             <h2 className="text-[80px] font-bold leading-tight tracking-tight">
               Know your numbers <span className="gradient-text">before you spend.</span>
             </h2>
-            <div className="mt-16 space-y-8 wide:mt-10 wide:grid wide:grid-cols-2 wide:items-stretch wide:gap-8 wide:space-y-0">
+            <div className="mt-16 space-y-8 short:mt-10 wide:grid wide:grid-cols-2 wide:items-stretch wide:gap-8 wide:space-y-0">
               <div className="rounded-3xl border border-white/10 bg-slate-900/90 p-10 wide:flex wide:flex-col wide:justify-center">
                 <p className="text-[28px] text-slate-400">Startup costs, researched for your market</p>
                 <p className="mt-3 text-[54px] font-bold tracking-tight">$3,100–$10,800</p>
@@ -88,7 +88,7 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
                 </GlanceTile>
               </div>
             </div>
-            <p className="mt-12 text-[32px] leading-snug text-slate-400 wide:mt-8">
+            <p className="mt-12 text-[32px] leading-snug text-slate-400 short:mt-8">
               Your budget, against researched costs — so the plan fits the money you actually have.
             </p>
           </div>
@@ -103,10 +103,10 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               Test demand <span className="gradient-text">before you build.</span>
             </h2>
-            <p className="mt-10 text-[36px] leading-snug text-slate-300 wide:mt-6">
+            <p className="mt-10 text-[36px] leading-snug text-slate-300 short:mt-6">
               Every report ends with paste-ready copy — written in your voice, for your customer.
             </p>
-            <div className="mt-14 space-y-8 wide:mt-8 wide:grid wide:grid-cols-2 wide:items-stretch wide:gap-8 wide:space-y-0">
+            <div className="mt-14 space-y-8 short:mt-8 wide:grid wide:grid-cols-2 wide:items-stretch wide:gap-8 wide:space-y-0">
               <div className="rounded-3xl border border-white/15 bg-slate-900/90 p-10">
                 <p className="text-[24px] font-semibold uppercase tracking-wide text-indigo-300">Poll for your local group</p>
                 <p className="mt-4 text-[30px] leading-normal text-slate-200">
@@ -114,14 +114,15 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
                   made locally, or is supermarket fine for you?&rdquo;
                 </p>
               </div>
-              <div className="rounded-3xl border border-white/15 bg-slate-900/90 p-10">
+              {/* Square only has room for one example card. */}
+              <div className="rounded-3xl border border-white/15 bg-slate-900/90 p-10 square:hidden">
                 <p className="text-[24px] font-semibold uppercase tracking-wide text-indigo-300">Ad line, under 120 characters</p>
                 <p className="mt-4 text-[30px] leading-normal text-slate-200">
                   &ldquo;Preservative-free dog treats, baked this week in your suburb. First box half price.&rdquo;
                 </p>
               </div>
             </div>
-            <p className="mt-12 text-[32px] text-slate-400 wide:mt-8">Post them. Count the replies. Now you know.</p>
+            <p className="mt-12 text-[32px] text-slate-400 short:mt-8">Post them. Count the replies. Now you know.</p>
           </div>
         </SlideShell>
       ),
@@ -134,7 +135,7 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
             <h2 className="text-[84px] font-bold leading-tight tracking-tight">
               Either answer <span className="gradient-text">wins.</span>
             </h2>
-            <div className="mt-20 space-y-16 wide:mt-14 wide:grid wide:grid-cols-2 wide:gap-16 wide:space-y-0">
+            <div className="mt-20 space-y-16 short:mt-14 wide:grid wide:grid-cols-2 wide:gap-16 wide:space-y-0">
               <div>
                 <p className="text-[44px] font-semibold text-white">If the numbers work —</p>
                 <p className="mt-3 text-[36px] leading-snug text-slate-400">

@@ -9,11 +9,16 @@
    with the light: variant, e.g. bg-slate-950 light:bg-gray-50. */
 @custom-variant light (&:where(.light, .light *));
 
-/* Ad-studio slide orientation (src/app/ad): slides are authored portrait
-   (1080×1920) and opt into landscape (1920×1080, YouTube) overrides via the
-   wide: variant. The [data-orient="wide"] attribute is set by the slide-route
-   wrapper — one slide source serves both formats, so copy can never drift. */
+/* Ad-studio slide formats (src/app/ad): slides are authored portrait
+   (1080×1920) and opt into overrides per format via variants — wide:
+   (1920×1080, YouTube), square: (1080×1080, IG/FB feed), and short: which
+   matches BOTH (shared vertical compression: wide and square each have far
+   less height than portrait). The [data-orient] attribute is set by the
+   slide-route wrapper — one slide source serves all formats, so copy can
+   never drift. */
 @custom-variant wide (&:where([data-orient="wide"], [data-orient="wide"] *));
+@custom-variant square (&:where([data-orient="square"], [data-orient="square"] *));
+@custom-variant short (&:where([data-orient="wide"], [data-orient="wide"] *, [data-orient="square"], [data-orient="square"] *));
 
 /* Recharts renders raw SVG — CSS vars in SVG *attributes* (fill="var(…)")
    don't resolve (SVG spec), so the axis/tick text falls back to black.

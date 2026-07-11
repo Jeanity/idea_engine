@@ -29,9 +29,9 @@ export function SlideShell({ children, footer = true }: { children: ReactNode; f
         <div className="absolute -bottom-48 -right-48 h-[760px] w-[760px] rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="absolute right-[-200px] top-1/3 h-[500px] w-[500px] rounded-full bg-violet-600/20 blur-3xl" />
       </div>
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col px-24 pt-32 wide:px-32 wide:pt-14">{children}</div>
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col px-24 pt-32 wide:px-32 short:pt-14">{children}</div>
       {footer && (
-        <div className="relative z-10 flex items-baseline justify-center gap-5 pb-24 wide:pb-10">
+        <div className="relative z-10 flex items-baseline justify-center gap-5 pb-24 short:pb-10">
           <span className="text-[40px] font-bold tracking-tight">HadIdea</span>
           <span className="text-[32px] text-slate-400">hadidea.com</span>
         </div>
@@ -54,7 +54,7 @@ export interface AdCard {
 
 export function AdReportCard({ card }: { card: AdCard }) {
   return (
-    <div className={`w-[620px] wide:w-[520px] rounded-3xl border border-white/10 bg-slate-900/90 p-8 wide:p-7 shadow-2xl shadow-black/40 backdrop-blur ${card.rotate}`}>
+    <div className={`w-[620px] wide:w-[520px] rounded-3xl border border-white/10 bg-slate-900/90 p-8 short:p-7 shadow-2xl shadow-black/40 backdrop-blur ${card.rotate}`}>
       <p className="text-[32px] font-semibold leading-tight text-white">{card.title}</p>
       <p className="mt-1 text-[23px] text-slate-400">{card.location}</p>
       <div className="mt-5 flex items-start justify-around gap-4">
@@ -75,10 +75,11 @@ export function AdReportCard({ card }: { card: AdCard }) {
  *  stacks them; wide puts them in a row with alternating vertical offsets. */
 export function StaggeredCards({ cards }: { cards: [AdCard, AdCard, AdCard] }) {
   return (
-    <div className="mt-12 flex flex-col gap-7 wide:mt-8 wide:flex-row wide:items-center wide:justify-center wide:gap-8">
+    <div className="mt-12 flex flex-col gap-7 short:mt-8 square:gap-5 wide:flex-row wide:items-center wide:justify-center wide:gap-8">
       <div className="self-start wide:self-auto wide:-translate-y-4"><AdReportCard card={cards[0]} /></div>
       <div className="self-end wide:self-auto wide:translate-y-4"><AdReportCard card={cards[1]} /></div>
-      <div className="self-start wide:self-auto wide:-translate-y-4"><AdReportCard card={cards[2]} /></div>
+      {/* Square (1080×1080) only has room for two cards — the third hides. */}
+      <div className="self-start wide:self-auto wide:-translate-y-4 square:hidden"><AdReportCard card={cards[2]} /></div>
     </div>
   )
 }
@@ -88,15 +89,15 @@ export function CtaSlide({ headline, button, sub }: { headline: ReactNode; butto
   return (
     <SlideShell footer={false}>
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <p className="text-[64px] font-bold tracking-tight wide:text-[54px]">HadIdea</p>
-        <h2 className="mt-14 text-[92px] font-bold leading-[1.1] tracking-tight wide:mt-8 wide:text-[84px]">
+        <p className="text-[64px] font-bold tracking-tight short:text-[54px]">HadIdea</p>
+        <h2 className="mt-14 text-[92px] font-bold leading-[1.1] tracking-tight short:mt-8 short:text-[84px]">
           {headline}
         </h2>
-        <span className="mt-24 rounded-2xl bg-indigo-500 px-16 py-8 text-[40px] font-semibold text-white shadow-2xl shadow-indigo-500/40 wide:mt-12 wide:px-14 wide:py-6">
+        <span className="mt-24 rounded-2xl bg-indigo-500 px-16 py-8 text-[40px] font-semibold text-white shadow-2xl shadow-indigo-500/40 short:mt-12 wide:px-14 wide:py-6">
           {button}
         </span>
-        {sub && <p className="mt-10 text-[34px] text-slate-400 wide:mt-6">{sub}</p>}
-        <p className="mt-24 text-[52px] font-semibold tracking-tight text-slate-200 wide:mt-10">hadidea.com</p>
+        {sub && <p className="mt-10 text-[34px] text-slate-400 short:mt-6">{sub}</p>}
+        <p className="mt-24 text-[52px] font-semibold tracking-tight text-slate-200 short:mt-10">hadidea.com</p>
       </div>
     </SlideShell>
   )
@@ -138,7 +139,9 @@ export function CheckRow({ title, detail }: { title: string; detail?: string }) 
       </svg>
       <div>
         <p className="text-[36px] font-semibold leading-tight text-white">{title}</p>
-        {detail && <p className="mt-1 text-[27px] leading-snug text-slate-400">{detail}</p>}
+        {/* Square keeps titles only — detail lines don't fit 1080px of height,
+            and a 1:1 feed ad reads better with less text anyway. */}
+        {detail && <p className="mt-1 text-[27px] leading-snug text-slate-400 square:hidden">{detail}</p>}
       </div>
     </div>
   )

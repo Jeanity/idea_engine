@@ -105,7 +105,7 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[84px] font-bold leading-tight tracking-tight">
               Then we research it. <span className="gradient-text">For real.</span>
             </h2>
-            <div className="mt-20 space-y-12 wide:mt-12 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-9 wide:space-y-0">
+            <div className="mt-20 space-y-12 short:mt-12 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-9 wide:space-y-0">
               <CheckRow title="Live web search" detail="Not a canned template — research runs when you ask." />
               <CheckRow title="Real competitors and their prices" detail="Who already does this near you, and what they charge." />
               <CheckRow title="Startup and running costs" detail="What it takes to open the doors, and to keep them open." />
@@ -137,8 +137,8 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               Inside your <span className="gradient-text">report.</span>
             </h2>
-            <div className="wide:mt-8 wide:flex wide:items-stretch wide:gap-8">
-              <div className="mt-16 rounded-3xl border border-white/10 bg-slate-900/90 p-12 wide:mt-0 wide:flex-1 wide:p-10">
+            <div className="short:mt-8 wide:flex wide:items-stretch wide:gap-8">
+              <div className="mt-16 rounded-3xl border border-white/10 bg-slate-900/90 p-12 wide:mt-0 wide:flex-1 short:p-10 square:mt-8">
                 <div className="flex items-center gap-8">
                   <div className="flex items-start gap-8">
                     <AdRing score={78} label="Viability" size={140} />
@@ -146,12 +146,15 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
                   </div>
                   <p className="text-[38px] font-semibold">Viability Snapshot</p>
                 </div>
-                <div className="mt-12 space-y-10 wide:mt-8 wide:space-y-6">
+                <div className="mt-12 space-y-10 short:mt-8 short:space-y-6">
                   <DimensionBar label="Market opportunity" score={4} note="14 competitors selling out at local weekend markets proves people already pay for this." />
-                  <DimensionBar label="Time to revenue" score={2} note="With council registration done, first sales are weeks away — not months." />
+                  {/* Square only has room for one dimension bar. */}
+                  <div className="square:hidden">
+                    <DimensionBar label="Time to revenue" score={2} note="With council registration done, first sales are weeks away — not months." />
+                  </div>
                 </div>
               </div>
-              <div className="mt-10 grid grid-cols-4 gap-6 wide:mt-0 wide:w-[540px] wide:shrink-0 wide:grid-cols-2">
+              <div className="mt-10 grid grid-cols-4 gap-6 wide:mt-0 wide:w-[540px] wide:shrink-0 wide:grid-cols-2 square:mt-7">
                 <GlanceTile label="Demand evidence"><ScoreRing score={84} label="" size={110} /></GlanceTile>
                 <GlanceTile label="Edge strength"><ScoreRing score={68} label="" size={110} /></GlanceTile>
                 <GlanceTile label="Gross margin"><ScoreRing score={73} label="" size={110} /></GlanceTile>
@@ -179,7 +182,7 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               One report. <span className="gradient-text">Everything you need.</span>
             </h2>
-            <div className="mt-16 space-y-10 wide:mt-10 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-8 wide:space-y-0">
+            <div className="mt-16 space-y-10 short:mt-10 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-8 wide:space-y-0">
               <CheckRow title="Competitor breakdown" detail="Real businesses, real prices, and the gap you can own." />
               <CheckRow title="Cost and margin math" detail="Startup costs, running costs, and what each sale really earns." />
               <CheckRow title="Legal and permit checklist" detail="Specific to your country — with links to official sources." />

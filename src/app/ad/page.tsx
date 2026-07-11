@@ -16,16 +16,17 @@ export default function AdStudioPage() {
         </span>
         <h1 className="mt-4 text-3xl font-bold">Ad studio</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Slide frames for the slideshow video app. Every slide exists in two formats: 9:16
-          (1080×1920 — Reels, TikTok, Shorts) and 16:9 (1920×1080 — YouTube). Both scale to fit
-          your window, and each slide page has a switch link in its corner nav.
+          Slide frames for the slideshow video app. Every slide exists in three formats: 9:16
+          (1080×1920 — Reels, TikTok, Shorts), 16:9 (1920×1080 — YouTube), and 1:1 (1080×1080 —
+          Instagram/Facebook feed). All scale to fit your window, and each slide page has format
+          switch links in its corner nav.
         </p>
 
         <div className="mt-6 rounded-xl border border-white/10 bg-slate-900/80 px-5 py-4 text-sm text-slate-300">
           <p className="font-semibold text-white">Capturing pixel-perfect frames</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-400">
             <li>Open a slide, press F12 → device toolbar (Ctrl+Shift+M).</li>
-            <li>Set dimensions to <span className="text-slate-200">1080 × 1920</span> (9:16) or <span className="text-slate-200">1920 × 1080</span> (16:9) — the slide renders at exactly 1:1.</li>
+            <li>Set dimensions to <span className="text-slate-200">1080 × 1920</span> (9:16), <span className="text-slate-200">1920 × 1080</span> (16:9), or <span className="text-slate-200">1080 × 1080</span> (1:1) — the slide renders pixel-exact.</li>
             <li>Ctrl+Shift+P → &ldquo;Capture screenshot&rdquo; saves the frame as a PNG.</li>
             <li>Repeat per slide, then drop the PNGs into the slideshow app in order.</li>
           </ol>
@@ -47,8 +48,11 @@ export default function AdStudioPage() {
                   <Link href={`/ad/${slug}/${i + 1}`} className="rounded border border-white/10 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:border-indigo-400/50 hover:text-white">
                     9:16
                   </Link>
-                  <Link href={`/ad/${slug}/${i + 1}?wide=1`} className="rounded border border-white/10 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:border-indigo-400/50 hover:text-white">
+                  <Link href={`/ad/${slug}/${i + 1}?format=wide`} className="rounded border border-white/10 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:border-indigo-400/50 hover:text-white">
                     16:9
+                  </Link>
+                  <Link href={`/ad/${slug}/${i + 1}?format=square`} className="rounded border border-white/10 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:border-indigo-400/50 hover:text-white">
+                    1:1
                   </Link>
                 </li>
               ))}

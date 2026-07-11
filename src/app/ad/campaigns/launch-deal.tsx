@@ -79,7 +79,7 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[84px] font-bold leading-tight tracking-tight">
               Here&rsquo;s <span className="gradient-text">how.</span>
             </h2>
-            <div className="mt-20 space-y-12 wide:mt-12 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-10 wide:space-y-0">
+            <div className="mt-20 space-y-12 short:mt-12 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-10 wide:space-y-0">
               <CheckRow title="1. Describe your idea" detail="Plain English. No forms, no jargon, no pitch deck." />
               <CheckRow title="2. Answer a few sharp questions" detail="Your budget, your time, your edge — the things that change the answer." />
               <CheckRow title="3. We research it live" detail="Real competitors, real prices, real costs, real rules for your country." />
@@ -110,7 +110,7 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[80px] font-bold leading-tight tracking-tight">
               Finding out the <span className="gradient-text">hard way</span> costs more.
             </h2>
-            <div className="mt-20 space-y-14 wide:mt-14 wide:grid wide:grid-cols-3 wide:gap-14 wide:space-y-0">
+            <div className="mt-20 space-y-14 short:mt-14 wide:grid wide:grid-cols-3 wide:gap-14 wide:space-y-0">
               <div>
                 <p className="text-[40px] font-semibold text-slate-200">Buying equipment for a market that&rsquo;s saturated</p>
                 <p className="mt-2 text-[32px] text-slate-500">thousands, gone</p>
@@ -124,7 +124,7 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
                 <p className="mt-2 text-[32px] text-slate-500">fines, delays, restarts</p>
               </div>
             </div>
-            <p className="mt-20 text-[40px] leading-snug text-slate-300 wide:mt-14">
+            <p className="mt-20 text-[40px] leading-snug text-slate-300 short:mt-14">
               A research-backed plan is the cheap way to find out.
             </p>
           </div>
@@ -139,7 +139,7 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
             <h2 className="text-[76px] font-bold leading-tight tracking-tight">
               One report. <span className="gradient-text">Everything you need.</span>
             </h2>
-            <div className="mt-16 space-y-10 wide:mt-10 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-8 wide:space-y-0">
+            <div className="mt-16 space-y-10 short:mt-10 wide:grid wide:grid-cols-2 wide:gap-x-20 wide:gap-y-8 wide:space-y-0">
               <CheckRow title="Viability scores with reasons" detail="Market, difficulty, capital, time to revenue — calibrated, not flattery." />
               <CheckRow title="Competitor breakdown" detail="Real businesses, real prices, and the gap you can own." />
               <CheckRow title="Cost and margin math" detail="Startup costs, running costs, and what each sale really earns." />
