@@ -506,10 +506,13 @@ function ViabilitySnapshot({ vs }: {
     <div className="rounded-2xl border border-white/10 bg-slate-900/80 light:bg-white light:border-gray-200 light:shadow-sm px-5 py-5">
       <div className="flex items-center gap-3 mb-4">
         {vs.success_outlook ? (
-          <>
+          /* items-start: "Success outlook" wraps to two lines under its ring
+             while "Viability" stays on one, so centering each ring+label
+             block would knock the circles out of horizontal alignment. */
+          <div className="flex items-start gap-3">
             <ScoreRing score={deriveHeadlineScore(vs.scores)} label="Viability" size={48} />
             <ScoreRing score={vs.success_outlook.score} label="Success outlook" size={48} />
-          </>
+          </div>
         ) : (
           <ScoreRing score={deriveHeadlineScore(vs.scores)} label="" size={48} />
         )}

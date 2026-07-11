@@ -344,7 +344,10 @@ function ReportCard({ card }: { card: ReportCardData }) {
         <p className="mt-0.5 text-[11px] text-slate-400 light:text-gray-500">{card.location}</p>
       </div>
 
-      <div className="mb-3 flex items-center justify-around gap-2">
+      {/* items-start: the two labels wrap to different line counts ("Success
+          outlook" breaks, "Viability" doesn't), so centering would push the
+          ring circles out of horizontal alignment. */}
+      <div className="mb-3 flex items-start justify-around gap-2">
         <ScoreRing score={card.score} label="Viability" size={60} />
         <ScoreRing score={card.success} label="Success outlook" size={60} />
       </div>
