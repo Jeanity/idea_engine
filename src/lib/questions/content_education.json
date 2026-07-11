@@ -188,5 +188,14 @@
     "required": true,
     "maps_to": "idea.time_commitment",
     "why": "How much time you can put in each week shapes how realistic our growth and income timeline is."
+  },
+  {
+    "key": "content_startup_capital",
+    "text": "How much money do you have to get started?",
+    "subtext": "For gear, editing tools, a course platform, or your first ads. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital",
+    "why": "Your budget shapes what production quality and promotion are realistic from day one — and an exact figure makes the report's budget-fit verdict exact too. Enter it in your own currency; the report prices everything using costs for your country."
   }
 ]

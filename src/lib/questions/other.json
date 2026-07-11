@@ -22,5 +22,14 @@
     "required": true,
     "maps_to": "fallback.money_model",
     "why": "How you'd make money from this shapes the financial modelling in your report."
+  },
+  {
+    "key": "other_startup_capital",
+    "text": "How much money do you have to put into this?",
+    "subtext": "Whatever getting started would take — equipment, tools, marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital",
+    "why": "Your budget shapes what's realistic now versus later — and an exact figure makes the report's budget-fit verdict exact too. Enter it in your own currency; the report prices everything using costs for your country."
   }
 ]

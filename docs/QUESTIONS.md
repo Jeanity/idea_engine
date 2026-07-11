@@ -347,10 +347,9 @@ Seven questions. Must capture pricing model and service area scope.
   },
   {
     "key": "service_startup_capital",
-    "text": "Roughly how much money do you have to start?",
-    "subtext": "For a vehicle, tools, insurance, marketing.",
-    "input_type": "select",
-    "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
+    "text": "How much money do you have to start?",
+    "subtext": "For a vehicle, tools, insurance, marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
     "required": true,
     "maps_to": "cost.startup_capital"
   }
@@ -359,7 +358,7 @@ Seven questions. Must capture pricing model and service area scope.
 
 ### 4.3 `software_app`
 
-Seven questions. Must capture monetisation model.
+Eight questions. Must capture monetisation model.
 
 ```json
 [
@@ -434,6 +433,14 @@ Seven questions. Must capture monetisation model.
     ],
     "required": true,
     "maps_to": "market.geographic_scope"
+  },
+  {
+    "key": "app_startup_capital",
+    "text": "How much money do you have to build and launch this?",
+    "subtext": "For development tools or contractors, hosting, and your first marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital"
   }
 ]
 ```
@@ -524,10 +531,9 @@ Nine questions. Cost inputs are captured thoroughly because this archetype feeds
   },
   {
     "key": "ecom_startup_capital",
-    "text": "Roughly how much money do you have to start?",
-    "subtext": "For initial inventory, store setup, first ads.",
-    "input_type": "select",
-    "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
+    "text": "How much money do you have to start?",
+    "subtext": "For store setup, first ads, and any upfront stock or samples your model needs. An exact figure or a best guess both work.",
+    "input_type": "number",
     "required": true,
     "maps_to": "cost.startup_capital"
   }
@@ -536,7 +542,7 @@ Nine questions. Cost inputs are captured thoroughly because this archetype feeds
 
 ### 4.5 `content_education`
 
-Seven questions. Must capture channel and monetisation.
+Eight questions. Must capture channel and monetisation.
 
 ```json
 [
@@ -626,13 +632,21 @@ Seven questions. Must capture channel and monetisation.
     "options": ["Evenings/weekends only", "Part-time (~20 hrs)", "Full-time"],
     "required": true,
     "maps_to": "idea.time_commitment"
+  },
+  {
+    "key": "content_startup_capital",
+    "text": "How much money do you have to get started?",
+    "subtext": "For gear, editing tools, a course platform, or your first ads. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital"
   }
 ]
 ```
 
 ### 4.6 `marketplace`
 
-Seven questions. Must capture monetisation model.
+Eight questions. Must capture monetisation model.
 
 ```json
 [
@@ -707,6 +721,14 @@ Seven questions. Must capture monetisation model.
     ],
     "required": true,
     "maps_to": "resource.tech_capability"
+  },
+  {
+    "key": "market_startup_capital",
+    "text": "How much money do you have to get this off the ground?",
+    "subtext": "For building the platform, attracting your first supply side, and early marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital"
   }
 ]
 ```
@@ -775,10 +797,9 @@ Six questions. Must capture IP status and target market.
   },
   {
     "key": "invention_startup_capital",
-    "text": "Roughly how much money do you have available for this?",
-    "subtext": "For prototyping, filings, initial manufacturing.",
-    "input_type": "select",
-    "options": ["Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+"],
+    "text": "How much money do you have available for this?",
+    "subtext": "For prototyping, filings, and getting it made — or proven — for the first time. An exact figure or a best guess both work.",
+    "input_type": "number",
     "required": true,
     "maps_to": "cost.startup_capital"
   }
@@ -787,7 +808,7 @@ Six questions. Must capture IP status and target market.
 
 ### 4.8 `other`
 
-Minimal three-question bank. This archetype is a fallback (see `docs/ARCHETYPES.md` §1.8); we ask only what's needed for the synthesis section to say something useful.
+Minimal four-question bank. This archetype is a fallback (see `docs/ARCHETYPES.md` §1.8); we ask only what's needed for the synthesis section to say something useful.
 
 ```json
 [
@@ -811,6 +832,14 @@ Minimal three-question bank. This archetype is a fallback (see `docs/ARCHETYPES.
     "input_type": "text",
     "required": true,
     "maps_to": "fallback.money_model"
+  },
+  {
+    "key": "other_startup_capital",
+    "text": "How much money do you have to put into this?",
+    "subtext": "Whatever getting started would take — equipment, tools, marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital"
   }
 ]
 ```

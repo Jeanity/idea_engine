@@ -109,5 +109,14 @@
       "No-code tools": "We'll factor in platform subscription costs and the limits no-code tools put on customisation.",
       "I'll hire / outsource development": "We'll factor in developer costs and the time it takes to brief and manage outsourced work."
     }
+  },
+  {
+    "key": "market_startup_capital",
+    "text": "How much money do you have to get this off the ground?",
+    "subtext": "For building the platform, attracting your first supply side, and early marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital",
+    "why": "Marketplaces spend money seeding both sides before fees flow — your budget shapes how the report stages that, and an exact figure makes the budget-fit verdict exact too. Enter it in your own currency; the report prices everything using costs for your country."
   }
 ]

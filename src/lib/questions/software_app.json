@@ -116,5 +116,14 @@
       "English-speaking countries": "We'll widen the market sizing and flag basic localisation needs across those countries.",
       "Global": "We'll size the market broadly and flag the localisation, payments and compliance complexity of going worldwide."
     }
+  },
+  {
+    "key": "app_startup_capital",
+    "text": "How much money do you have to build and launch this?",
+    "subtext": "For development tools or contractors, hosting, and your first marketing. An exact figure or a best guess both work.",
+    "input_type": "number",
+    "required": true,
+    "maps_to": "cost.startup_capital",
+    "why": "Your budget shapes whether the report leans no-code, DIY, or hired development — and an exact figure makes the budget-fit verdict exact too. Enter it in your own currency; the report prices everything using costs for your country."
   }
 ]
