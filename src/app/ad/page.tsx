@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SLIDES } from './free-launch/slides'
+import { CAMPAIGNS } from './campaigns'
 
 // Internal ad-production index — unlisted (no nav links to it) and noindexed.
 export const metadata = {
@@ -34,20 +34,25 @@ export default function AdStudioPage() {
           </p>
         </div>
 
-        <h2 className="mt-10 text-lg font-semibold">Campaign: first 1,000 plans free</h2>
-        <ul className="mt-4 space-y-2">
-          {SLIDES.map((s, i) => (
-            <li key={s.title}>
-              <Link
-                href={`/ad/free-launch/${i + 1}`}
-                className="flex items-center gap-4 rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 transition-colors hover:border-indigo-400/50 hover:bg-slate-900"
-              >
-                <span className="w-8 text-right font-mono text-sm text-slate-500">{String(i + 1).padStart(2, '0')}</span>
-                <span className="text-sm font-medium text-slate-200">{s.title}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {Object.entries(CAMPAIGNS).map(([slug, c]) => (
+          <section key={slug} className="mt-10">
+            <h2 className="text-lg font-semibold">{c.name}</h2>
+            <p className="mt-1 text-sm text-slate-400">{c.purpose}</p>
+            <ul className="mt-4 space-y-2">
+              {c.slides.map((s, i) => (
+                <li key={s.title}>
+                  <Link
+                    href={`/ad/${slug}/${i + 1}`}
+                    className="flex items-center gap-4 rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 transition-colors hover:border-indigo-400/50 hover:bg-slate-900"
+                  >
+                    <span className="w-8 text-right font-mono text-sm text-slate-500">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="text-sm font-medium text-slate-200">{s.title}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </main>
   )
