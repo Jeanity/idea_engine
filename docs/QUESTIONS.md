@@ -121,7 +121,7 @@ Almost all keys in this group are only populated for `physical_product` and `eco
 | `cost.batch_yield` | `number` | cost, price | How many finished units come out of one batch. Unit: units. |
 | `cost.hourly_rate` | `number` | cost, price | Operator's target hourly rate for their own time. Currency: user's local (implied by `ideas.location_country`). |
 | `cost.packaging_per_unit` | `number` | cost | Packaging cost per finished unit sold. Currency: local. |
-| `cost.startup_capital` | `select` | cost, synth | Rough band of upfront money available. "Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+". Feeds a realism check on suggested equipment / stock levels. |
+| `cost.startup_capital` | `number` | cost, synth | Upfront money available, in the founder's local currency. Was a `select` band ("Under $500", "$500–$2,000", "$2,000–$10,000", "$10,000+") until 2026-07-11 — stored band answers persist, so consumers must parse both (`parseCapitalRange` in src/lib/derived-metrics.ts does). Feeds a realism check on suggested equipment / stock levels and the report's budget-fit verdict. |
 | `cost.fulfilment_model` | `select` | cost, legal, synth | Only for `ecommerce_brand`. "Print-on-demand", "Dropship", "Own inventory, ship from home", "3PL warehouse", "White-label + own storage". |
 | `cost.unit_cost_estimate` | `number` | cost | Optional. For `ecommerce_brand` where the operator already knows their landed unit cost from a supplier. Skips the ingredient-parsing step of the cost engine. |
 
