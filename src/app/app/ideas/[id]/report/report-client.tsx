@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { symbolForCurrency } from '@/lib/countries'
 import { ScoreRing } from '@/components/score-ring'
 import { deriveHeadlineScore } from '@/lib/viability-score'
-import { deriveBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
+import { deriveBudgetFit, explainBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
 import { splitCiteSegments, hasCiteMarkers } from '@/lib/cite'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
 import { SectionLabel } from '@/components/admin/section-label'
@@ -576,6 +576,10 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
   const budgetFitBand = statedCapital !== null && startup !== null ? deriveBudgetFit(statedCapital, startup) : null
 
   const tiles: ReactNode[] = []
+  // One legend line per RENDERED tile — the "What do these scores mean?"
+  // disclosure below the grid. This is also where the AI rationales become
+  // readable on touch devices (the tile title= tooltips are hover-only).
+  const legendItems: Array<{ key: string; label: string; text: string }> = []
 
   if (vs?.demand_evidence) {
     tiles.push(
@@ -584,6 +588,11 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
         <span className="text-xs text-slate-400 light:text-gray-500 text-center">Demand evidence</span>
       </div>
     )
+    legendItems.push({
+      key: 'demand',
+      label: 'Demand evidence',
+      text: `how strongly the research proves people already pay for this (0–100). ${vs.demand_evidence.rationale}`,
+    })
   }
 
   if (vs?.edge_strength) {
@@ -593,6 +602,11 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
         <span className="text-xs text-slate-400 light:text-gray-500 text-center">Edge strength</span>
       </div>
     )
+    legendItems.push({
+      key: 'edge',
+      label: 'Edge strength',
+      text: `how real your differentiator is against the competitors found (0–100). ${vs.edge_strength.rationale}`,
+    })
   }
 
   if (grossMarginPct !== null) {
@@ -603,6 +617,11 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
         <span className="text-[10px] text-slate-500 light:text-gray-400 -mt-1">per unit</span>
       </div>
     )
+    legendItems.push({
+      key: 'margin',
+      label: 'Gross margin',
+      text: 'the share of each sale left after direct per-unit costs, at the suggested price.',
+    })
   }
 
   if (budgetFitBand && startup) {
@@ -610,8 +629,9 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
     const sym = currencySymbol(cb?.currency ?? 'USD')
     const capitalStr = formatCapitalRange(statedCapital as CapitalRange, sym)
     const startupStr = `${fmt0(sym, startup.low)}–${fmt0(sym, startup.high)}`
+    const budgetExplanation = explainBudgetFit(budgetFitBand, capitalStr, fmt0(sym, startup.low), fmt0(sym, startup.high), (statedCapital as CapitalRange).high === null)
     tiles.push(
-      <div key="budget" className={`${AT_A_GLANCE_TILE_CLASS} text-center`}>
+      <div key="budget" className={`${AT_A_GLANCE_TILE_CLASS} text-center`} title={budgetExplanation}>
         <span className="text-xs text-slate-400 light:text-gray-500">Budget fit</span>
         <span className={`text-sm font-semibold ${meta.textClass}`}>{meta.label}</span>
         <div className="flex gap-1 w-full max-w-[88px]">
@@ -622,6 +642,11 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
         <span className="text-xs text-slate-500 light:text-gray-400 text-center break-words w-full">your {capitalStr} vs {startupStr} est.</span>
       </div>
     )
+    legendItems.push({
+      key: 'budget',
+      label: 'Budget fit',
+      text: `${budgetExplanation} The bar runs from short (1 bar) to fully covered (4 bars).`,
+    })
   }
 
   if (tiles.length === 0) return null
@@ -634,7 +659,23 @@ function AtAGlanceStrip({ vs, costBreakdown, statedCapital }: {
         ? 'grid-cols-2'
         : 'grid-cols-1'
 
-  return <div className={`grid ${gridColsClass} gap-3`}>{tiles}</div>
+  return (
+    <div>
+      <div className={`grid ${gridColsClass} gap-3`}>{tiles}</div>
+      <details className="mt-2">
+        <summary className="w-fit cursor-pointer list-none [&::-webkit-details-marker]:hidden text-xs text-slate-500 light:text-gray-400 underline decoration-dotted underline-offset-2 hover:text-slate-300 light:hover:text-gray-600">
+          What do these scores mean?
+        </summary>
+        <ul className="mt-2 space-y-1.5 rounded-lg border border-white/10 bg-slate-900/60 light:bg-white light:border-gray-200 px-4 py-3">
+          {legendItems.map(item => (
+            <li key={item.key} className="text-xs text-slate-400 light:text-gray-500 leading-relaxed">
+              <span className="font-medium text-slate-300 light:text-gray-700">{item.label}</span> — {item.text}
+            </li>
+          ))}
+        </ul>
+      </details>
+    </div>
+  )
 }
 
 // ── Gated teaser components (src/lib/teaser-gating.ts) ───────────────────

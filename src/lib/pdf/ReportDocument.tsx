@@ -17,7 +17,7 @@ import {
 import { symbolForCurrency } from '@/lib/countries'
 import { deriveHeadlineScore } from '@/lib/viability-score'
 import { ESSENTIAL_SERVICE_GROUPS, type ResolvedEssentialService } from '@/lib/essential-services'
-import { deriveBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
+import { deriveBudgetFit, explainBudgetFit, sumStartupCosts, type CapitalRange, type BudgetFitBand } from '@/lib/derived-metrics'
 
 // Duplicated from the three other copies in the app (confirm/summary/my-ideas
 // pages) — no shared module for this yet, matching existing pattern.
@@ -297,7 +297,7 @@ export function ReportDocument({ data }: { data: ReportPdfInput }) {
               </View>
               {budgetFitBand && startupSum && statedCapital && (
                 <Text style={[styles.caption, { marginTop: 8 }]}>
-                  Budget fit: {BUDGET_FIT_LABELS[budgetFitBand]} — your {formatCapitalRange(statedCapital, sym)} vs {fmt0(sym, startupSum.low)}–{fmt0(sym, startupSum.high)} estimated startup
+                  Budget fit: {BUDGET_FIT_LABELS[budgetFitBand]} — {explainBudgetFit(budgetFitBand, formatCapitalRange(statedCapital, sym), fmt0(sym, startupSum.low), fmt0(sym, startupSum.high), statedCapital.high === null)}
                 </Text>
               )}
             </View>

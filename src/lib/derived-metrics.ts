@@ -105,3 +105,32 @@ export function deriveBudgetFit(capital: CapitalRange, startup: { low: number; h
   if (capital.high !== null && capital.high < startup.low) return 'short'
   return 'partial'
 }
+
+/**
+ * One founder-facing sentence saying what a budget-fit verdict actually means
+ * for THEIR numbers — shared by the web tile legend/tooltip and the PDF line
+ * so the two never drift. Takes pre-formatted currency strings (each caller
+ * already owns its own symbol/formatting helpers) plus openEnded
+ * (capital.high === null), because a 'partial' verdict means something
+ * different for an open-ended "$10,000+" band than for a bounded one.
+ */
+export function explainBudgetFit(
+  band: BudgetFitBand,
+  capital: string,
+  startupLow: string,
+  startupHigh: string,
+  openEnded: boolean
+): string {
+  switch (band) {
+    case 'covered':
+      return `Your stated budget (${capital}) covers the estimated startup costs (${startupLow}–${startupHigh}) even at their high end.`
+    case 'lean_covered':
+      return `Even the low end of your stated budget (${capital}) covers a lean start (${startupLow}), though costs could run to ${startupHigh}.`
+    case 'partial':
+      return openEnded
+        ? `Your stated budget (${capital}) is open-ended: its known floor sits below the lean-start estimate (${startupLow}), so coverage depends on how far beyond that floor you actually are.`
+        : `Your stated budget (${capital}) straddles the lean-start estimate (${startupLow}): the top of your range covers it, the bottom falls short.`
+    case 'short':
+      return `Even the top of your stated budget (${capital}) sits below the lean-start estimate (${startupLow}) — the funding options in this report exist to close that gap.`
+  }
+}
