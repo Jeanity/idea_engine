@@ -9,12 +9,6 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-export function generateStaticParams() {
-  return Object.entries(CAMPAIGNS).flatMap(([campaign, c]) =>
-    c.slides.map((_, i) => ({ campaign, slide: String(i + 1) }))
-  )
-}
-
 export default async function AdSlidePage({ params }: { params: Promise<{ campaign: string; slide: string }> }) {
   const { campaign, slide } = await params
   const c = CAMPAIGNS[campaign]
