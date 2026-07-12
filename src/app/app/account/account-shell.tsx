@@ -16,6 +16,9 @@ import {
   Menu,
   X,
   Sparkles,
+  HelpCircle,
+  Mail,
+  LifeBuoy,
   type LucideProps,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -57,6 +60,16 @@ const BASE_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Account',
     items: [{ href: '/app/account/settings', label: 'Settings', icon: Settings }],
+  },
+  {
+    // Public help pages, reachable without leaving the account area's nav —
+    // on mobile these live in the same hamburger drawer as everything else.
+    label: 'Help',
+    items: [
+      { href: '/faq', label: 'FAQ', icon: HelpCircle },
+      { href: '/contact', label: 'Contact', icon: Mail },
+      { href: '/support', label: 'Support', icon: LifeBuoy },
+    ],
   },
 ]
 

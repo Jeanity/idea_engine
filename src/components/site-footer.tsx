@@ -3,15 +3,19 @@ import { CookiePreferencesLink } from '@/components/cookie-preferences-link'
 import { SOCIAL_LINKS } from '@/lib/site'
 
 /**
- * Shared footer for public pages (homepage, /sample-report, /sign-in, and the
- * static pages) — server component, no data needs. NOT rendered on /app/*
- * (the signed-in shell) — see CLAUDE.md / the public-site-batch plan.
+ * Shared site footer — public pages (homepage, /sample-report, /sign-in,
+ * /support, and the static pages) plus the signed-in surfaces where support
+ * access matters: the /app intake page and the report views (Danny,
+ * 2026-07-13). Deliberately ABSENT from the generation funnel (questions/
+ * confirm/progress — no exit links mid-flow) and the account/admin shells,
+ * whose sidebars carry Help links instead. print:hidden keeps it out of
+ * browser-printed reports (the generated PDF is react-pdf and never sees it).
  */
 export function SiteFooter() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-white/10 bg-slate-950 px-6 py-12 light:border-gray-200 light:bg-white">
+    <footer className="border-t border-white/10 bg-slate-950 px-6 py-12 light:border-gray-200 light:bg-white print:hidden">
       <div className="mx-auto max-w-5xl">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">

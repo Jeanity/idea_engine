@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AppHeader } from '@/components/app-header'
 import NewIdeaForm from '@/components/new-idea-form'
+import { SiteFooter } from '@/components/site-footer'
 import { DEMO_STATS } from '@/lib/demo-stats'
 
 export const metadata = { title: 'New idea — HadIdea' }
@@ -110,6 +111,8 @@ export default async function DashboardPage() {
             </p>
           </div>
         </div>
+
+        <SiteFooter />
       </div>
     </main>
   )

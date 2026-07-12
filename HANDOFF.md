@@ -28,6 +28,20 @@ All on main through `9c45be8`; no new migrations (027/028 were already run).
    FAQ refund + purchase-help entries (JSON-LD included); /contact?category= prefill.
    Still deferred to payments build: order-confirmation email, My purchases
    self-service, live Stripe refund call.
+7. **Footer everywhere it belongs** (Danny's scoping, 2026-07-13): public pages
+   (already had it) + /app intake page + report views (teaser/full). Deliberately NOT
+   on the generation funnel (questions/confirm/progress — no exit links mid-flow);
+   progress screen's ERROR state gets a /support link instead (help exactly where it's
+   needed). Account sidebar gains a Help group (FAQ/Contact/Support) — rides the
+   existing mobile hamburger drawer. Footer is print:hidden; react-pdf never saw it.
+
+**FILED WITH PAYMENTS TASKS (Danny, 2026-07-13): user credits.** Admin needs a way to
+grant a free full-report generation credit (or other credit types) to a user account —
+e.g. goodwill after a support issue, comps, promos. Deliberately waiting for the
+payments build to define what a "credit" IS (a row that satisfies the unlock gate the
+same way a purchase does), so the grant mechanism and the purchase path share one
+model instead of bolting a parallel freebie system on later. Natural home: admin
+user-detail page action + a credits/entitlements table designed alongside purchases.
 
 Danny-side done: Vercel MAIL_FROM display name now HadIdea. Still open from 07-11
 list: Supabase auth email templates check, logo, smexy device check. GSC/Bing tokens

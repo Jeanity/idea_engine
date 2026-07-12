@@ -12,6 +12,7 @@ import { SectionLabel } from '@/components/admin/section-label'
 import { SurveyCard, type SurveyData } from '@/components/survey-card'
 import { BugReportWidget } from '@/components/bug-report-widget'
 import { StartOverButton } from '@/components/start-over-button'
+import { SiteFooter } from '@/components/site-footer'
 
 interface ReportData {
   id: string
@@ -409,6 +410,13 @@ function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
           >
             Try again
           </button>
+          <p className="mt-6 text-xs text-slate-500">
+            Keeps happening?{' '}
+            <Link href="/support" className="text-slate-400 hover:text-white underline underline-offset-2">
+              Get in touch
+            </Link>{' '}
+            — we&apos;ll sort it out.
+          </p>
         </div>
       </div>
     )
@@ -2365,6 +2373,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
         <div className="mb-8">
           <SurveyCard data={surveyData} reportId={report!.id} />
         </div>
+        <SiteFooter />
       </div>
     )
   }
@@ -2405,10 +2414,14 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
         <div className="mb-8">
           <SurveyCard data={surveyData} reportId={report.id} />
         </div>
+        <SiteFooter />
       </div>
     )
   }
 
+  // Deliberately NO footer while generating (Danny, 2026-07-13): the
+  // progress screen stays distraction-free — the only support path shown is
+  // on its error state, where it's actually needed.
   return (
     <ProgressScreen
       ideaId={ideaId}
