@@ -109,34 +109,32 @@ export default async function SampleReportPage({
         </div>
       </div>
 
-      {/* Bottom CTA band */}
-      <section className="relative overflow-hidden bg-slate-950 light:bg-gray-50 px-6 py-24 text-center border-t border-white/10 light:border-gray-200">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="animate-blob-1 absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-indigo-600/30 blur-3xl light:opacity-50" />
-          <div className="animate-blob-2 absolute -bottom-20 right-1/4 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl light:opacity-50" />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-2xl">
-          <h2 className="text-2xl font-bold text-white light:text-gray-900 sm:text-3xl">
-            Your idea deserves this treatment.
-          </h2>
-          <div className="mt-8 flex flex-col items-center gap-3">
-            <Link
-              href="/sign-in"
-              className="inline-block rounded-lg bg-indigo-500 px-7 py-3.5 text-sm font-semibold text-white
-                         shadow-lg shadow-indigo-500/40 transition-all duration-200 hover:scale-105 hover:bg-indigo-400
-                         focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
-            >
-              Get early access
-            </Link>
-            <p className="text-xs text-slate-500 light:text-gray-400">
-              Reports from US$19.95 — pricing may change at launch
-            </p>
-          </div>
-        </div>
-      </section>
-
       <SiteFooter />
+
+      {/* Docked CTA bar (cookie-banner style). Solid, explicit background —
+          deliberately NOT bg-slate-950, which the smexy theme turns
+          translucent; a floating bar must stay readable over any content.
+          z-40 keeps it under the sample modal (z-50) and the cookie banner. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#06040f] px-4 py-3 light:border-gray-200 light:bg-white">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <p className="text-sm font-semibold text-white light:text-gray-900">
+            Your idea deserves this treatment.
+          </p>
+          <Link
+            href="/sign-in"
+            className="rounded-lg bg-indigo-500 px-5 py-2 text-sm font-semibold text-white shadow-lg
+                       shadow-indigo-500/40 transition-colors hover:bg-indigo-400 focus:outline-none
+                       focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+          >
+            Get early access
+          </Link>
+          <p className="hidden text-xs text-slate-500 light:text-gray-400 sm:block">
+            Reports from US$19.95 — pricing may change at launch
+          </p>
+        </div>
+      </div>
+      {/* Spacer so the docked bar never hides the footer's last line. */}
+      <div className="h-16" aria-hidden="true" />
     </main>
   )
 }

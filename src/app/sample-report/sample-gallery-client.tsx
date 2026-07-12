@@ -71,7 +71,12 @@ function ReportModal({ state, onClose }: { state: ModalState; onClose: () => voi
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-slate-950 light:bg-gray-50 light:border-gray-200 shadow-2xl overflow-hidden"
+        // Solid, explicit background — deliberately NOT bg-slate-950, which
+        // the smexy theme turns translucent (glass). A dialog scrolling over
+        // arbitrary page content (including the docked CTA bar) must be
+        // fully opaque or the layers bleed into each other and become
+        // unreadable.
+        className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#09071a] light:bg-gray-50 light:border-gray-200 shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <button
