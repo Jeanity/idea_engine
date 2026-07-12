@@ -1,3 +1,40 @@
+# Handoff — 2026-07-13 (launch hardening + customer support)
+
+All on main through `9c45be8`; no new migrations (027/028 were already run).
+
+1. **Inngest concurrency caps** — generate-report 8, generate-teaser 25. Under burst
+   load reports now QUEUE instead of blowing Anthropic TPM and degrading to PARTIAL.
+   Tune the 8 with the Anthropic tier (also mirrored in queueWaitLabel, report-client).
+2. **Demo mode, sitewide + per-user**: app_settings 'demo_mode_global' (admin Settings
+   card toggle; red "Site Demo" header pill) + admin can flip any user's demo_mode from
+   the admin user-detail page (/api/admin/users/[id]/demo-mode). Demo now also mocks
+   classify + dynamic-questions, so a demo account's whole intake→report flow is $0.
+   Test recipe: non-admin account (admins never see promo overlays) + demo ON.
+3. **Queue-aware progress screen**: after 25s queued → "you're in line" + rounded-UP
+   ETA (never a position number); "High demand" line at depth ≥10 only; full-report
+   runs show the "we'll email you" release valve. GET /api/reports returns queueDepth
+   (bare count) while the caller's report is queued.
+4. **Full-report run visuals**: 6-gear cluster (geometry verified meshing) + "Generating
+   your full report" heading; teaser keeps the 3-gear original. Run type = click-time
+   hint + preview_sections-preserved heuristic (survives refresh).
+5. **Survey gates E2E-VERIFIED by Danny** (both overlays working live). Root cause of
+   "not working" was the promo card's save button not reading as covering the survey
+   dropdowns — now labeled "Save caps & surveys". Full checklist lives in the promo-card
+   / survey.ts comments.
+6. **Customer support — pre-payments slice DONE** (`9c45be8`): admin Purchases &
+   refunds section on Sales (record/undo refund w/ two-step confirm, Stripe payment
+   deep link, email-enriched + filterable; record-keeping only until payments wires the
+   Stripe API); /support hub page (stable URL for future receipts) + footer/sitemap;
+   FAQ refund + purchase-help entries (JSON-LD included); /contact?category= prefill.
+   Still deferred to payments build: order-confirmation email, My purchases
+   self-service, live Stripe refund call.
+
+Danny-side done: Vercel MAIL_FROM display name now HadIdea. Still open from 07-11
+list: Supabase auth email templates check, logo, smexy device check. GSC/Bing tokens
+still pending.
+
+---
+
 # Day wrap — 2026-07-11 (all shipped to main + prod)
 
 Everything below is live: c4af64e stepped survey → b5932c1 HadIdea rebrand → 1a222c7
@@ -300,6 +337,10 @@ Approved design:
    hardest gating. Track unlock CTR before/after the flip.
 
 ## TODO — Customer support feature (Danny's ask, 2026-07-10, build with/before payments)
+## → PRE-PAYMENTS SLICE DONE 2026-07-13 (`9c45be8`, see top of file). Items 1+2 built
+## (billing category was migration 027; refund workflow on Sales page). Item 3's
+## /support page + FAQ built; order-confirmation email and item 4 (My purchases)
+## remain for the payments build. Spec kept below for that.
 Stripe signup surfaced the requirement: customers must be able to reach us about a charge
 (support email is on Stripe receipts — hello@hadidea.com; phone kept private). What to build:
 1. **Billing/refund support path**: add a "Billing & refunds" category to the /contact form's
