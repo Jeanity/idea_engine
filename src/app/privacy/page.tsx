@@ -24,16 +24,24 @@ export default function PrivacyPage() {
 
       <section>
         <H2>2. Who processes it</H2>
-        <p className="mt-3">Your data is processed by the infrastructure providers that run the service:</p>
+        <p className="mt-3">
+          Your data is processed by a small set of vetted, industry-standard cloud providers that
+          run the service, covering:
+        </p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5">
-          <li>Supabase — database, authentication, and storage.</li>
-          <li>Vercel — application hosting.</li>
-          <li>Anthropic — the AI API used to generate your report content.</li>
-          <li>Inngest — background job processing for report generation.</li>
+          <li>Secure application hosting and delivery.</li>
+          <li>Database, authentication, and file storage.</li>
+          <li>AI processing used to generate your report content.</li>
+          <li>Background processing for report generation.</li>
         </ul>
         <p className="mt-3">
-          Each processes only what&apos;s needed to run the service. We don&apos;t sell your data
-          to anyone.
+          Each provider processes only what&apos;s needed to run the service. We don&apos;t sell
+          your data to anyone. If you need the specific processor list — for example for a
+          compliance review — request it via the{' '}
+          <a href="/contact" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+            contact page
+          </a>
+          .
         </p>
       </section>
 
@@ -70,10 +78,10 @@ export default function PrivacyPage() {
         <p className="mt-3">We use three categories of first-party cookies, and nothing from third-party ad networks:</p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5">
           <li>
-            <strong>Necessary</strong> — Supabase authentication (keeps you signed in),{' '}
-            <code>ie_consent</code> (remembers your cookie choice), and <code>ie_ab</code> (fraud
-            prevention for free-report promotions). These are required for the site to function
-            and are never gated behind a choice.
+            <strong>Necessary</strong> — authentication cookies set by our sign-in service (they
+            keep you signed in), <code>ie_consent</code> (remembers your cookie choice), and{' '}
+            <code>ie_ab</code> (fraud prevention for free-report promotions). These are required
+            for the site to function and are never gated behind a choice.
           </li>
           <li>
             <strong>Functional</strong> — your theme preference (light/dark), stored in your
