@@ -3,6 +3,7 @@ import {
   CtaSlide,
   SlideShell,
   StaggeredCards,
+  WhatWeDoSlide,
   type AdCard,
   type Slide,
 } from '../slide-kit'
@@ -22,7 +23,7 @@ const CARDS: [AdCard, AdCard, AdCard] = [
 
 export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
   name: '$4.95 launch pricing',
-  purpose: 'Paid launch — discounted reports for the first 1,000 users. Slides 1–3 are HOOK VARIANTS (use one per cut); the offer slide also comes in price-shown and price-teased variants (use one). Note: hooks B and C name the price — pair them with the price-shown offer.',
+  purpose: 'Paid launch — discounted reports for the first 1,000 users. Slides 1–3 are HOOK VARIANTS (use one per cut, always followed by the What-we-do slide); the offer slide also comes in price-shown and price-teased variants (use one). Note: hooks B and C name the price — pair them with the price-shown offer.',
   slides: [
     {
       title: 'Hook A — nobody tells you how',
@@ -69,6 +70,12 @@ export const LAUNCH_DEAL: { name: string; purpose: string; slides: Slide[] } = {
             </h1>
           </div>
         </SlideShell>
+      ),
+    },
+    {
+      title: 'What we do',
+      node: (
+        <WhatWeDoSlide sub="We turn raw ideas into researched, scored business plans. Real competitors, real costs, real next steps." />
       ),
     },
     {

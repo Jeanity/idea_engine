@@ -3,6 +3,7 @@ import {
   CtaSlide,
   RedactedCompetitorRow,
   SlideShell,
+  WhatWeDoSlide,
   type Slide,
 } from '../slide-kit'
 
@@ -13,7 +14,7 @@ import {
 
 export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Slide[] } = {
   name: 'Evergreen — “it already exists”',
-  purpose: 'Competitor reframe for founders who found their idea "already taken". No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut.',
+  purpose: 'Competitor reframe for founders who found their idea "already taken". No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut, always followed by the What-we-do slide (cold viewers don’t know the brand).',
   slides: [
     {
       title: 'Hook A — good.',
@@ -55,6 +56,12 @@ export const EVERGREEN_COMPETITORS: { name: string; purpose: string; slides: Sli
             </h1>
           </div>
         </SlideShell>
+      ),
+    },
+    {
+      title: 'What we do',
+      node: (
+        <WhatWeDoSlide sub="We research your idea for real — who’s already doing it, what they charge, and the gap you can own." />
       ),
     },
     {

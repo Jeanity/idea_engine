@@ -84,6 +84,24 @@ export function StaggeredCards({ cards }: { cards: [AdCard, AdCard, AdCard] }) {
   )
 }
 
+/** The "what we do" slide — ALWAYS the slide right after the hook in every
+ *  cut. Cold viewers don't know what HadIdea is; this names the brand and
+ *  states the offer in one line before any angle-specific content runs.
+ *  `sub` is the campaign-flavored bridge into the rest of the deck. */
+export function WhatWeDoSlide({ sub }: { sub: string }) {
+  return (
+    <SlideShell>
+      <div className="flex flex-1 flex-col justify-center">
+        <p className="text-[52px] font-bold tracking-tight text-slate-200 short:text-[46px]">HadIdea</p>
+        <h1 className="mt-12 text-[104px] font-bold leading-[1.08] tracking-tight short:mt-8 short:text-[92px]">
+          Have an idea? <span className="gradient-text">Let&rsquo;s make it real.</span>
+        </h1>
+        <p className="mt-16 text-[40px] leading-snug text-slate-300 short:mt-10">{sub}</p>
+      </div>
+    </SlideShell>
+  )
+}
+
 /** Shared closing slide — brand, headline, button, url. Both orientations. */
 export function CtaSlide({ headline, button, sub }: { headline: ReactNode; button: string; sub?: string }) {
   return (

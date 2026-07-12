@@ -7,6 +7,7 @@ import {
   GlanceTile,
   SlideShell,
   StaggeredCards,
+  WhatWeDoSlide,
   type AdCard,
   type Slide,
 } from '../slide-kit'
@@ -23,7 +24,7 @@ const CARDS: [AdCard, AdCard, AdCard] = [
 
 export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
   name: 'First 1,000 plans free',
-  purpose: 'Launch feedback drive — free generations for the first 1,000 users. Slides 1–3 are HOOK VARIANTS for split testing: use exactly one per cut.',
+  purpose: 'Launch feedback drive — free generations for the first 1,000 users. Slides 1–3 are HOOK VARIANTS for split testing: use exactly one per cut, always followed by the What-we-do slide (cold viewers don’t know the brand).',
   slides: [
     {
       title: 'Hook A — the idea you keep thinking about',
@@ -72,6 +73,12 @@ export const FREE_LAUNCH: { name: string; purpose: string; slides: Slide[] } = {
             </p>
           </div>
         </SlideShell>
+      ),
+    },
+    {
+      title: 'What we do',
+      node: (
+        <WhatWeDoSlide sub="We turn raw ideas into researched, scored business plans — and the first 1,000 are free." />
       ),
     },
     {

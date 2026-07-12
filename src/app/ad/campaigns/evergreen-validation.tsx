@@ -3,6 +3,7 @@ import {
   CtaSlide,
   GlanceTile,
   SlideShell,
+  WhatWeDoSlide,
   type Slide,
 } from '../slide-kit'
 
@@ -13,7 +14,7 @@ import {
 
 export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slide[] } = {
   name: 'Evergreen — test it on paper',
-  purpose: 'Validation angle — know the numbers before you spend. No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut.',
+  purpose: 'Validation angle — know the numbers before you spend. No offer — runs forever. Slides 1–3 are HOOK VARIANTS: use exactly one per cut, always followed by the What-we-do slide (cold viewers don’t know the brand).',
   slides: [
     {
       title: 'Hook A — don’t quit your job',
@@ -59,6 +60,12 @@ export const EVERGREEN_VALIDATION: { name: string; purpose: string; slides: Slid
             </p>
           </div>
         </SlideShell>
+      ),
+    },
+    {
+      title: 'What we do',
+      node: (
+        <WhatWeDoSlide sub="Real costs. Real competitors. Real demand — researched before you spend a dollar." />
       ),
     },
     {
