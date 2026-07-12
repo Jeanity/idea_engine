@@ -371,8 +371,9 @@ function ReportCard({ card }: { card: ReportCardData }) {
   )
 }
 
-// Product schema for search rich results and AI assistants — the offer price
-// mirrors the "Reports from US$19.95" footnote below; update both together.
+// Product schema for search rich results and AI assistants. No offers block:
+// the site deliberately doesn't state a public price pre-launch, and schema
+// claims must never say more than the pages do.
 const PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -381,12 +382,6 @@ const PRODUCT_JSONLD = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description: SITE_DESCRIPTION,
-  offers: {
-    '@type': 'Offer',
-    price: '19.95',
-    priceCurrency: 'USD',
-    description: 'Reports from US$19.95 — launch pricing may differ.',
-  },
   publisher: { '@id': `${SITE_URL}/#organization` },
 }
 
@@ -459,7 +454,7 @@ export default async function LandingPage() {
                          shadow-lg shadow-indigo-500/40 transition-all duration-200 hover:scale-105 hover:bg-indigo-400
                          focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
-              Get early access
+              Make it real
             </Link>
             <a
               href="#how-it-works"
@@ -650,7 +645,7 @@ export default async function LandingPage() {
                          shadow-lg shadow-indigo-500/40 transition-all duration-200 hover:scale-105 hover:bg-indigo-400
                          focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
             >
-              Get early access
+              Make it real
             </Link>
             <p className="text-xs text-slate-500 light:text-gray-400">No credit card required — join the early list</p>
           </div>

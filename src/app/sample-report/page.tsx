@@ -126,11 +126,8 @@ export default async function SampleReportPage({
                        shadow-indigo-500/40 transition-colors hover:bg-indigo-400 focus:outline-none
                        focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950"
           >
-            Get early access
+            Make it real
           </Link>
-          <p className="hidden text-xs text-slate-500 light:text-gray-400 sm:block">
-            Reports from US$19.95 — pricing may change at launch
-          </p>
         </div>
       </div>
       {/* Spacer so the docked bar never hides the footer's last line. */}
