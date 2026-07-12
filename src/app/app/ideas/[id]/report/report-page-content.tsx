@@ -103,7 +103,7 @@ export async function ReportPageContent({ id }: { id: string }) {
   // a blocking survey overlay would make no sense.
   const promoSurveys = isAdmin
     ? { initial: null, full: null }
-    : await pickPromoGateSurveys(createServiceClient(), supabase, user.id, await readPromoConfig(createServiceClient()))
+    : await pickPromoGateSurveys(supabase, user.id, await readPromoConfig(createServiceClient()))
 
   // Render-time "Your support team" block (Legal & Compliance tab) — never
   // stored in report sections, never touched by the AI pipeline. Reads active

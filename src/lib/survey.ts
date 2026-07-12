@@ -392,7 +392,6 @@ export function idsNeedingFetch(
  * behaviour the spec calls for: no explicit active check needed here.
  */
 export async function pickPromoGateSurveys(
-  service: SupabaseClient<Database>,
   requestClient: SupabaseClient<Database>,
   userId: string,
   config: PromoConfig

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluatePromoGate, DEFAULT_PROMO_CONFIG, mergePromoConfig, type PromoConfig } from '@/lib/promo'
+import { evaluatePromoGate, isAnswerableSurvey, DEFAULT_PROMO_CONFIG, mergePromoConfig, type PromoConfig } from '@/lib/promo'
 
 function config(overrides: Partial<PromoConfig> = {}): PromoConfig {
   return { ...DEFAULT_PROMO_CONFIG, enabled: true, started_at: '2026-07-01T00:00:00.000Z', ...overrides }
@@ -62,5 +62,31 @@ describe('mergePromoConfig', () => {
     expect(merged.enabled).toBe(true)
     expect(merged.report_cap).toBe(50)
     expect(merged.spend_cap_usd).toBeNull()
+  })
+})
+
+// The deadlock guard: the server-side initial-survey gate must only enforce
+// when the survey is ANSWERABLE (active, >=1 active question) — the exact
+// conditions under which the client renders the overlay. Otherwise a user
+// could be denied the full report with an instruction they cannot follow.
+describe('isAnswerableSurvey', () => {
+  it('false for a missing/deleted survey', () => {
+    expect(isAnswerableSurvey(null, 3)).toBe(false)
+  })
+
+  it('false for an inactive survey even with active questions', () => {
+    expect(isAnswerableSurvey({ active: false }, 3)).toBe(false)
+  })
+
+  it('false for an active survey with zero active questions', () => {
+    expect(isAnswerableSurvey({ active: true }, 0)).toBe(false)
+  })
+
+  it('false when the question count is unknown (null)', () => {
+    expect(isAnswerableSurvey({ active: true }, null)).toBe(false)
+  })
+
+  it('true only for an active survey with at least one active question', () => {
+    expect(isAnswerableSurvey({ active: true }, 1)).toBe(true)
   })
 })

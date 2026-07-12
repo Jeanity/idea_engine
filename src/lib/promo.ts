@@ -195,6 +195,40 @@ export type PromoGateCheckResult =
   | { allowed: true; normalizedEmail: string; ipHash: string | null }
   | { allowed: false; message: string }
 
+/** Pure: the survey gate only applies when the selected survey is currently
+ *  ANSWERABLE — active with at least one active question. This mirrors the
+ *  RLS conditions under which pickPromoGateSurveys renders the overlay, so
+ *  the server can never demand a survey the client cannot show. */
+export function isAnswerableSurvey(
+  survey: { active: boolean } | null,
+  activeQuestionCount: number | null
+): boolean {
+  return survey?.active === true && (activeQuestionCount ?? 0) > 0
+}
+
+async function isSurveyAnswerable(
+  service: SupabaseClient<Database>,
+  surveyId: string
+): Promise<boolean> {
+  // Any read error counts as "not answerable" → the gate falls through to
+  // allow, which is the safe direction (never brick the promo on a hiccup).
+  const { data: survey, error } = await service
+    .from('surveys')
+    .select('active')
+    .eq('id', surveyId)
+    .maybeSingle()
+  if (error || !survey) return false
+
+  const { count, error: qError } = await service
+    .from('survey_questions')
+    .select('id', { count: 'exact', head: true })
+    .eq('survey_id', surveyId)
+    .eq('active', true)
+  if (qError) return false
+
+  return isAnswerableSurvey(survey, count)
+}
+
 /**
  * Full server-side gate for POST /api/reports/full's non-admin path. Reads
  * config + usage, evaluates the pure per-user-limit decision, and — for
@@ -208,10 +242,10 @@ export type PromoGateCheckResult =
  * the product never reveals which signal tripped.
  *
  * Also checked here: the initial-report survey gate (migration 028). If the
- * admin has set config.initial_survey_id, the caller must have a
- * survey_responses row for it before a full report can start. Unlike the
- * abuse denials above, that message is deliberately specific — see the
- * comment at the check itself.
+ * admin has set config.initial_survey_id AND that survey is answerable, the
+ * caller must have a survey_responses row for it before a full report can
+ * start. Unlike the abuse denials above, that message is deliberately
+ * specific — see the comment at the check itself.
  *
  * Returns a user-facing message alongside the decision; callers map
  * `allowed: false` to a 403. On `allowed: true`, also returns the
@@ -250,19 +284,29 @@ export async function checkAndApplyPromoGate(
   // reuse one generic string on purpose so the product never reveals which
   // abuse signal tripped; this one is an instruction ("go answer the
   // survey"), not a security signal, so telling the user exactly what to do
-  // is the whole point. Degrade gracefully on a read error — a DB hiccup
-  // should never brick the promo, so we allow through rather than deny.
+  // is the whole point.
+  //
+  // DEADLOCK GUARD: the overlay the user answers is only rendered when the
+  // survey is ANSWERABLE — active with ≥1 active question (RLS hides
+  // inactive surveys from pickPromoGateSurveys). The server must mirror
+  // exactly that condition, or an inactive/questionless selection would
+  // deny users with an instruction they cannot follow. Deactivating the
+  // selected survey is therefore the admin's pause switch for this gate.
+  // Degrade gracefully on any read error — a DB hiccup should never brick
+  // the promo, so every uncertain path falls through to allow.
   if (config.initial_survey_id) {
-    const { count, error: surveyError } = await service
-      .from('survey_responses')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('survey_id', config.initial_survey_id)
+    if (await isSurveyAnswerable(service, config.initial_survey_id)) {
+      const { count, error: surveyError } = await service
+        .from('survey_responses')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('survey_id', config.initial_survey_id)
 
-    if (!surveyError && (count ?? 0) === 0) {
-      return {
-        allowed: false,
-        message: 'Quick one first: complete the short survey on your initial report — it unlocks the full report.',
+      if (!surveyError && (count ?? 0) === 0) {
+        return {
+          allowed: false,
+          message: 'Quick one first: complete the short survey on your initial report — it unlocks the full report.',
+        }
       }
     }
   }
