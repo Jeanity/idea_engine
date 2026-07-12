@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CAMPAIGNS } from '../../campaigns'
-import { FORMAT_DIMS, SlideFrame, type SlideFormat } from '../../slide-frame'
+import { SlideFrame } from '../../slide-frame'
+import { FORMAT_DIMS, type SlideFormat } from '../../slide-formats'
 
 // Internal ad-production pages — must never end up in search results.
 export const metadata = {
