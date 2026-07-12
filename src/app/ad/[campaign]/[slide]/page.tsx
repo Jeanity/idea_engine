@@ -33,27 +33,30 @@ export default async function AdSlidePage({
   const others = (['tall', 'wide', 'square'] as const).filter(f => f !== format)
 
   return (
-    <>
-      {/* Discreet nav, outside the frame on most window shapes — crops out of
-          screenshots taken of the slide itself. */}
-      <nav className="fixed left-3 top-3 z-50 flex items-center gap-3 rounded-lg bg-black/70 px-3 py-1.5 text-xs text-slate-400">
-        <Link href="/ad" className="hover:text-white">index</Link>
-        <span>{c.name} · {n}/{c.slides.length} · {c.slides[n - 1].title} · {FORMAT_DIMS[format].label}</span>
-        {n > 1 && <Link href={`/ad/${campaign}/${n - 1}${query}`} className="hover:text-white">← prev</Link>}
-        {n < c.slides.length && <Link href={`/ad/${campaign}/${n + 1}${query}`} className="hover:text-white">next →</Link>}
-        {others.map(f => (
-          <Link key={f} href={`/ad/${campaign}/${n}${f === 'tall' ? '' : `?format=${f}`}`} className="text-indigo-300 hover:text-white">
-            {FORMAT_DIMS[f].label}
-          </Link>
-        ))}
-      </nav>
-      <SlideFrame format={format}>
-        {/* data-orient drives the wide:/square:/short: Tailwind variants
-            (globals.css) inside every slide — one slide source, three formats. */}
-        <div className="h-full w-full" data-orient={format === 'tall' ? undefined : format}>
-          {c.slides[n - 1].node}
-        </div>
-      </SlideFrame>
-    </>
+    // The nav renders as a bar ABOVE the frame (SlideFrame owns the layout —
+    // never a fixed overlay, so it can't sit on top of a screenshot), and
+    // SlideFrame hides it entirely in exact-size capture mode.
+    <SlideFrame
+      format={format}
+      nav={
+        <>
+          <Link href="/ad" className="hover:text-white">index</Link>
+          <span>{c.name} · {n}/{c.slides.length} · {c.slides[n - 1].title} · {FORMAT_DIMS[format].label}</span>
+          {n > 1 && <Link href={`/ad/${campaign}/${n - 1}${query}`} className="hover:text-white">← prev</Link>}
+          {n < c.slides.length && <Link href={`/ad/${campaign}/${n + 1}${query}`} className="hover:text-white">next →</Link>}
+          {others.map(f => (
+            <Link key={f} href={`/ad/${campaign}/${n}${f === 'tall' ? '' : `?format=${f}`}`} className="text-indigo-300 hover:text-white">
+              {FORMAT_DIMS[f].label}
+            </Link>
+          ))}
+        </>
+      }
+    >
+      {/* data-orient drives the wide:/square:/short: Tailwind variants
+          (globals.css) inside every slide — one slide source, three formats. */}
+      <div className="h-full w-full" data-orient={format === 'tall' ? undefined : format}>
+        {c.slides[n - 1].node}
+      </div>
+    </SlideFrame>
   )
 }

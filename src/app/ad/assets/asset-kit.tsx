@@ -1,35 +1,52 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 /**
- * Fits an exact-pixel brand asset to the viewport for screenshotting —
- * same workflow as the campaign slides: devtools device emulation at the
- * asset's stated size captures it 1:1.
+ * Fits an exact-pixel brand asset to the space under its own nav bar for
+ * screenshotting. The nav is normal flow (never an overlay), so it can't
+ * end up inside a capture at any window shape — and when the viewport
+ * exactly matches the asset size (devtools device emulation) the nav hides
+ * itself, keeping those captures 1:1 and chrome-free. Mirrors SlideFrame.
  */
 export function PixelFrame({ w, h, label, children }: { w: number; h: number; label: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.4)
+  const [captureMode, setCaptureMode] = useState(false)
 
   useEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / w, window.innerHeight / h, 1))
+    const detect = () =>
+      setCaptureMode(Math.abs(window.innerWidth - w) <= 2 && Math.abs(window.innerHeight - h) <= 2)
+    detect()
+    window.addEventListener('resize', detect)
+    return () => window.removeEventListener('resize', detect)
+  }, [w, h])
+
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const fit = () => setScale(Math.min(el.clientWidth / w, el.clientHeight / h, 1))
     fit()
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [w, h])
 
   return (
-    <>
-      <nav className="fixed left-3 top-3 z-50 flex items-center gap-3 rounded-lg bg-black/70 px-3 py-1.5 text-xs text-slate-400">
-        <Link href="/ad" className="hover:text-white">index</Link>
-        <span>{label} · capture at {w}×{h}</span>
-      </nav>
-      <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
+    <main className="flex h-screen w-screen flex-col bg-black">
+      {!captureMode && (
+        <nav className="flex h-9 shrink-0 items-center gap-3 px-3 text-xs text-slate-400">
+          <Link href="/ad" className="hover:text-white">index</Link>
+          <span>{label} · capture at {w}×{h}</span>
+        </nav>
+      )}
+      <div ref={box} className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
         <div style={{ width: w, height: h, transform: `scale(${scale})`, flexShrink: 0 }}>
           {children}
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
 

@@ -26,7 +26,7 @@ export default function AdStudioPage() {
           <p className="font-semibold text-white">Capturing pixel-perfect frames</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-400">
             <li>Open a slide, press F12 → device toolbar (Ctrl+Shift+M).</li>
-            <li>Set dimensions to <span className="text-slate-200">1080 × 1920</span> (9:16), <span className="text-slate-200">1920 × 1080</span> (16:9), or <span className="text-slate-200">1080 × 1080</span> (1:1) — the slide renders pixel-exact.</li>
+            <li>Set dimensions to <span className="text-slate-200">1080 × 1920</span> (9:16), <span className="text-slate-200">1920 × 1080</span> (16:9), or <span className="text-slate-200">1080 × 1080</span> (1:1) — at the exact size the nav bar hides itself and the slide renders pixel-exact, edge to edge.</li>
             <li>Ctrl+Shift+P → &ldquo;Capture screenshot&rdquo; saves the frame as a PNG.</li>
             <li>Repeat per slide, then drop the PNGs into the slideshow app in order.</li>
           </ol>
