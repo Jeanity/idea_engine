@@ -4,7 +4,8 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { SiteFooter } from '@/components/site-footer'
 import SignInForm from './sign-in-form'
 
-export const metadata = { title: 'Sign in — HadIdea' }
+// noindex: a sign-in form has no search value and dilutes the public pages.
+export const metadata = { title: 'Sign in', robots: { index: false, follow: false } }
 
 export default function SignInPage() {
   return (

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — HadIdea',
+  title: 'Terms of Service',
   description: 'The terms that govern use of HadIdea.',
 }
 

@@ -9,6 +9,7 @@ import { DEMO_STATS } from '@/lib/demo-stats'
 import { createPublicClient, createServiceClient } from '@/lib/db'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { toPublicDisplayName } from '@/lib/public-name'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
 
 // Revalidate periodically (ISR) rather than once at build time — otherwise an
 // admin featuring/unfeaturing testimonials wouldn't show up until the next
@@ -370,11 +371,34 @@ function ReportCard({ card }: { card: ReportCardData }) {
   )
 }
 
+// Product schema for search rich results and AI assistants — the offer price
+// mirrors the "Reports from US$19.95" footnote below; update both together.
+const PRODUCT_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: SITE_NAME,
+  url: SITE_URL,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  description: SITE_DESCRIPTION,
+  offers: {
+    '@type': 'Offer',
+    price: '19.95',
+    priceCurrency: 'USD',
+    description: 'Reports from US$19.95 — launch pricing may differ.',
+  },
+  publisher: { '@id': `${SITE_URL}/#organization` },
+}
+
 export default async function LandingPage() {
   const [testimonials, offers] = await Promise.all([getTestimonials(), getHomepageOffers()])
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(PRODUCT_JSONLD) }}
+      />
       {/* ------------------------------------------------------------------ */}
       {/* Hero                                                               */}
       {/* ------------------------------------------------------------------ */}

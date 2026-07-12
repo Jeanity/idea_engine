@@ -9,9 +9,9 @@ import { SAMPLE_IDEA, SAMPLE_REPORT_SECTIONS } from '@/lib/sample-report'
 import { SampleGallery, type GalleryCard, type FallbackCard } from './sample-gallery-client'
 
 export const metadata: Metadata = {
-  title: 'Sample reports — HadIdea',
+  title: 'Sample Business Plans & Idea Reports',
   description:
-    'Browse example HadIdea reports — viability score, competitors, cost breakdown, legal & compliance, and prioritised next steps.',
+    'See real examples: viability scores, competitor research with real prices, startup cost breakdowns, legal checklists, and week-one action plans.',
 }
 
 const FALLBACK_CARD: FallbackCard = {

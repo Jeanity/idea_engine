@@ -4,8 +4,8 @@ import { createDbClient } from '@/lib/db'
 import { ContactForm } from './contact-form'
 
 export const metadata: Metadata = {
-  title: 'Contact — HadIdea',
-  description: 'Get in touch — feedback, questions, complaints, billing, or partnerships.',
+  title: 'Contact',
+  description: 'Get in touch with HadIdea — feedback, questions, complaints, billing, or partnerships.',
 }
 
 async function getPrefill(): Promise<{ name: string; email: string }> {

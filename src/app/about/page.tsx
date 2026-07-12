@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { StaticPageShell } from '@/components/static-page-shell'
 
 export const metadata: Metadata = {
-  title: 'About — HadIdea',
-  description: 'What HadIdea does, and the philosophy behind it.',
+  title: { absolute: 'About HadIdea — From Raw Idea to Real-World Plan' },
+  description:
+    'Most business ideas die as a thought — not because they were bad, but because nobody checked. HadIdea turns raw ideas into researched, scored business plans.',
 }
 
 function H2({ children }: { children: React.ReactNode }) {

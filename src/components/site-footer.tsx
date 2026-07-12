@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CookiePreferencesLink } from '@/components/cookie-preferences-link'
+import { SOCIAL_LINKS } from '@/lib/site'
 
 /**
  * Shared footer for public pages (homepage, /sample-report, /sign-in, and the
@@ -18,6 +19,17 @@ export function SiteFooter() {
             <p className="mt-2 text-xs text-slate-500 light:text-gray-400">
               Turn a raw idea into a researched, actionable report.
             </p>
+            <a
+              href={SOCIAL_LINKS.facebook}
+              target="_blank"
+              rel="noopener"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors light:text-gray-500 light:hover:text-gray-900"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M13.5 21.9v-7.4h2.5l.5-3.1h-3V9.4c0-.9.3-1.6 1.6-1.6H16.6V5c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1v2.4H7.5v3.1h2.7v7.4a10 10 0 1 1 3.3 0Z" />
+              </svg>
+              Facebook
+            </a>
           </div>
 
           <div>

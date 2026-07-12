@@ -3,7 +3,7 @@ import { CAMPAIGNS } from './campaigns'
 
 // Internal ad-production index — unlisted (no nav links to it) and noindexed.
 export const metadata = {
-  title: 'Ad studio — HadIdea (internal)',
+  title: { absolute: 'Ad studio — HadIdea (internal)' },
   robots: { index: false, follow: false },
 }
 

@@ -3,12 +3,76 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import { AnalyticsBeacon } from '@/components/analytics-beacon'
 import { CookieConsentBanner } from '@/components/cookie-consent'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_LINKS } from '@/lib/site'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
+const DEFAULT_TITLE = 'HadIdea — Turn Your Business Idea into a Real Plan'
+
 export const metadata: Metadata = {
-  title: 'HadIdea',
-  description: 'Turn your raw business idea into a structured opportunity report.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: DEFAULT_TITLE,
+    // Child pages set a bare title ("FAQ") — never append "— HadIdea"
+    // themselves, this template does it.
+    template: `%s — ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Google ignores the keywords tag; some smaller engines and AI crawlers
+  // still read it. The real targeting lives in titles, descriptions, page
+  // copy, and the JSON-LD below.
+  keywords: [
+    'business idea',
+    'validate business idea',
+    'business plan from an idea',
+    'AI business plan',
+    'how to start a business with an idea',
+    'turn my idea into a business',
+    'is my business idea viable',
+    'startup costs',
+    'competitor research',
+    'make my idea real',
+  ],
+  // './' resolves per-page against metadataBase — every page gets a
+  // self-referencing canonical without repeating it in child metadata.
+  alternates: { canonical: './' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    url: './',
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
+}
+
+// Site-wide identity for search engines and AI assistants. Product-level
+// schema (SoftwareApplication with the offer) lives on the homepage.
+const IDENTITY_JSONLD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.svg`,
+      sameAs: [SOCIAL_LINKS.facebook],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      publisher: { '@id': `${SITE_URL}/#organization` },
+    },
+  ],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +92,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `try{var el=document.documentElement,t=localStorage.getItem('theme');if(t==='light'){el.classList.remove('smexy');el.classList.add('light')}else if(localStorage.getItem('smexy_off')==='1')el.classList.remove('smexy')}catch(e){}`,
           }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(IDENTITY_JSONLD) }}
         />
       </head>
       {/* suppressHydrationWarning: browser extensions inject attributes into

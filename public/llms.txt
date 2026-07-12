@@ -1,0 +1,15 @@
+# HadIdea
+
+> HadIdea turns raw business ideas into researched, scored business plans. Describe your idea in plain English; HadIdea researches it with live web search — real competitors and their prices, startup and running costs, legal and permit requirements for your country, and funding options — and delivers a structured report with viability scores and a prioritised week-one action plan.
+
+HadIdea is for anyone who has a business idea and wants to know if it will actually work before spending money on it: side-hustlers, first-time founders, inventors, and small-business starters. Reports are honest by design — scores are calibrated against the evidence, and if an idea has no real edge yet, the report says so and names the smallest change that would create one.
+
+What a report includes: a viability snapshot (market opportunity, execution difficulty, capital required, time to revenue), a success outlook score, demand evidence and edge-strength scores, a competitor breakdown with real prices and gaps, cost and gross-margin math, a budget-fit verdict against the founder's stated capital, a legal and compliance checklist with official links, a pricing recommendation, risks with mitigations, prioritised next steps, and paste-ready demand-test copy (poll, ad line, forum post).
+
+## Pages
+
+- [Home](https://hadidea.com/): What HadIdea does and how it works
+- [Sample reports](https://hadidea.com/sample-report): Full example reports with real research structure
+- [FAQ](https://hadidea.com/faq): What reports include, accuracy, idea ownership, pricing, supported idea types
+- [About](https://hadidea.com/about): The philosophy behind the product
+- [Contact](https://hadidea.com/contact): Feedback, questions, partnerships

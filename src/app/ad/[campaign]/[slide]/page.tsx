@@ -5,7 +5,7 @@ import { FORMAT_DIMS, SlideFrame, type SlideFormat } from '../../slide-frame'
 
 // Internal ad-production pages — must never end up in search results.
 export const metadata = {
-  title: 'Ad slide — HadIdea (internal)',
+  title: { absolute: 'Ad slide — HadIdea (internal)' },
   robots: { index: false, follow: false },
 }
 
