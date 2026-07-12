@@ -24,15 +24,7 @@ export default async function DashboardPage() {
         <AppHeader email={user.email!} />
 
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="relative z-10 rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm p-8">
-            <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">What&apos;s the idea?</h1>
-            <p className="text-sm text-slate-400 light:text-gray-500 mb-6">
-              Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
-            </p>
-            <NewIdeaForm />
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-5">
+          <div className="rounded-2xl border border-white/10 bg-white/5 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-5 mb-6">
             <div className="grid grid-cols-3 gap-4 text-center mb-4">
               <div>
                 <p className="text-lg font-semibold text-white light:text-gray-900">{DEMO_STATS.ideasLast30Days}</p>
@@ -52,6 +44,49 @@ export default async function DashboardPage() {
                 See a sample report →
               </Link>
             </div>
+          </div>
+
+          <div className="relative z-10 rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm p-8">
+            <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">What&apos;s the idea?</h1>
+            <p className="text-sm text-slate-400 light:text-gray-500 mb-6">
+              Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
+            </p>
+            <NewIdeaForm />
+          </div>
+
+          {/* What happens after submitting — expectations set honestly:
+              the initial report completes while the user watches; only the
+              full report takes minutes and sends the email link. */}
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 light:border-gray-200 light:bg-white light:shadow-sm px-6 py-5">
+            <h2 className="text-sm font-semibold text-white light:text-gray-900">What happens next</h2>
+            <ol className="mt-4 space-y-4">
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-300 light:bg-indigo-100 light:text-indigo-700">1</span>
+                <p className="text-sm text-slate-400 light:text-gray-600">
+                  <span className="font-medium text-slate-200 light:text-gray-900">A few quick questions.</span>{' '}
+                  We ask a handful of targeted follow-ups — your budget, your time, what makes your
+                  version different — because they change the answer.
+                </p>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-300 light:bg-indigo-100 light:text-indigo-700">2</span>
+                <p className="text-sm text-slate-400 light:text-gray-600">
+                  <span className="font-medium text-slate-200 light:text-gray-900">Your initial report.</span>{' '}
+                  Generated while you watch — viability scores and the shape of the opportunity.
+                  Enough to know whether your idea is worth the full deep-dive before you commit to
+                  anything.
+                </p>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-300 light:bg-indigo-100 light:text-indigo-700">3</span>
+                <p className="text-sm text-slate-400 light:text-gray-600">
+                  <span className="font-medium text-slate-200 light:text-gray-900">The full report.</span>{' '}
+                  Live web research takes a few minutes, so feel free to close the tab — we email
+                  you a link the moment it&apos;s ready. Competitors with real prices, costs and
+                  margins, legal for your country, funding options, and a week-one action plan.
+                </p>
+              </li>
+            </ol>
           </div>
         </div>
       </div>
