@@ -258,6 +258,26 @@ function ConsoleTicker({ stepKey }: { stepKey: string }) {
   )
 }
 
+// Rounded-up wait estimate from queue depth. 8 mirrors generate-report's
+// Inngest concurrency cap (src/lib/inngest/generate-report.ts) and ~4 min
+// mirrors a typical full-report run — keep in sync if either changes. Always
+// rounds UP to the next 5 minutes: arriving early delights, late annoys. A
+// position number is deliberately never shown (it invites refresh-watching
+// and reveals how quiet the site is on an average day) — time is the only
+// currency users actually care about.
+function queueWaitLabel(depth: number): string {
+  const waves = Math.ceil(depth / 8)
+  const minutes = Math.max(5, Math.ceil((waves * 4) / 5) * 5)
+  return minutes >= 60 ? 'about an hour' : `about ${minutes} minutes`
+}
+
+// Only surface busy-ness when it's flattering — silence when quiet.
+const HIGH_DEMAND_QUEUE_DEPTH = 10
+
+// Don't mention the queue at all until it's clearly not just normal pickup
+// latency — under this, the standard progress screen carries the wait fine.
+const QUEUE_NOTICE_AFTER_MS = 25_000
+
 function ProgressScreen({ ideaId, restatement, onComplete }: {
   ideaId: string
   restatement: string | null
@@ -266,6 +286,14 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
   const [report, setReport] = useState<ReportData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
+  // When we FIRST saw this run in 'queued' (null once it starts running),
+  // the over-threshold flag derived from it on each poll tick (a ref + poll-
+  // time comparison because render must stay pure — no Date.now() there),
+  // and the sitewide queued-report count from the poll. Together these drive
+  // the "you're in line" notice below.
+  const queuedSinceRef = useRef<number | null>(null)
+  const [queuedLong, setQueuedLong] = useState(false)
+  const [queueDepth, setQueueDepth] = useState<number | null>(null)
 
   const triggerGeneration = useCallback(async () => {
     setGenerating(true)
@@ -280,6 +308,7 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error ?? `Report generation failed to start (server error ${res.status}). Please try again.`)
       setReport(prev => prev ?? { id: data.reportId, status: data.status, sections: {}, preview_sections: {}, error: null })
+      if (data.status === 'queued') queuedSinceRef.current ??= Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start generation')
     } finally {
@@ -305,6 +334,14 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
         const data = await res.json()
         if (data.report) {
           setReport(data.report)
+          setQueueDepth(typeof data.queueDepth === 'number' ? data.queueDepth : null)
+          if (data.report.status === 'queued') {
+            queuedSinceRef.current ??= Date.now()
+            setQueuedLong(Date.now() - queuedSinceRef.current > QUEUE_NOTICE_AFTER_MS)
+          } else {
+            queuedSinceRef.current = null
+            setQueuedLong(false)
+          }
           if (data.report.status === 'complete') {
             clearInterval(interval)
             onComplete(data.report)
@@ -323,6 +360,13 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
     const done = completedKeys.includes(key)
     return !done && (i === 0 || completedKeys.includes(STEPS[i - 1]?.key ?? ''))
   })?.key
+
+  // A full-report run preserves the teaser's preview_sections (the /full
+  // route clears only `sections`), while a fresh/regenerated teaser resets
+  // both to {} — so non-empty previews during a run means this is the full
+  // report, the only run that sends a report-ready email. Survives refresh,
+  // unlike anything threaded from the button that started the run.
+  const isFullRun = Object.keys(report?.preview_sections ?? {}).length > 0
 
   if (error) {
     return (
@@ -362,6 +406,22 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
           </div>
 
           <GearCluster />
+
+          {queuedLong && (
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.08] px-5 py-4 mb-8 text-center">
+              <p className="text-sm text-indigo-200">
+                You&apos;re in line — reports are generated in the order they&apos;re requested.{' '}
+                {queueDepth !== null && queueDepth > 1
+                  ? `Yours should start within ${queueWaitLabel(queueDepth)}.`
+                  : 'Yours should start shortly.'}
+              </p>
+              {(queueDepth ?? 0) >= HIGH_DEMAND_QUEUE_DEPTH && (
+                <p className="text-xs text-indigo-300/80 mt-1.5">
+                  High demand right now — thanks for your patience!
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-0">
             {STEPS.map(({ key, label }, i) => {
@@ -411,7 +471,11 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
           )}
         </div>
       </div>
-      <p className="text-center text-xs text-slate-500 mt-4">This usually takes 1–3 minutes.</p>
+      <p className="text-center text-xs text-slate-500 mt-4 px-6 pb-6">
+        {isFullRun
+          ? 'The full report usually takes a few minutes — no need to keep this page open, we’ll email you the moment it’s ready.'
+          : 'This usually takes 1–3 minutes.'}
+      </p>
     </div>
   )
 }

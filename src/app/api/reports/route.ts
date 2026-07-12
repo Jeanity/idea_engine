@@ -133,5 +133,21 @@ export async function GET(request: NextRequest) {
   // payload would overwrite the gated one with the full snapshot. The
   // service client only reads the app-global toggle (app_settings has no
   // RLS policies at all); the report row itself came through RLS above.
-  return NextResponse.json({ report: await maybeGateReport(createServiceClient(), report) })
+  const service = createServiceClient()
+
+  // Queue depth for the progress screen's "you're in line" notice — only
+  // computed while this report is actually waiting (queued is a rare,
+  // short-lived state, so the extra count query almost never runs). A bare
+  // count of queued reports is the only cross-user fact that ships: no ids,
+  // no owners, no position ranking (deliberately — see the progress screen).
+  let queueDepth: number | undefined
+  if (report.status === 'queued') {
+    const { count } = await service
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'queued')
+    queueDepth = count ?? undefined
+  }
+
+  return NextResponse.json({ report: await maybeGateReport(service, report), queueDepth })
 }
