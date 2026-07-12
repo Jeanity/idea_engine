@@ -27,15 +27,30 @@ async function getPrefill(): Promise<{ name: string; email: string }> {
   }
 }
 
-export default async function ContactPage() {
+const PRESELECTABLE = ['feedback', 'complaint', 'question', 'billing', 'partnership'] as const
+type Preselectable = (typeof PRESELECTABLE)[number]
+
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>
+}) {
   const prefill = await getPrefill()
+
+  // ?category=billing preselects the reason — used by /support, the FAQ, and
+  // (payments build) order-confirmation emails. Unknown values fall back to
+  // the form's own default.
+  const { category } = await searchParams
+  const defaultCategory = PRESELECTABLE.includes(category as Preselectable)
+    ? (category as Preselectable)
+    : undefined
 
   return (
     <StaticPageShell
       title="Contact us"
       intro="Feedback, questions, complaints, billing & refunds, or partnership enquiries — we read everything."
     >
-      <ContactForm defaultName={prefill.name} defaultEmail={prefill.email} />
+      <ContactForm defaultName={prefill.name} defaultEmail={prefill.email} defaultCategory={defaultCategory} />
     </StaticPageShell>
   )
 }

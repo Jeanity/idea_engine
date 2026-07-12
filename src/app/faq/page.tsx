@@ -85,6 +85,40 @@ const FAQS: { q: string; a: React.ReactNode; plain: string }[] = [
     ),
   },
   {
+    q: 'How do refunds work?',
+    plain: "Full refund if your report hasn't been generated yet, no questions asked. If a report is defective, we'll regenerate it or refund it in full — your choice. We don't offer change-of-mind refunds after a report is delivered, and nothing in our policy limits your rights under Australian Consumer Law. Details are in the Terms.",
+    a: (
+      <p>
+        Full refund if your report hasn&apos;t been generated yet, no questions asked. If a report is
+        defective, we&apos;ll regenerate it or refund it in full — your choice. We don&apos;t offer
+        change-of-mind refunds after a report is delivered, and nothing in our policy limits your
+        rights under Australian Consumer Law. The full policy is in the{' '}
+        <a href="/terms" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+          Terms
+        </a>
+        .
+      </p>
+    ),
+  },
+  {
+    q: 'I have a problem with my purchase — how do I get help?',
+    plain: "Head to the Support page, or contact us with the “Billing & refunds” option and the email you purchased with. Billing messages are flagged and handled first — charge problems are time-sensitive and we treat them that way.",
+    a: (
+      <p>
+        Head to the{' '}
+        <a href="/support" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+          Support
+        </a>{' '}
+        page, or{' '}
+        <a href="/contact?category=billing" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
+          contact us with the &ldquo;Billing &amp; refunds&rdquo; option
+        </a>{' '}
+        and the email you purchased with. Billing messages are flagged and handled first — charge
+        problems are time-sensitive and we treat them that way.
+      </p>
+    ),
+  },
+  {
     q: 'Can I delete my data?',
     plain: "Yes. Deleting your account from account settings permanently erases your ideas, answers, and reports \u2014 there's no recovery after that.",
     a: (

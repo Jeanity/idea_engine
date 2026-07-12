@@ -17,8 +17,16 @@ const inputCls =
   'w-full rounded-lg border border-white/10 bg-slate-900/60 light:bg-white light:border-gray-300 px-3 py-2 text-sm text-white light:text-gray-900 placeholder:text-slate-600 light:placeholder:text-gray-400 focus:outline-none focus:border-indigo-500'
 const labelCls = 'block text-xs font-medium text-slate-400 light:text-gray-500 mb-1.5'
 
-export function ContactForm({ defaultName, defaultEmail }: { defaultName: string; defaultEmail: string }) {
-  const [category, setCategory] = useState<Category>('question')
+export function ContactForm({
+  defaultName,
+  defaultEmail,
+  defaultCategory,
+}: {
+  defaultName: string
+  defaultEmail: string
+  defaultCategory?: Category
+}) {
+  const [category, setCategory] = useState<Category>(defaultCategory ?? 'question')
   const [name, setName] = useState(defaultName)
   const [email, setEmail] = useState(defaultEmail)
   const [message, setMessage] = useState('')
