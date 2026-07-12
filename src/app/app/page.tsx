@@ -48,10 +48,23 @@ export default async function DashboardPage() {
 
           <div className="relative z-10 rounded-2xl border border-white/10 bg-slate-900/80 light:border-gray-200 light:bg-white light:shadow-sm p-8">
             <h1 className="text-2xl font-semibold text-white light:text-gray-900 mb-1">What&apos;s the idea?</h1>
-            <p className="text-sm text-slate-400 light:text-gray-500 mb-6">
+            <p className="text-sm text-slate-400 light:text-gray-500 mb-2">
               Describe it in plain English — rough is fine. The engine turns it into a researched, costed plan.
             </p>
+            <p className="text-xs text-slate-500 light:text-gray-400 mb-6">
+              Tip: mention where you are and who it&apos;s for — location sharpens the competitor,
+              cost, and legal research.
+            </p>
             <NewIdeaForm />
+            <div className="mt-6 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[11px] text-slate-500 light:text-gray-400">Works for:</span>
+              {['Physical products', 'Local services', 'Software & apps', 'Ecommerce', 'Content & education', 'Marketplaces', 'Inventions'].map(t => (
+                <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-slate-400 light:border-gray-200 light:bg-gray-100 light:text-gray-500">
+                  {t}
+                </span>
+              ))}
+              <span className="text-[11px] text-slate-500 light:text-gray-400">…and anything else.</span>
+            </div>
           </div>
 
           {/* What happens after submitting — expectations set honestly:
@@ -87,6 +100,14 @@ export default async function DashboardPage() {
                 </p>
               </li>
             </ol>
+            {/* Wording mirrors the FAQ's "Who owns my idea?" answer — keep in sync. */}
+            <p className="mt-5 flex items-start gap-1.5 border-t border-white/10 pt-4 text-xs text-slate-500 light:border-gray-200 light:text-gray-400">
+              <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              Your idea stays yours — never shared, never used to train models, and you can delete
+              it any time from account settings.
+            </p>
           </div>
         </div>
       </div>
