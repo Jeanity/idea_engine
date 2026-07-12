@@ -209,6 +209,14 @@ export const generateReport = inngest.createFunction(
   {
     id: 'generate-report',
     retries: 0,
+    // Anthropic TPM is the real ceiling under burst load: each run makes ~6
+    // calls, and the search-backed ones carry ~100k+ input tokens. Without a
+    // cap, N simultaneous requests all hit the API at once and rate-limited
+    // steps degrade to fallback/unavailable sections (PARTIAL reports).
+    // With it, Inngest queues excess runs instead — queued users just wait
+    // longer, which the progress screen + report-ready email already absorb.
+    // Tune upward as the Anthropic tier's rate limits grow.
+    concurrency: [{ limit: 8 }],
     triggers: [{ event: 'idea-engine/full-report.requested' }],
   },
   async ({ event, step }: { event: { data: { reportId: string; ideaId: string; userId: string } }; step: StepRunner }) => {

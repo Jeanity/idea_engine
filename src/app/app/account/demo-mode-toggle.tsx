@@ -3,7 +3,18 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function DemoModeToggle({ demoMode }: { demoMode: boolean }) {
+// All three demo switches share this control — they differ only in which
+// route the POST hits (every one accepts the same { demo_mode } body):
+//   own account (default)  → /api/profile/demo-mode
+//   sitewide               → /api/admin/demo-mode
+//   another user's account → /api/admin/users/[id]/demo-mode
+export default function DemoModeToggle({
+  demoMode,
+  endpoint = '/api/profile/demo-mode',
+}: {
+  demoMode: boolean
+  endpoint?: string
+}) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -12,7 +23,7 @@ export default function DemoModeToggle({ demoMode }: { demoMode: boolean }) {
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch('/api/profile/demo-mode', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ demo_mode: !demoMode }),

@@ -1,5 +1,6 @@
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
+import { providerOverrideForUser } from '@/lib/demo-mode'
 import { DYNAMIC_QUESTIONS_SYSTEM_PROMPT, buildDynamicQuestionsMessage } from '@/lib/prompts/dynamic-questions'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ALL_MAPS_TO_KEYS, validateQuestion, type Question } from '@/lib/validate-question'
@@ -79,7 +80,8 @@ function loadBank(archetype: string) {
 async function generateDynamicQuestions(
   idea: { raw_text: string; archetype: string; location_country: string; location_region: string | null; restatement: string | null },
   existingAnswers: Array<{ question_key: string; answer_text: string }>,
-  staticBank: Question[]
+  staticBank: Question[],
+  provider: 'mock' | undefined
 ): Promise<Question[]> {
   if (process.env.DYNAMIC_QUESTIONS_ENABLED === 'false') return []
 
@@ -120,6 +122,7 @@ async function generateDynamicQuestions(
       system: DYNAMIC_QUESTIONS_SYSTEM_PROMPT,
       maxTokens: 1024,
       tag: 'dynamic-questions',
+      provider,
     })
 
     const raw = JSON.parse(text)
@@ -173,7 +176,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   let dynamicQuestions: Question[] = []
   if (allRequiredAnswered && staticBank.length > 0) {
-    dynamicQuestions = await generateDynamicQuestions(idea, existingAnswers ?? [], staticBank)
+    // Demo mode (sitewide or this user's flag) mocks this call too, so a demo
+    // account's whole intake→report flow is spend-free, not just the reports.
+    const provider = await providerOverrideForUser(createServiceClient(), user.id)
+    dynamicQuestions = await generateDynamicQuestions(idea, existingAnswers ?? [], staticBank, provider)
   }
 
   return NextResponse.json({

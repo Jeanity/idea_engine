@@ -1,5 +1,6 @@
-import { createDbClient } from '@/lib/db'
+import { createDbClient, createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
+import { providerOverrideForUser } from '@/lib/demo-mode'
 import { CLASSIFY_SYSTEM_PROMPT, buildClassifyUserMessage } from '@/lib/prompts/classify'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { IdeaArchetype } from '@/lib/database.types'
@@ -16,7 +17,7 @@ interface ClassifyResult {
   detected_signals: string[]
 }
 
-async function classify(idea: string, location: string | null): Promise<ClassifyResult> {
+async function classify(idea: string, location: string | null, provider: 'mock' | undefined): Promise<ClassifyResult> {
   const locationForPrompt = location && location.trim().length > 0 ? location : 'unknown'
   const attempt = async () => {
     const { text } = await callAI({
@@ -24,6 +25,7 @@ async function classify(idea: string, location: string | null): Promise<Classify
       system: CLASSIFY_SYSTEM_PROMPT,
       maxTokens: 256,
       tag: 'classifier',
+      provider,
     })
     return JSON.parse(text) as ClassifyResult
   }
@@ -65,7 +67,10 @@ export async function POST(request: NextRequest) {
 
   // Location is collected later, at the questions step (country is required
   // there before the report can run) — classification doesn't need it.
-  const result = await classify(raw_text.trim(), null)
+  // Demo mode (sitewide or this user's flag) mocks classification too, so a
+  // demo account's whole intake→report flow is spend-free.
+  const provider = await providerOverrideForUser(createServiceClient(), user.id)
+  const result = await classify(raw_text.trim(), null, provider)
 
   const { data: idea, error } = await supabase
     .from('ideas')

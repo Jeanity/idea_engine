@@ -17,6 +17,11 @@ export const generateTeaser = inngest.createFunction(
   {
     id: 'generate-teaser',
     retries: 2,
+    // Teasers are one small no-search Haiku call, so the cap is generous —
+    // it exists only so a signup burst can't trip Anthropic request-rate
+    // limits. Kept well above generate-report's cap because a teaser is
+    // watched live by the user; queueing here hurts UX far more.
+    concurrency: [{ limit: 25 }],
     triggers: [{ event: 'idea-engine/report.requested' }],
   },
   async ({ event }: { event: { data: { reportId: string; ideaId: string; userId: string } } }) => {

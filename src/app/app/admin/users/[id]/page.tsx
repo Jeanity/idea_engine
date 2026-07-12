@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import { DeleteUserButton } from '../delete-user-button'
+import DemoModeToggle from '@/app/app/account/demo-mode-toggle'
 
 export const metadata = { title: 'User — Admin — HadIdea' }
 
@@ -112,9 +113,14 @@ export default async function AdminUserDetailPage({
               <dt className="text-slate-400 light:text-gray-500">Marketing opt-in</dt>
               <dd className="text-slate-200 light:text-gray-800">{profile?.marketing_opt_in ? 'Yes' : 'No'}</dd>
             </div>
-            <div className="flex justify-between gap-4">
+            <div className="flex justify-between gap-4 items-center">
               <dt className="text-slate-400 light:text-gray-500">Demo mode</dt>
-              <dd className="text-slate-200 light:text-gray-800">{profile?.demo_mode ? 'Yes' : 'No'}</dd>
+              <dd className="text-slate-200 light:text-gray-800">
+                {/* Reports for this user run from canned fixtures while on —
+                    no API spend. How a test account exercises user-only flows
+                    (promo survey gates etc.) for free. */}
+                <DemoModeToggle demoMode={profile?.demo_mode ?? false} endpoint={`/api/admin/users/${id}/demo-mode`} />
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-slate-400 light:text-gray-500">Joined</dt>

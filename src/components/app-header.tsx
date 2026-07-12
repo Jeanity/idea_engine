@@ -4,6 +4,7 @@ import { AccountMenu } from '@/components/account-menu'
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { readPromoConfig } from '@/lib/promo'
+import { readGlobalDemoMode } from '@/lib/demo-mode'
 
 export async function AppHeader({ email }: { email: string }) {
   // A cheap count-only query — cheaper than threading an "hasIdeas" prop
@@ -17,12 +18,15 @@ export async function AppHeader({ email }: { email: string }) {
 
   // Admin-only mode badges. The app-wide pill shows Promo vs Live (promo is
   // global billing state — Danny needs to see it at a glance); the amber Demo
-  // pill is the admin's own per-profile fixture mode and renders alongside,
-  // since both can be on at once. Service client only after the admin check,
-  // per project ground rules (app_settings has no RLS policies).
+  // pill is the admin's own per-profile fixture mode; the red Site Demo pill
+  // means EVERY user is getting fixture reports — the one state that must
+  // never linger unnoticed. All can be on at once. Service client only after
+  // the admin check, per project ground rules (app_settings has no RLS
+  // policies).
   const isAdmin = isAdminEmail(email)
   let demoMode = false
   let promoMode = false
+  let siteDemoMode = false
   if (isAdmin) {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
@@ -33,7 +37,9 @@ export async function AppHeader({ email }: { email: string }) {
         .single()
       demoMode = profile?.demo_mode ?? false
     }
-    promoMode = (await readPromoConfig(createServiceClient())).enabled
+    const service = createServiceClient()
+    promoMode = (await readPromoConfig(service)).enabled
+    siteDemoMode = await readGlobalDemoMode(service)
   }
 
   return (
@@ -56,6 +62,11 @@ export async function AppHeader({ email }: { email: string }) {
         {isAdmin && demoMode && (
           <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-500/15 text-amber-300 light:bg-amber-100 light:text-amber-700">
             Demo Mode
+          </span>
+        )}
+        {isAdmin && siteDemoMode && (
+          <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-500/15 text-red-300 light:bg-red-100 light:text-red-700">
+            Site Demo — all users on fixtures
           </span>
         )}
       </div>
