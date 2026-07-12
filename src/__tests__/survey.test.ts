@@ -4,6 +4,7 @@ import {
   validateQuestionFields,
   audienceMatches,
   pickEligibleSurvey,
+  idsNeedingFetch,
   type SurveyQuestionForValidation,
   type AudienceSignals,
   type EligibleSurveyRow,
@@ -215,5 +216,31 @@ describe('pickEligibleSurvey', () => {
     const answered = s('answered')
     const targeted = s('targeted', { audience: 'first_purchase' })
     expect(pickEligibleSurvey([answered, targeted], new Set(['answered']), noSignals)).toBeNull()
+  })
+})
+
+describe('idsNeedingFetch', () => {
+  const base = { enabled: true, initial_survey_id: 'survey-initial' as string | null, full_survey_id: 'survey-full' as string | null }
+  const none = new Set<string>()
+
+  it('returns both ids when promo is enabled and neither has been answered', () => {
+    expect(idsNeedingFetch(base, none)).toEqual({ initial: 'survey-initial', full: 'survey-full' })
+  })
+
+  it('returns nulls when the promo is disabled, regardless of config ids', () => {
+    expect(idsNeedingFetch({ ...base, enabled: false }, none)).toEqual({ initial: null, full: null })
+  })
+
+  it('returns null for ids that are unset', () => {
+    expect(idsNeedingFetch({ ...base, initial_survey_id: null, full_survey_id: null }, none)).toEqual({ initial: null, full: null })
+  })
+
+  it('excludes an id the user has already answered', () => {
+    expect(idsNeedingFetch(base, new Set(['survey-initial']))).toEqual({ initial: null, full: 'survey-full' })
+    expect(idsNeedingFetch(base, new Set(['survey-full']))).toEqual({ initial: 'survey-initial', full: null })
+  })
+
+  it('returns both null once both have been answered', () => {
+    expect(idsNeedingFetch(base, new Set(['survey-initial', 'survey-full']))).toEqual({ initial: null, full: null })
   })
 })

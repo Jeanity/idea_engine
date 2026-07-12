@@ -25,6 +25,13 @@ export interface PromoConfig {
   started_at: string | null
   ended_at: string | null
   ended_reason: 'spend_cap' | 'report_cap' | 'manual' | null
+  /** Overlay survey (surveys.promo_gate = true) a promo user must complete,
+   *  on their completed INITIAL report, before starting the full report.
+   *  null = no gate. See src/lib/survey.ts pickPromoGateSurveys. */
+  initial_survey_id: string | null
+  /** Overlay survey a promo user must complete, on their completed FULL
+   *  report, before reading it / seeing the PDF download button. */
+  full_survey_id: string | null
 }
 
 export const DEFAULT_PROMO_CONFIG: PromoConfig = {
@@ -35,6 +42,8 @@ export const DEFAULT_PROMO_CONFIG: PromoConfig = {
   started_at: null,
   ended_at: null,
   ended_reason: null,
+  initial_survey_id: null,
+  full_survey_id: null,
 }
 
 export interface PromoUsage {
@@ -198,6 +207,12 @@ export type PromoGateCheckResult =
  * reuse signals. Any denial here reuses the exact per_user_limit message so
  * the product never reveals which signal tripped.
  *
+ * Also checked here: the initial-report survey gate (migration 028). If the
+ * admin has set config.initial_survey_id, the caller must have a
+ * survey_responses row for it before a full report can start. Unlike the
+ * abuse denials above, that message is deliberately specific — see the
+ * comment at the check itself.
+ *
  * Returns a user-facing message alongside the decision; callers map
  * `allowed: false` to a 403. On `allowed: true`, also returns the
  * normalizedEmail/ipHash computed here so the caller can pass them straight
@@ -228,6 +243,28 @@ export async function checkAndApplyPromoGate(
   // Disposable-email blocklist — pure, no DB dependency, always enforced.
   if (isDisposableEmail(signals.email)) {
     return { allowed: false, message: PROMO_MESSAGES.per_user_limit }
+  }
+
+  // Initial-report survey gate (migration 028) — unlike every other denial
+  // in this function, this message is deliberately SPECIFIC. The others
+  // reuse one generic string on purpose so the product never reveals which
+  // abuse signal tripped; this one is an instruction ("go answer the
+  // survey"), not a security signal, so telling the user exactly what to do
+  // is the whole point. Degrade gracefully on a read error — a DB hiccup
+  // should never brick the promo, so we allow through rather than deny.
+  if (config.initial_survey_id) {
+    const { count, error: surveyError } = await service
+      .from('survey_responses')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('survey_id', config.initial_survey_id)
+
+    if (!surveyError && (count ?? 0) === 0) {
+      return {
+        allowed: false,
+        message: 'Quick one first: complete the short survey on your initial report — it unlocks the full report.',
+      }
+    }
   }
 
   const normalizedEmail = normalizeEmail(signals.email)

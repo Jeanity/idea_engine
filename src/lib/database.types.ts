@@ -703,6 +703,7 @@ export type Database = {
           audience: SurveyAudience
           sort_order: number
           created_at: string
+          promo_gate: boolean
         }
         Insert: {
           id?: string
@@ -713,6 +714,7 @@ export type Database = {
           audience: SurveyAudience
           sort_order?: number
           created_at?: string
+          promo_gate?: boolean
         }
         Update: {
           name?: string
@@ -721,6 +723,7 @@ export type Database = {
           placement?: SurveyPlacement
           audience?: SurveyAudience
           sort_order?: number
+          promo_gate?: boolean
         }
         Relationships: [
           {

@@ -58,6 +58,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!Number.isInteger(n)) return NextResponse.json({ error: 'sort_order must be an integer.' }, { status: 400 })
     update.sort_order = n
   }
+  if ('promo_gate' in body) {
+    if (typeof body.promo_gate !== 'boolean') return NextResponse.json({ error: 'promo_gate must be a boolean.' }, { status: 400 })
+    update.promo_gate = body.promo_gate
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No fields to update.' }, { status: 400 })

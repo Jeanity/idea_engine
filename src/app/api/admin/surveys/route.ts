@@ -1,7 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
-import { isMissingTable } from '@/lib/app-settings'
+import { isMissingTable, isMissingColumn } from '@/lib/app-settings'
 import { validateSurveyFields } from '@/lib/survey'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -25,11 +25,14 @@ export async function GET() {
 
   const { data: surveys, error: sError } = await service
     .from('surveys')
-    .select('id, name, group_id, active, placement, audience, sort_order, created_at')
+    .select('id, name, group_id, active, placement, audience, sort_order, created_at, promo_gate')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
 
-  if (isMissingTable(sError)) {
+  // isMissingColumn (42703) covers migration 028 (surveys.promo_gate) not
+  // having run yet — same "run the migration" notice as a missing table,
+  // since the admin surveys page can't render meaningfully without it.
+  if (isMissingTable(sError) || isMissingColumn(sError)) {
     return NextResponse.json({ migrationMissing: true })
   }
   if (sError) {
@@ -87,6 +90,16 @@ export async function POST(request: NextRequest) {
   const parsed = validateSurveyFields(body)
   if ('error' in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
+  // promo_gate: reserves this survey for the promo-overlay flow instead of
+  // normal placement rotation (src/lib/survey.ts). Optional, defaults false.
+  let promoGate = false
+  if ('promo_gate' in body) {
+    if (typeof body.promo_gate !== 'boolean') {
+      return NextResponse.json({ error: 'promo_gate must be a boolean.' }, { status: 400 })
+    }
+    promoGate = body.promo_gate
+  }
+
   const service = createServiceClient()
 
   // New surveys append to the end of the order and start INACTIVE — Danny
@@ -100,7 +113,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await service
     .from('surveys')
-    .insert({ ...parsed, active: false, sort_order: (last?.sort_order ?? -1) + 1 })
+    .insert({ ...parsed, active: false, promo_gate: promoGate, sort_order: (last?.sort_order ?? -1) + 1 })
     .select('id')
     .single()
 

@@ -53,6 +53,10 @@ interface Props {
   isAdmin: boolean
   promoStatus: PromoStatus
   surveyData: SurveyData
+  /** Promo overlay surveys (migration 028, src/lib/survey.ts
+   *  pickPromoGateSurveys) — non-null means this user still needs to answer
+   *  it before proceeding. Both null outside a promo, or once answered. */
+  promoSurveys?: { initial: SurveyData | null; full: SurveyData | null }
   essentialServices: ResolvedEssentialService[]
   /** Founder's stated startup-capital band (src/lib/derived-metrics.ts), used
    *  for the "At a glance" budget-fit tile. null when unanswered/unparseable
@@ -896,11 +900,39 @@ function PromoUnlockButton({ ideaId, onStart }: { ideaId: string; onStart: () =>
   )
 }
 
-function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: {
+// Blocking overlay for a promo-gated survey (migration 028). No close
+// button — deliberately blocking, per the promo-gate spec: the user cannot
+// proceed (start the full report / read it and download the PDF) until
+// they've answered. bg-[#09071a] (not bg-slate-950, which the smexy theme
+// makes translucent) matches the sample-report modal's opaque-card
+// convention — see src/app/sample-report/sample-gallery-client.tsx.
+function PromoSurveyOverlay({ data, reportId, title, subtitle, onComplete }: {
+  data: SurveyData
+  reportId: string
+  title: string
+  subtitle: string
+  onComplete: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/80 backdrop-blur-sm px-4 py-8">
+      <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#09071a] light:bg-gray-50 light:border-gray-200 shadow-2xl px-6 py-6 my-auto">
+        <h2 className="text-lg font-semibold text-white light:text-gray-900 mb-1">{title}</h2>
+        <p className="text-sm text-slate-400 light:text-gray-500 mb-4">{subtitle}</p>
+        <SurveyCard data={data} reportId={reportId} onComplete={onComplete} className="" />
+      </div>
+    </div>
+  )
+}
+
+function TeaserViewer({ report, ideaId, isAdmin, promoStatus, suppressUnlock = false, onGenerateFull }: {
   report: ReportData
   ideaId: string
   isAdmin: boolean
   promoStatus: { active: boolean; perUserRemaining: number | null }
+  /** True while the initial-report promo survey overlay is pending — the
+   *  free-report unlock button must not be shown until it's answered (belt
+   *  for the server-side brace in src/lib/promo.ts checkAndApplyPromoGate). */
+  suppressUnlock?: boolean
   onGenerateFull: () => void
 }) {
   const p = report.preview_sections
@@ -1016,7 +1048,7 @@ function TeaserViewer({ report, ideaId, isAdmin, promoStatus, onGenerateFull }: 
             </li>
           ))}
         </ul>
-        {promoStatus.active && promoStatus.perUserRemaining !== 0 ? (
+        {suppressUnlock ? null : promoStatus.active && promoStatus.perUserRemaining !== 0 ? (
           <PromoUnlockButton ideaId={ideaId} onStart={onGenerateFull} />
         ) : promoStatus.active ? (
           <button
@@ -2180,10 +2212,16 @@ function AffiliateDisclosure() {
   )
 }
 
-export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, essentialServices, statedCapital = null }: Props) {
+export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, promoSurveys = { initial: null, full: null }, essentialServices, statedCapital = null }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
   const [fullReportTab, setFullReportTab] = useState<string | undefined>(undefined)
+  // Promo overlay completion — tracked client-side per page view. Once true,
+  // the overlay never comes back for the rest of this session (a resolved
+  // server-side `promoSurveys.*` would need a reload to reflect the same
+  // thing, so this avoids a jarring re-render on submit).
+  const [initialSurveyDone, setInitialSurveyDone] = useState(false)
+  const [fullSurveyDone, setFullSurveyDone] = useState(false)
 
   const hasFullSections = report?.status === 'complete' && Object.keys(report.sections).length > 0
   const reportMeta = report?.sections?._meta as { cost_usd?: number; model?: string } | undefined
@@ -2191,14 +2229,24 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   const generationModel = reportMeta?.model
 
   if (hasFullSections && !regenerating) {
+    const fullSurveyPending = promoSurveys.full !== null && !fullSurveyDone
     return (
       <div>
+        {fullSurveyPending && (
+          <PromoSurveyOverlay
+            data={promoSurveys.full!}
+            reportId={report!.id}
+            title="Last step — tell us what you think"
+            subtitle="Complete this short survey to open your full report and PDF download."
+            onComplete={() => setFullSurveyDone(true)}
+          />
+        )}
         <FullReportViewer report={report!} essentialServices={essentialServices} onActiveTabChange={setFullReportTab} statedCapital={statedCapital} />
         <div className="mb-8">
           <ReportFeedbackCard ideaId={ideaId} initialFeedback={initialFeedback} feedbackReplies={feedbackReplies} />
         </div>
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-3 print:hidden">
-          <DownloadPdfButton ideaId={ideaId} />
+          {!fullSurveyPending && <DownloadPdfButton ideaId={ideaId} />}
           {isAdmin && generationCost !== undefined && (
             <p className="text-xs text-slate-500 light:text-gray-400">
               Generation cost: US${generationCost.toFixed(2)}
@@ -2223,13 +2271,24 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
   }
 
   if (report?.status === 'complete' && !regenerating) {
+    const initialSurveyPending = promoSurveys.initial !== null && !initialSurveyDone
     return (
       <div>
+        {initialSurveyPending && (
+          <PromoSurveyOverlay
+            data={promoSurveys.initial!}
+            reportId={report.id}
+            title="Quick feedback unlocks your full report"
+            subtitle="A few quick questions about your initial report — then the full deep-dive is yours."
+            onComplete={() => setInitialSurveyDone(true)}
+          />
+        )}
         <TeaserViewer
           report={report}
           ideaId={ideaId}
           isAdmin={isAdmin}
           promoStatus={promoStatus}
+          suppressUnlock={initialSurveyPending}
           onGenerateFull={() => { setRegenerating(true); setReport(null) }}
         />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">

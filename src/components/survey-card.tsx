@@ -51,11 +51,17 @@ export function SurveyCard({
   data,
   reportId = null,
   className = 'max-w-3xl mx-auto px-6 print:hidden',
+  onComplete,
 }: {
   data: SurveyData
   reportId?: string | null
   /** Outer wrapper classes — the default matches the report page layout. */
   className?: string
+  /** Called once the survey is done — either freshly submitted, or the API
+   *  reports it was already answered (409). Used by promo overlays to
+   *  dismiss themselves; a stale overlay must never be able to trap a user
+   *  who already answered this survey on a previous visit. */
+  onComplete?: () => void
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [step, setStep] = useState(0)
@@ -120,10 +126,20 @@ export function SurveyCard({
       })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) {
+        // 409 = already answered (e.g. a duplicate tab, or a resubmit after
+        // the local `submitted` state was lost on reload) — treat it as
+        // complete rather than an error, so a stale promo overlay can never
+        // trap the user.
+        if (res.status === 409) {
+          setSubmitted(true)
+          onComplete?.()
+          return
+        }
         setError(d.error ?? 'Could not save your answers. Please try again.')
         return
       }
       setSubmitted(true)
+      onComplete?.()
     } catch {
       setError('Could not save your answers. Please try again.')
     } finally {

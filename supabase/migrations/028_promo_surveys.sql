@@ -1,0 +1,21 @@
+-- Migration 028: promo-gated overlay surveys.
+-- Run in the Supabase SQL editor after 027_contact_billing_category.sql.
+-- RUN MANUALLY.
+--
+-- Adds surveys.promo_gate — flags a survey as reserved for the promo overlay
+-- flow (src/app/app/ideas/[id]/report/report-client.tsx PromoSurveyOverlay)
+-- rather than the normal placement-based rotation (src/lib/survey.ts
+-- pickSurveyFor). While a promo is running, the admin picks an
+-- initial_survey_id and full_survey_id (stored in the app_settings 'promo'
+-- row, src/lib/promo.ts PromoConfig) from the set of promo_gate=true
+-- surveys, and non-admin users must complete each once before they can
+-- proceed past the corresponding blocking overlay. A promo_gate survey is
+-- excluded from pickSurveyFor's placement picking so it never doubles up as
+-- an ordinary bottom-of-report survey.
+--
+-- Graceful degradation: until this migration is run, the column doesn't
+-- exist — pickSurveyFor retries its select without promo_gate on Postgres
+-- 42703 (undefined_column, see isMissingColumn in src/lib/app-settings.ts)
+-- and behaves as if no survey were promo-gated.
+
+alter table public.surveys add column promo_gate boolean not null default false;

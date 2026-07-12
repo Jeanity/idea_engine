@@ -13,6 +13,14 @@ export function isMissingTable(error: { code?: string } | null | undefined): boo
   return error?.code === '42P01' || error?.code === 'PGRST205'
 }
 
+// Postgres 42703 = undefined_column — same graceful-degradation shape as
+// isMissingTable, but for a column a pending migration hasn't added yet
+// (e.g. surveys.promo_gate, migration 028). Callers typically retry the
+// same select without the new column rather than failing outright.
+export function isMissingColumn(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703'
+}
+
 export async function getSetting<T>(
   service: SupabaseClient<Database>,
   key: string

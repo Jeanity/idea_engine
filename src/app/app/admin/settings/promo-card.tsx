@@ -10,6 +10,8 @@ interface PromoConfig {
   started_at: string | null
   ended_at: string | null
   ended_reason: 'spend_cap' | 'report_cap' | 'manual' | null
+  initial_survey_id: string | null
+  full_survey_id: string | null
 }
 
 interface PromoUsage {
@@ -18,12 +20,20 @@ interface PromoUsage {
   perUserUsed: number
 }
 
+interface PromoSurveyOption {
+  id: string
+  name: string
+  active: boolean
+}
+
 interface PromoState {
   config: PromoConfig
   usage: PromoUsage
   distinctUsers: number
   suspiciousClusters: number
   migrationMissing: boolean
+  promoSurveys: PromoSurveyOption[]
+  promoSurveysMigrationMissing: boolean
 }
 
 const inputCls =
@@ -55,6 +65,8 @@ export function PromoCard() {
   const [spendCap, setSpendCap] = useState('')
   const [reportCap, setReportCap] = useState('')
   const [perUserLimit, setPerUserLimit] = useState('')
+  const [initialSurveyId, setInitialSurveyId] = useState('')
+  const [fullSurveyId, setFullSurveyId] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
@@ -76,6 +88,8 @@ export function PromoCard() {
         setSpendCap(data.config.spend_cap_usd ?? '')
         setReportCap(data.config.report_cap ?? '')
         setPerUserLimit(data.config.per_user_limit ?? '')
+        setInitialSurveyId(data.config.initial_survey_id ?? '')
+        setFullSurveyId(data.config.full_survey_id ?? '')
       }
     } catch {
       setLoadError('Failed to load promo settings.')
@@ -99,6 +113,8 @@ export function PromoCard() {
           spend_cap_usd: spendCap === '' ? null : Number(spendCap),
           report_cap: reportCap === '' ? null : Number(reportCap),
           per_user_limit: perUserLimit === '' ? null : Number(perUserLimit),
+          initial_survey_id: initialSurveyId || null,
+          full_survey_id: fullSurveyId || null,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -217,6 +233,41 @@ export function PromoCard() {
             onChange={e => setPerUserLimit(e.target.value)}
           />
         </div>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-xs text-slate-500 light:text-gray-400 mb-2 leading-relaxed">
+          Overlay surveys promo users must complete to unlock their reports. &ldquo;None&rdquo; skips that gate.
+        </p>
+        {state.promoSurveysMigrationMissing ? (
+          <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 light:bg-amber-50 light:border-amber-200 px-4 py-3">
+            <p className="text-xs text-amber-100/90 light:text-amber-800">
+              Run <code className="rounded bg-black/20 light:bg-amber-100 px-1.5 py-0.5">supabase/migrations/028_promo_surveys.sql</code> to
+              enable overlay survey selection.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Initial report survey</label>
+              <select className={inputCls} value={initialSurveyId} onChange={e => setInitialSurveyId(e.target.value)}>
+                <option value="">None</option>
+                {state.promoSurveys.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}{!s.active ? ' (inactive)' : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Full report survey</label>
+              <select className={inputCls} value={fullSurveyId} onChange={e => setFullSurveyId(e.target.value)}>
+                <option value="">None</option>
+                {state.promoSurveys.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}{!s.active ? ' (inactive)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {saveError && <p className="text-xs text-red-300 light:text-red-600 mb-3">{saveError}</p>}

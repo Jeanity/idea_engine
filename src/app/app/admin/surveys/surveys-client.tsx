@@ -28,6 +28,7 @@ interface Survey {
   created_at: string
   questions: Question[]
   respondentCount: number
+  promo_gate: boolean
 }
 
 interface Group {
@@ -345,6 +346,11 @@ function SurveyRow({ survey, onChanged, onEdit }: { survey: Survey; onChanged: (
         <span className={`${chipCls} bg-violet-500/10 text-violet-300 light:bg-violet-50 light:text-violet-700`}>
           {AUDIENCE_LABELS[survey.audience]}
         </span>
+        {survey.promo_gate && (
+          <span className={`${chipCls} bg-amber-500/10 text-amber-300 light:bg-amber-50 light:text-amber-700 font-semibold`}>
+            PROMO
+          </span>
+        )}
       </div>
 
       <p className="text-xs text-slate-500 light:text-gray-400">
@@ -698,6 +704,7 @@ function SurveyModal({
   const [groupId, setGroupId] = useState<string>(survey?.group_id ?? '')
   const [placement, setPlacement] = useState<Placement>(survey?.placement ?? 'full_report_end')
   const [audience, setAudience] = useState<Audience>(survey?.audience ?? 'all')
+  const [promoGate, setPromoGate] = useState(survey?.promo_gate ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -710,7 +717,7 @@ function SurveyModal({
     }
     setSaving(true)
     setError('')
-    const payload = { name: trimmed, group_id: groupId || null, placement, audience }
+    const payload = { name: trimmed, group_id: groupId || null, placement, audience, promo_gate: promoGate }
     try {
       const res = mode === 'edit'
         ? await fetch(`/api/admin/surveys/${survey!.id}`, {
@@ -801,6 +808,15 @@ function SurveyModal({
                 Purchase-based audiences match nobody until payments launch.
               </p>
             )}
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm text-slate-300 light:text-gray-700 cursor-pointer">
+              <input type="checkbox" checked={promoGate} onChange={e => setPromoGate(e.target.checked)} />
+              Promo overlay survey
+            </label>
+            <p className="text-xs text-slate-500 light:text-gray-400 mt-1">
+              Reserved for promo overlays — never shown in normal placements; select it on the Promo card in Settings.
+            </p>
           </div>
 
           {error && <p className="text-sm text-red-300 light:text-red-600">{error}</p>}

@@ -1,7 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
-import { isMissingTable } from '@/lib/app-settings'
+import { isMissingTable, isMissingColumn } from '@/lib/app-settings'
 import {
   readPromoConfig,
   writePromoConfig,
@@ -44,7 +44,30 @@ export async function GET() {
   const usage = await readPromoUsage(service, config)
   const distinctUsers = await readPromoDistinctUsers(service, config)
   const suspiciousClusters = await readSuspiciousClusters(service, config)
-  return NextResponse.json({ config, usage, distinctUsers, suspiciousClusters, migrationMissing: false })
+
+  // Promo-gate survey picklist (migration 028) for the overlay-survey
+  // selects on the promo card. Column-missing (028 not yet run) degrades to
+  // an empty list plus its own flag, distinct from the app_settings
+  // migrationMissing above — the rest of the card still works fine without
+  // this migration, so it gets a narrower hint rather than blocking the page.
+  const surveysRes = await service
+    .from('surveys')
+    .select('id, name, active')
+    .eq('promo_gate', true)
+    .order('name', { ascending: true })
+
+  const promoSurveysMigrationMissing = isMissingColumn(surveysRes.error) || isMissingTable(surveysRes.error)
+  const promoSurveys = surveysRes.error ? [] : (surveysRes.data ?? [])
+
+  return NextResponse.json({
+    config,
+    usage,
+    distinctUsers,
+    suspiciousClusters,
+    promoSurveys,
+    promoSurveysMigrationMissing,
+    migrationMissing: false,
+  })
 }
 
 function parseCaps(body: Record<string, unknown>): { fields: Partial<PromoConfig> } | { error: string } {
@@ -71,7 +94,30 @@ function parseCaps(body: Record<string, unknown>): { fields: Partial<PromoConfig
   return { fields }
 }
 
-// ── Update caps (does not change enabled/started_at/ended_at) ──────────
+// A non-null survey id must reference an existing promo_gate=true survey —
+// otherwise the overlay flow would silently gate on a survey that either
+// doesn't exist or isn't reserved for promo use (and could therefore also
+// show up in normal placement rotation, defeating the point of the flag).
+async function validateSurveyIdField(
+  service: ReturnType<typeof createServiceClient>,
+  raw: unknown
+): Promise<{ value: string | null } | { error: string }> {
+  if (raw === null || raw === '') return { value: null }
+  if (typeof raw !== 'string') return { error: 'Survey id must be a string or null.' }
+
+  const { data, error } = await service
+    .from('surveys')
+    .select('id')
+    .eq('id', raw)
+    .eq('promo_gate', true)
+    .maybeSingle()
+
+  if (error || !data) return { error: 'Survey id must reference an existing promo overlay survey.' }
+  return { value: raw }
+}
+
+// ── Update caps and/or overlay survey selections ────────────────────────
+// (does not change enabled/started_at/ended_at)
 export async function PATCH(request: NextRequest) {
   const { denied } = await requireAdmin()
   if (denied) return denied
@@ -81,8 +127,20 @@ export async function PATCH(request: NextRequest) {
   if ('error' in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
   const service = createServiceClient()
+
+  const surveyFields: Partial<PromoConfig> = {}
+  for (const [key, target] of [
+    ['initial_survey_id', 'initial_survey_id'],
+    ['full_survey_id', 'full_survey_id'],
+  ] as const) {
+    if (!(key in body)) continue
+    const result = await validateSurveyIdField(service, body[key])
+    if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 })
+    surveyFields[target] = result.value
+  }
+
   const current = await readPromoConfig(service)
-  const next: PromoConfig = mergePromoConfig({ ...current, ...parsed.fields })
+  const next: PromoConfig = mergePromoConfig({ ...current, ...parsed.fields, ...surveyFields })
 
   const { error } = await writePromoConfig(service, next)
   if (error) {

@@ -4,8 +4,8 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { rewriteAffiliateUrls } from '@/lib/affiliate-rewrite'
 import { resolveEssentialServices } from '@/lib/essential-services'
-import { getPromoPublicStatus } from '@/lib/promo'
-import { pickSurveyFor } from '@/lib/survey'
+import { getPromoPublicStatus, readPromoConfig } from '@/lib/promo'
+import { pickSurveyFor, pickPromoGateSurveys } from '@/lib/survey'
 import { maybeGateReport } from '@/lib/teaser-gating'
 import { loadQuestionBank, filterVisibleAnswers } from '@/lib/question-bank'
 import { parseCapitalRange } from '@/lib/derived-metrics'
@@ -98,6 +98,13 @@ export async function ReportPageContent({ id }: { id: string }) {
     hasFullSections ? 'full_report_end' : 'initial_report_end'
   )
 
+  // Promo overlay surveys (migration 028) — admins never see these; they
+  // always have full access regardless of promo state, so gating them with
+  // a blocking survey overlay would make no sense.
+  const promoSurveys = isAdmin
+    ? { initial: null, full: null }
+    : await pickPromoGateSurveys(createServiceClient(), supabase, user.id, await readPromoConfig(createServiceClient()))
+
   // Render-time "Your support team" block (Legal & Compliance tab) — never
   // stored in report sections, never touched by the AI pipeline. Reads active
   // links via the same public RLS policy as the rewrite engine above, so this
@@ -158,6 +165,7 @@ export async function ReportPageContent({ id }: { id: string }) {
       isAdmin={isAdmin}
       promoStatus={promoStatus}
       surveyData={surveyData}
+      promoSurveys={promoSurveys}
       essentialServices={essentialServices}
       statedCapital={statedCapital}
     />

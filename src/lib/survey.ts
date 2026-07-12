@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, SurveyQuestionType, SurveyPlacement, SurveyAudience } from '@/lib/database.types'
-import { isMissingTable } from '@/lib/app-settings'
+import { isMissingTable, isMissingColumn } from '@/lib/app-settings'
+import type { PromoConfig } from '@/lib/promo'
 
 export const MAX_ANSWER_LENGTH = 2000
 export const RATING_MIN = 1
@@ -267,7 +268,14 @@ export async function getAudienceSignals(
  * some candidate actually targets a narrower audience than 'all'.
  *
  * Graceful degradation: until migration 025 runs, the surveys table doesn't
- * exist — any missing-table error means "no survey to show".
+ * exist — any missing-table error means "no survey to show". Until migration
+ * 028 runs, `promo_gate` doesn't exist either — that select is retried
+ * without the column (isMissingColumn, Postgres 42703) and every survey is
+ * treated as non-promo, matching pre-028 behaviour exactly.
+ *
+ * Promo-gated surveys (promo_gate = true) are excluded here — they are only
+ * ever served through pickPromoGateSurveys below, via the promo config's
+ * explicit initial/full selections, never through placement-based rotation.
  */
 export async function pickSurveyFor(
   service: SupabaseClient<Database>,
@@ -275,16 +283,36 @@ export async function pickSurveyFor(
   userId: string,
   placement: SurveyPlacement
 ): Promise<SurveyCardData> {
-  const { data: surveys, error } = await requestClient
+  type SurveyRow = { id: string; audience: SurveyAudience; sort_order: number; created_at: string; promo_gate: boolean }
+
+  const first = await requestClient
     .from('surveys')
-    .select('id, audience, sort_order, created_at')
+    .select('id, audience, sort_order, created_at, promo_gate')
     .eq('placement', placement)
 
-  if (error) {
-    if (!isMissingTable(error)) console.error('Error loading surveys:', error)
-    return NO_SURVEY
+  let rows: SurveyRow[] | null = first.data as SurveyRow[] | null
+
+  if (first.error) {
+    if (isMissingColumn(first.error)) {
+      // Migration 028 hasn't run yet — retry without promo_gate and treat
+      // every survey as non-promo (the only behaviour possible pre-028).
+      const retry = await requestClient
+        .from('surveys')
+        .select('id, audience, sort_order, created_at')
+        .eq('placement', placement)
+      if (retry.error) {
+        if (!isMissingTable(retry.error)) console.error('Error loading surveys:', retry.error)
+        return NO_SURVEY
+      }
+      rows = (retry.data ?? []).map(s => ({ ...s, promo_gate: false }))
+    } else {
+      if (!isMissingTable(first.error)) console.error('Error loading surveys:', first.error)
+      return NO_SURVEY
+    }
   }
-  if (!surveys || surveys.length === 0) return NO_SURVEY
+
+  const surveys = (rows ?? []).filter(s => s.promo_gate !== true)
+  if (surveys.length === 0) return NO_SURVEY
 
   const surveyIds = surveys.map(s => s.id)
   const [questionsRes, answeredRes] = await Promise.all([
@@ -328,4 +356,98 @@ export async function pickSurveyFor(
   if (!picked) return NO_SURVEY
 
   return { show: true, surveyId: picked.id, questions: questionsBySurvey.get(picked.id)! }
+}
+
+// ── Promo overlay surveys (migration 028) ────────────────────────────────
+
+/**
+ * Pure decision function — no I/O. Given the promo config and the set of
+ * survey ids the caller has already answered, decides which of
+ * initial_survey_id/full_survey_id still need to be fetched (null = no gate
+ * or already answered). Promo-off collapses both to null since neither
+ * overlay should ever be shown while the promo isn't running.
+ */
+export function idsNeedingFetch(
+  config: Pick<PromoConfig, 'enabled' | 'initial_survey_id' | 'full_survey_id'>,
+  answeredIds: ReadonlySet<string>
+): { initial: string | null; full: string | null } {
+  if (!config.enabled) return { initial: null, full: null }
+  return {
+    initial: config.initial_survey_id && !answeredIds.has(config.initial_survey_id) ? config.initial_survey_id : null,
+    full: config.full_survey_id && !answeredIds.has(config.full_survey_id) ? config.full_survey_id : null,
+  }
+}
+
+/**
+ * Resolves the two promo overlay surveys (if any) this user still needs to
+ * complete: the initial-report gate and the full-report gate. Each survey is
+ * answerable once ever (survey_responses dedupe, same as pickSurveyFor).
+ *
+ * Unlike pickSurveyFor, these ids are NOT placement/audience-picked — the
+ * admin selects them explicitly on the promo card, so this loads exactly
+ * those two surveys (each independently) rather than picking among
+ * candidates. requestClient does the reads — "surveys: public select
+ * active" RLS means an inactive survey (or one deactivated mid-promo) simply
+ * comes back empty, which is exactly the "admin's graceful pause switch"
+ * behaviour the spec calls for: no explicit active check needed here.
+ */
+export async function pickPromoGateSurveys(
+  service: SupabaseClient<Database>,
+  requestClient: SupabaseClient<Database>,
+  userId: string,
+  config: PromoConfig
+): Promise<{ initial: SurveyCardData | null; full: SurveyCardData | null }> {
+  if (!config.enabled || (!config.initial_survey_id && !config.full_survey_id)) {
+    return { initial: null, full: null }
+  }
+
+  const ids = [config.initial_survey_id, config.full_survey_id].filter((id): id is string => id !== null)
+
+  const { data: answered, error: answeredError } = await requestClient
+    .from('survey_responses')
+    .select('survey_id')
+    .eq('user_id', userId)
+    .in('survey_id', ids)
+
+  // A read hiccup here should not incorrectly show/hide an overlay — fall
+  // back to "nothing answered" so an existing completion never gets lost
+  // (worst case, a user is asked again this load; they can't be trapped
+  // since a resubmission 409s and SurveyCard treats that as complete too).
+  const answeredIds = new Set(answeredError ? [] : (answered ?? []).map(r => r.survey_id))
+
+  const need = idsNeedingFetch(config, answeredIds)
+
+  async function loadOne(surveyId: string | null): Promise<SurveyCardData | null> {
+    if (!surveyId) return null
+
+    const { data: survey } = await requestClient
+      .from('surveys')
+      .select('id')
+      .eq('id', surveyId)
+      .maybeSingle()
+    if (!survey) return null // inactive (RLS-filtered) or deleted — pause the gate
+
+    const { data: questions } = await requestClient
+      .from('survey_questions')
+      .select('id, prompt, qtype, options, sort_order')
+      .eq('survey_id', surveyId)
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+    if (!questions || questions.length === 0) return null // no active questions — pause the gate
+
+    return {
+      show: true,
+      surveyId,
+      questions: questions.map(q => ({
+        id: q.id,
+        prompt: q.prompt,
+        qtype: q.qtype,
+        options: (q.options as string[] | null) ?? null,
+        sort_order: q.sort_order,
+      })),
+    }
+  }
+
+  const [initial, full] = await Promise.all([loadOne(need.initial), loadOne(need.full)])
+  return { initial, full }
 }
