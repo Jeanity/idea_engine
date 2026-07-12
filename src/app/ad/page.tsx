@@ -36,6 +36,27 @@ export default function AdStudioPage() {
           </p>
         </div>
 
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold">Brand assets</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Social profile art — capture at the stated size (same devtools workflow as slides).
+          </p>
+          <ul className="mt-4 space-y-2">
+            <li>
+              <Link href="/ad/assets/facebook-profile" className="flex items-center gap-4 rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 transition-colors hover:border-indigo-400/50 hover:bg-slate-900">
+                <span className="flex-1 text-sm font-medium text-slate-200">Facebook profile picture</span>
+                <span className="font-mono text-xs text-slate-500">1080×1080 · shown as a circle</span>
+              </Link>
+            </li>
+            <li>
+              <Link href="/ad/assets/facebook-cover" className="flex items-center gap-4 rounded-lg border border-white/10 bg-slate-900/60 px-4 py-3 transition-colors hover:border-indigo-400/50 hover:bg-slate-900">
+                <span className="flex-1 text-sm font-medium text-slate-200">Facebook page cover</span>
+                <span className="font-mono text-xs text-slate-500">1640×624 · content centred for mobile crop</span>
+              </Link>
+            </li>
+          </ul>
+        </section>
+
         {Object.entries(CAMPAIGNS).map(([slug, c]) => (
           <section key={slug} className="mt-10">
             <h2 className="text-lg font-semibold">{c.name}</h2>
