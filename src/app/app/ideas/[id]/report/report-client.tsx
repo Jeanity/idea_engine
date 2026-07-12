@@ -191,9 +191,13 @@ function BouncingBlob({ sizePx, className, fx, fy }: {
   )
 }
 
-function GearCluster() {
+// The teaser gets the familiar three-gear cluster; a full-report run doubles
+// the machinery to six — the deep dive should LOOK like more work than the
+// initial pass. Same palette plus one emerald gear (ties to the emerald
+// step checkmarks). Reduced motion stops all of them via globals.css.
+function GearCluster({ full = false }: { full?: boolean }) {
   return (
-    <div className="relative flex items-center justify-center h-28 mb-2" aria-hidden="true">
+    <div className={`relative flex items-center justify-center ${full ? 'h-32' : 'h-28'} mb-2`} aria-hidden="true">
       {/* Large gear, back-left, slowest */}
       <div className="gear-spin absolute" style={{ animationDuration: '13s', left: 'calc(50% - 58px)', top: 'calc(50% - 8px)' }}>
         <Cog size={56} color="#818cf8" />
@@ -206,6 +210,22 @@ function GearCluster() {
       <div className="gear-spin absolute" style={{ animationDuration: '6s', left: 'calc(50% + 28px)', top: 'calc(50% - 46px)' }}>
         <Cog size={40} color="#22d3ee" />
       </div>
+      {full && (
+        <>
+          {/* Outrigger gear, upper-left, meshes against the large gear */}
+          <div className="gear-spin-reverse absolute" style={{ animationDuration: '7s', left: 'calc(50% - 94px)', top: 'calc(50% - 30px)' }}>
+            <Cog size={44} color="#818cf8" />
+          </div>
+          {/* Right gear, driven off the small cyan one */}
+          <div className="gear-spin absolute" style={{ animationDuration: '5s', left: 'calc(50% + 60px)', top: 'calc(50% - 20px)' }}>
+            <Cog size={36} color="#22d3ee" />
+          </div>
+          {/* Tiny emerald gear, front-bottom, fastest of all */}
+          <div className="gear-spin-reverse absolute" style={{ animationDuration: '4s', left: 'calc(50% + 8px)', top: 'calc(50% + 28px)' }}>
+            <Cog size={28} color="#34d399" />
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -278,9 +298,14 @@ const HIGH_DEMAND_QUEUE_DEPTH = 10
 // latency — under this, the standard progress screen carries the wait fine.
 const QUEUE_NOTICE_AFTER_MS = 25_000
 
-function ProgressScreen({ ideaId, restatement, onComplete }: {
+function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
   ideaId: string
   restatement: string | null
+  /** Hint from the click that started the run — the polled preview_sections
+   *  check below confirms it (and covers a mid-run page refresh), but the
+   *  hint means the full-run visuals show from the first frame instead of
+   *  after the first poll. */
+  fullRun: boolean
   onComplete: (report: ReportData) => void
 }) {
   const [report, setReport] = useState<ReportData | null>(null)
@@ -365,8 +390,8 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
   // route clears only `sections`), while a fresh/regenerated teaser resets
   // both to {} — so non-empty previews during a run means this is the full
   // report, the only run that sends a report-ready email. Survives refresh,
-  // unlike anything threaded from the button that started the run.
-  const isFullRun = Object.keys(report?.preview_sections ?? {}).length > 0
+  // unlike the fullRun hint prop; either signal counts.
+  const isFullRun = fullRun || Object.keys(report?.preview_sections ?? {}).length > 0
 
   if (error) {
     return (
@@ -401,11 +426,13 @@ function ProgressScreen({ ideaId, restatement, onComplete }: {
       <div className="max-w-2xl mx-auto px-6 py-16 sm:py-20">
         <div className="relative z-10">
           <div className="text-center mb-4">
-            <h1 className="text-xl font-semibold text-white mb-2">Generating your report</h1>
+            <h1 className="text-xl font-semibold text-white mb-2">
+              {isFullRun ? 'Generating your full report' : 'Generating your report'}
+            </h1>
             {restatement && <p className="text-sm text-slate-400">{restatement}</p>}
           </div>
 
-          <GearCluster />
+          <GearCluster full={isFullRun} />
 
           {queuedLong && (
             <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.08] px-5 py-4 mb-8 text-center">
@@ -2279,6 +2306,14 @@ function AffiliateDisclosure() {
 export default function ReportClient({ ideaId, restatement, initialReport, initialFeedback, feedbackReplies, isAdmin, promoStatus, surveyData, promoSurveys = { initial: null, full: null }, essentialServices, statedCapital = null }: Props) {
   const [report, setReport] = useState<ReportData | null>(initialReport)
   const [regenerating, setRegenerating] = useState(false)
+  // Whether the run the ProgressScreen is (about to be) showing is a FULL
+  // report — drives its heavier visuals from the first frame. Set by the
+  // buttons below; initialised for the mid-full-run page refresh, where the
+  // server snapshot is a non-complete report that still has its teaser
+  // preview_sections (a teaser run resets those to {}).
+  const [fullRunHint, setFullRunHint] = useState(
+    () => initialReport != null && initialReport.status !== 'complete' && Object.keys(initialReport.preview_sections ?? {}).length > 0
+  )
   const [fullReportTab, setFullReportTab] = useState<string | undefined>(undefined)
   // Promo overlay completion — tracked client-side per page view. Once true,
   // the overlay never comes back for the rest of this session (a resolved
@@ -2317,7 +2352,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
               {generationModel && <span> · {generationModel}</span>}
             </p>
           )}
-          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null); setFullRunHint(false) }} />
           <Link
             href={`/app/ideas/${ideaId}/summary`}
             className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
@@ -2353,10 +2388,10 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
           isAdmin={isAdmin}
           promoStatus={promoStatus}
           suppressUnlock={initialSurveyPending}
-          onGenerateFull={() => { setRegenerating(true); setReport(null) }}
+          onGenerateFull={() => { setRegenerating(true); setReport(null); setFullRunHint(true) }}
         />
         <div className="max-w-3xl mx-auto px-6 pb-8 flex flex-col items-center gap-2 print:hidden">
-          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null) }} />
+          <RegenerateButton ideaId={ideaId} label="Regenerate initial report" onStart={() => { setRegenerating(true); setReport(null); setFullRunHint(false) }} />
           <Link
             href={`/app/ideas/${ideaId}/summary`}
             className="text-xs text-slate-400 hover:text-white light:text-gray-500 light:hover:text-gray-900 underline underline-offset-2"
@@ -2378,6 +2413,7 @@ export default function ReportClient({ ideaId, restatement, initialReport, initi
     <ProgressScreen
       ideaId={ideaId}
       restatement={restatement}
+      fullRun={fullRunHint}
       onComplete={(r) => { setReport(r); setRegenerating(false) }}
     />
   )
