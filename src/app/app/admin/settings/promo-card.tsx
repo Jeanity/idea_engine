@@ -278,7 +278,7 @@ export function PromoCard() {
           disabled={saving}
           className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 disabled:opacity-50 transition-colors"
         >
-          {saving ? 'Saving…' : 'Save caps'}
+          {saving ? 'Saving…' : 'Save caps & surveys'}
         </button>
         {saved && <span className="text-xs text-emerald-300 light:text-emerald-600">Saved.</span>}
 
