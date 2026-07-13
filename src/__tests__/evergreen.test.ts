@@ -39,6 +39,19 @@ describe('mergeComplianceItems', () => {
     expect(mergeComplianceItems([], [])).toEqual([])
   })
 
+  it('drops malformed overlay items (missing/non-string `item`) instead of throwing', () => {
+    const baseline = [item({ item: 'ABN registration' })]
+    // parseJsonArray only guarantees array-ness — a malformed element must
+    // degrade, not throw: on the pipeline a throw fails the whole paid report.
+    const overlay = [
+      {} as ComplianceItem,
+      { item: 42 } as unknown as ComplianceItem,
+      item({ item: 'Food handling licence' }),
+    ]
+    const merged = mergeComplianceItems(baseline, overlay)
+    expect(merged.map(i => i.item)).toEqual(['ABN registration', 'Food handling licence'])
+  })
+
   it('handles whitespace/casing differences in item names as the same key', () => {
     const baseline = [item({ item: '  ABN Registration  ' })]
     const overlay = [item({ item: 'abn registration', summary: 'overlay wins' })]

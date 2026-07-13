@@ -207,7 +207,14 @@ export function mergeComplianceItems(
   baselineItems: ComplianceItem[],
   overlayItems: ComplianceItem[]
 ): ComplianceItem[] {
-  const overlayKeys = new Set(overlayItems.map(i => i.item.trim().toLowerCase()))
-  const dedupedBaseline = baselineItems.filter(i => !overlayKeys.has(i.item.trim().toLowerCase()))
-  return [...dedupedBaseline, ...overlayItems]
+  // Overlay items come straight from parseJsonArray, which only guarantees
+  // array-ness — not per-item shape. This runs on the report pipeline where
+  // an uncaught throw fails the whole paid report, so a malformed element
+  // (missing/non-string `item`) is dropped rather than allowed to throw.
+  const itemKey = (i: ComplianceItem): string =>
+    typeof i?.item === 'string' ? i.item.trim().toLowerCase() : ''
+  const safeOverlay = overlayItems.filter(i => itemKey(i) !== '')
+  const overlayKeys = new Set(safeOverlay.map(itemKey))
+  const dedupedBaseline = baselineItems.filter(i => !overlayKeys.has(itemKey(i)) || itemKey(i) === '')
+  return [...dedupedBaseline, ...safeOverlay]
 }
