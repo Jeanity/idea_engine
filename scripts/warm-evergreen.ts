@@ -257,7 +257,7 @@ async function generateOne(
       return { status: 'failed', itemCount: validItems.length, costUsd: r.costUsd, error: `only ${validItems.length} valid items` }
     }
 
-    await storeEvergreenBaseline(supabase, {
+    const stored = await storeEvergreenBaseline(supabase, {
       countryCode,
       archetype,
       section: 'compliance',
@@ -266,6 +266,12 @@ async function generateOne(
       costUsd: r.costUsd,
       sourceReportId: null,
     })
+    if (!stored) {
+      // The call was billed but the row never landed — report the pair as
+      // failed so the operator knows it still needs a (re-)run.
+      console.warn(`[${countryCode}/${archetype}] FAILED — generation succeeded ($${r.costUsd.toFixed(4)}) but the upsert did not land (see error above).`)
+      return { status: 'failed', itemCount: validItems.length, costUsd: r.costUsd, error: 'store failed' }
+    }
 
     console.log(`[${countryCode}/${archetype}] generated — ${validItems.length} items stored, $${r.costUsd.toFixed(4)}`)
     return { status: 'generated', itemCount: validItems.length, costUsd: r.costUsd }
@@ -303,9 +309,18 @@ async function main() {
     process.exit(1)
   }
 
+  const knownArchetypes = defaultArchetypes()
   const archetypes = typeof argv.archetypes === 'string' && argv.archetypes.trim() !== ''
     ? Array.from(new Set(argv.archetypes.split(',').map(a => a.trim()).filter(Boolean)))
-    : defaultArchetypes()
+    : knownArchetypes
+  // A typo'd archetype would happily generate + store a row no report can
+  // ever read (reports look up by the idea's real archetype) — pure wasted
+  // spend, so reject unknown names outright.
+  const unknownArchetypes = archetypes.filter(a => !knownArchetypes.includes(a))
+  if (unknownArchetypes.length > 0) {
+    console.error(`Unknown archetype(s): ${unknownArchetypes.join(', ')}. Known: ${knownArchetypes.join(', ')}`)
+    process.exit(1)
+  }
 
   const refreshDaysRaw = argv['refresh-days']
   const refreshDays = typeof refreshDaysRaw === 'string' ? parseInt(refreshDaysRaw, 10) : 30

@@ -158,13 +158,15 @@ export interface EvergreenStoreInput {
  * first-reports for the same key is last-writer-wins by design — both
  * results are fresh, no locking needed. Regeneration always resets
  * review_status to 'unreviewed' and pushes expires_at out 180 days from now.
- * Swallows a missing-table error (logs, doesn't throw) — the report that
- * triggered this call must never fail because the cache table is absent.
+ * Never throws — the report that triggered this call must never fail because
+ * the cache write did. Returns whether the row actually landed, so callers
+ * that DO care (scripts/warm-evergreen.ts reports generated-vs-failed per
+ * pair) can tell a swallowed failure from a success; the pipeline ignores it.
  */
 export async function storeEvergreenBaseline(
   supabase: SupabaseClient<Database>,
   { countryCode, archetype, section, items, model, costUsd, sourceReportId }: EvergreenStoreInput
-): Promise<void> {
+): Promise<boolean> {
   const normalizedCountry = (countryCode ?? '').toUpperCase()
   const now = new Date()
   const expiresAt = new Date(now.getTime() + EVERGREEN_TTL_MS)
@@ -193,10 +195,12 @@ export async function storeEvergreenBaseline(
   if (error) {
     if (isMissingEvergreenTable(error)) {
       console.warn('storeEvergreenBaseline: evergreen_baselines table not found (migration 030 not run) — skipping store')
-      return
+      return false
     }
     console.error('storeEvergreenBaseline: upsert failed', error)
+    return false
   }
+  return true
 }
 
 /**
