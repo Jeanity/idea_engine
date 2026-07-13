@@ -7,7 +7,6 @@ import {
   PlusCircle,
   ListChecks,
   Newspaper,
-  FileText,
   MessageSquare,
   Settings,
   ShieldCheck,
@@ -52,8 +51,9 @@ const BASE_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Coming soon',
     comingSoon: [
-      { label: 'Blog', icon: Newspaper },
-      { label: 'Articles', icon: FileText },
+      // One content surface, not Blog + Articles (Danny, 2026-07-14) —
+      // "Guides" promises utility and matches the planned SEO content.
+      { label: 'Guides', icon: Newspaper },
       { label: 'Forum', icon: MessageSquare },
     ],
   },
