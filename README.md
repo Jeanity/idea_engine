@@ -28,6 +28,23 @@ npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
 
 Without it, starting a report fails with a 500 (events have nowhere to go). Production uses Inngest cloud and needs neither.
 
+## Warming the evergreen cache
+
+`evergreen_baselines` (migration 030) caches country x archetype compliance
+research so real reports skip re-buying it. It self-populates on the first
+real report from a new country x archetype, but `scripts/warm-evergreen.ts`
+lets an operator pre-populate or refresh it ahead of time, on the exact same
+generation path the report pipeline uses:
+
+```bash
+npx tsx scripts/warm-evergreen.ts --countries AU,US,GB --dry-run   # print the plan, no spend
+npx tsx scripts/warm-evergreen.ts --countries AU,US,GB,CA,NZ       # generate for real
+```
+
+`--countries` is required (no default). See the usage comment at the top of
+the script for the full flag list (`--archetypes`, `--refresh-days`,
+`--force`, `--max-spend`).
+
 ## Repo visibility
 
 This repo is **public** on the Vercel Hobby plan: the private-repo tier blocks deployments when the committing GitHub account isn't the exact account connected to the Vercel project, and no repo secrets are stored in git (see `.gitignore`), so public is the zero-cost fix.

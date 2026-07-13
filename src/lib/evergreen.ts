@@ -145,7 +145,11 @@ export interface EvergreenStoreInput {
   items: ComplianceItem[]
   model: string
   costUsd: number
-  sourceReportId: string
+  // Nullable: the report pipeline always passes the triggering report's id,
+  // but scripts/warm-evergreen.ts pre-populates the cache outside any report
+  // (no report to attribute the entry to) and passes null — the column and
+  // the admin evergreen list already handle a null source report.
+  sourceReportId: string | null
 }
 
 /**
