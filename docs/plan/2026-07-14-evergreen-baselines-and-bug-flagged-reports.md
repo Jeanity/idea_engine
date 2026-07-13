@@ -286,10 +286,137 @@ only if the section registry makes that a one-liner — otherwise skip).
 
 ---
 
+## Workstream C — Evergreen lifecycle: live-by-default, exposure tagging, disapprove remediation (added 2026-07-14, Danny)
+
+### Product intent (Danny, verbatim requirements distilled)
+Entries are live the moment they're generated (already true — approval never
+gated serving). Reframe the model to match: entries are auto-served, Danny
+DISAPPROVES by exception. The nav light means "new evergreen appeared, glance
+at it," not "action required." Track which reports consumed an entry before
+Danny approved it, so a bad entry has a known exposure cohort. On disapprove,
+Danny attaches an explanation and remediates: regenerate the entry, patch the
+affected reports in place, and email those users "your report has been
+updated" — or send a notify-only email (freeform note; can promise a manual
+credit — an automated credit ledger is Phase-5/payments scope, NOT built
+here). Admin row target: "NZ (New Zealand) · New · 6 reports on this version
+· view · approve · disapprove · regenerate".
+
+### Design decisions (locked)
+- **Serving**: 'unreviewed' (displayed as **"New"**) and 'approved' rows are
+  served identically. NEW status 'disapproved': never served, never
+  auto-regenerated — the pipeline takes the pre-evergreen legacy branch (live
+  per-report compliance search) until Danny explicitly regenerates. Lookup
+  gains a fourth state.
+- **Badge**: switch from "unreviewed count" (shipped 56ab53f) to seen-based
+  "new entries since I last opened the Evergreen page" — extend the
+  admin_seen Section union with 'evergreen' (nav-status route + seen route +
+  MarkSeen mounted on the evergreen page), count rows with
+  `updated_at > seen.evergreen`. Regeneration bumps updated_at, so a
+  regenerated entry lights the badge again. Remove the unreviewed-count badge
+  logic; keep the ADMIN_NAV_SEEN_EVENT dispatch on approve/disapprove/evict
+  (harmless immediate refresh).
+- **Exposure tagging**: new table `evergreen_report_usage` — one row per
+  report that was served an evergreen baseline. Columns: id uuid pk,
+  created_at, evergreen_id uuid NOT NULL REFERENCES evergreen_baselines(id)
+  ON DELETE CASCADE (eviction deletes usage history — acceptable; the
+  disapprove flow never deletes), report_id uuid not null, user_id uuid not
+  null, evergreen_updated_at timestamptz not null (revision snapshot),
+  approved_at_use boolean not null, remediated_at timestamptz null,
+  remediation text null ('patched' | 'notified'). Index
+  (evergreen_id, evergreen_updated_at). RLS on, no policies.
+- **Patchability**: the pipeline stashes, in the report's sections._meta:
+  `evergreen: { id, updated_at, review_status_at_use }` and
+  `compliance_overlay_items: [...]` (the overlay's own items pre-merge). A
+  patch is then: legal_compliance = merge(current baseline items, stashed
+  overlay items). Reports generated before this ships have no stash and are
+  not patchable (fine — forward-looking).
+- **storeEvergreenBaseline** changes from returning boolean to returning the
+  stored row (or null on swallowed failure) via .upsert().select().single(),
+  so the pipeline records the CANONICAL id/updated_at in usage rows and _meta
+  (the in-memory reconstruction it currently builds drifts from the stored
+  timestamps). Callers: pipeline uses the row; warm script's stored-check
+  (86a1bd0) adapts to null-check.
+- **Migration 031**: usage table above + evergreen_baselines gains
+  'disapproved' in the review_status CHECK, disapproved_at timestamptz null,
+  disapprove_note text null. House-style header, RUN MANUALLY.
+- Country display names via Intl.DisplayNames (client-side, no dependency):
+  "NZ (New Zealand)".
+
+### C1 — lifecycle + tagging + badge (implementer run 1)
+1. Migration 031 per above.
+2. evergreen.ts: lookup returns
+   'hit' | 'miss' | 'disapproved' | 'table_missing' (disapproved = row exists
+   with review_status='disapproved' and not expired; expired disapproved rows
+   are still 'disapproved' — expiry must not resurrect a bad entry into
+   regeneration). store returns stored row per above. Types updated.
+3. Pipeline (generate-report.ts): disapproved → legacy branch, no baseline
+   call, no usage row. Baseline served (hit or fresh) → stash _meta fields +
+   insert usage row inside its own step.run (id 'evergreen-usage-record');
+   skip both entirely for provider==='mock'. Usage insert failure: log, never
+   fail the report. approved_at_use = (review_status at use) === 'approved'.
+4. Badge rework per design (nav-status route, seen route Section union,
+   MarkSeen on evergreen page, admin-shell count semantics + description
+   "— N new").
+5. Admin evergreen page: per-row "N reports on this version (M before
+   approval)" from usage counts; status pills New (amber) / Approved
+   (emerald) / Disapproved (red); Disapprove action opens a small form
+   (required note textarea) → PATCH {action:'disapprove', note} sets status +
+   disapproved_at + disapprove_note; Approve unchanged; Evict unchanged but
+   confirm copy warns usage history is deleted with it. Country display
+   names. Disapproved rows show the note + "not being served — regenerate to
+   restore" hint (regenerate button itself is C2; render disabled with
+   "coming in C2" title if trivial, else omit).
+6. Tests: lookup quad-state (incl. disapproved + expired-disapproved), merge
+   unchanged, usage approved_at_use derivation if extracted as a pure helper.
+7. Out of scope for C1: any email, any report patching, regenerate button.
+
+### C2 — disapprove remediation (implementer run 2, after C1 ships)
+1. POST /api/admin/evergreen/[id]/regenerate — admin-gated; runs the exact
+   warm-script generation call (Sonnet, webSearchTool(4), provider pinned
+   'anthropic', validated >= 3 items) server-side; upserts (row returns to
+   'unreviewed'/New, updated_at bumps); returns the new row. UI: Regenerate
+   button on every row (primary styling on disapproved rows), with a
+   cost-confirm ("~$0.18") window.confirm.
+2. Affected cohort per row = usage rows where evergreen_updated_at !=
+   current updated_at AND remediated_at IS NULL (i.e. consumed a superseded
+   revision, not yet remediated). Show cohort count on the row.
+3. "Patch reports & notify" action (enabled when cohort > 0 AND the row's
+   current revision is approved — Danny must approve the fixed content before
+   it's pushed into user reports): for each cohort report, load sections; if
+   _meta.compliance_overlay_items exists, legal_compliance =
+   mergeComplianceItems(current baseline items, stashed overlay); update
+   _meta.evergreen to the new revision; write back; mark usage row
+   remediated_at now, remediation 'patched'; send email (buildBrandedEmail +
+   sendMail, house pattern from bug-report route) — subject "Your HadIdea
+   report has been updated", body = standard copy + Danny's freeform note
+   (textarea in the action dialog) + link to their report. Reports without
+   the stash: skip patch, still notify, remediation 'notified'. Sequential
+   sends; per-user failures logged and skipped, summary returned to the UI.
+4. "Notify only" action (no patch; available regardless of approval state):
+   same email machinery, remediation 'notified'. This is the "credit offer"
+   path — the note is freeform; NO automated credit is granted (no ledger
+   until payments).
+5. Both actions are ADMIN-CLICKED — no automated/scheduled sending anywhere.
+6. Tests: cohort selection logic and patch-merge as pure helpers.
+
+### C verification
+- Usual: tsc clean, vitest green, lint at 18-problem baseline, prod build.
+- C1 manual (dev DB + migration 031): generate report on warm cache → usage
+  row exists with correct revision + approved_at_use; disapprove entry → next
+  report takes legacy branch (no baseline in _meta.steps), no usage row;
+  badge lights on new entry, clears on visiting the page (MarkSeen), relights
+  after regeneration bumps updated_at.
+- C2 manual: regenerate returns New row ($ spent logged); approve; patch &
+  notify against a test-account cohort — report section actually changes,
+  usage rows marked, email received on the test account.
+
 ## Sequencing & review
 
-1. Implementer run 1: Workstream B. → Fable review.
-2. Implementer run 2: Workstream A. → Opus reviewer (correctness of Inngest
-   step discipline, RLS posture, cache-poisoning guards, fallback chain) →
-   Fable final review.
-3. Danny runs migration 030 manually (house rule) before A ships to prod.
+1. Implementer run 1: Workstream B. → Fable review. ✅ shipped 138d726.
+2. Implementer run 2: Workstream A. → Opus review → Fable. ✅ shipped
+   5e79137 + fixes cd9bc0f/c665cd1; live-tested 2026-07-14; warm script
+   86a1bd0; unreviewed-count badge 56ab53f (superseded by C1's badge).
+3. Danny runs migration 030 manually (house rule) before A ships to prod. ✅
+4. Workstream C: implementer C1 → Opus review → Fable → ship; then
+   implementer C2 → Opus review → Fable → ship. Danny runs migration 031
+   manually before C1 hits prod usage.
