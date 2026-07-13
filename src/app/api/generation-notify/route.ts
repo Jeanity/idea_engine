@@ -13,12 +13,18 @@ export async function POST() {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  if (!user.email) {
+    return NextResponse.json({ error: 'No email on this account.' }, { status: 400 })
+  }
 
   const service = createServiceClient()
+  // notified_at is explicitly RESET here: a user who was emailed after a
+  // previous service window and opts in again during a new one must be
+  // re-armed, or the second opt-in would silently never send.
   const { error } = await service
     .from('generation_notify')
     .upsert(
-      { user_id: user.id, email: user.email ?? '' },
+      { user_id: user.id, email: user.email, notified_at: null },
       { onConflict: 'user_id' }
     )
 
