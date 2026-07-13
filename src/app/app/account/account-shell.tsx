@@ -35,7 +35,7 @@ type NavItem = {
   icon: ComponentType<LucideProps>
   exact?: boolean
 }
-type ComingSoonItem = { label: string; icon: ComponentType<LucideProps> }
+type ComingSoonItem = { label: string; icon: ComponentType<LucideProps>; hint?: string }
 type NavGroup =
   | { label: string; items: NavItem[]; comingSoon?: undefined }
   | { label: string; comingSoon: ComingSoonItem[]; items?: undefined }
@@ -55,8 +55,8 @@ const BASE_NAV_GROUPS: NavGroup[] = [
       // "Blog" chosen deliberately over Guides/Notebook/Stories: the planned
       // content mixes founder story, product philosophy, AND how-tos — which
       // is precisely what a blog is, and the label everyone understands.
-      { label: 'Blog', icon: Newspaper },
-      { label: 'Forum', icon: MessageSquare },
+      { label: 'Blog', icon: Newspaper, hint: 'Articles, stories, and other useful guides' },
+      { label: 'Forum', icon: MessageSquare, hint: 'Talk ideas with other founders' },
     ],
   },
   {
@@ -260,7 +260,7 @@ function Sidebar({
                 return (
                   <li key={item.label}>
                     <span
-                      title={collapsed ? `${item.label} — coming soon` : undefined}
+                      title={collapsed ? `${item.label} — coming soon` : item.hint}
                       aria-disabled="true"
                       className={`flex cursor-not-allowed items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 light:text-gray-400 ${
                         collapsed ? 'lg:justify-center' : ''
