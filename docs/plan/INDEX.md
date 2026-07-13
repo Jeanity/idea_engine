@@ -21,6 +21,10 @@
 | 6 | [PHASE_06_launch.md](PHASE_06_launch.md) | Landing page, legal pages/disclaimers, analytics, abuse/cost controls, QA, launch | Phase 5 |
 | 7 | [PHASE_07_post_mvp_quarantine.md](PHASE_07_post_mvp_quarantine.md) | **NOT BUILT NOW.** Pitch generator, pitch rooms, marketplace, equity — legal-risk quarantine notes | Post-launch |
 
+## Post-phase feature plans
+
+- [2026-07-14-evergreen-baselines-and-bug-flagged-reports.md](2026-07-14-evergreen-baselines-and-bug-flagged-reports.md) — self-populating per-country evergreen research cache (compliance first) + admin inspector for bug-flagged reports
+
 ## Rules of the road
 
 - Each phase ends in something you can click and demo. Do not start a phase until the previous phase's acceptance criteria pass.
