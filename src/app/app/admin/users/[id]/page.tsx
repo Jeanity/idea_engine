@@ -63,6 +63,22 @@ export default async function AdminUserDetailPage({
   const reportByIdea = new Map((reports ?? []).map(r => [r.idea_id, r]))
   const isAdmin = isAdminEmail(authUser.email)
 
+  // Bug count per report, for the "N bug(s)" pill below. bug_reports may not
+  // exist yet (migration 018 not run) — a failed/empty query here just means
+  // zero bugs to show, same graceful-degradation posture as /app/admin/bugs.
+  const reportIds = (reports ?? []).map(r => r.id)
+  const bugCountByReport = new Map<string, number>()
+  if (reportIds.length > 0) {
+    const { data: bugRows } = await service
+      .from('bug_reports')
+      .select('report_id')
+      .in('report_id', reportIds)
+    for (const row of bugRows ?? []) {
+      if (!row.report_id) continue
+      bugCountByReport.set(row.report_id, (bugCountByReport.get(row.report_id) ?? 0) + 1)
+    }
+  }
+
   const acquisition = profile?.acquisition as
     | { referrer?: string | null; utm?: Record<string, string | null>; landing_path?: string | null }
     | null
@@ -186,11 +202,21 @@ export default async function AdminUserDetailPage({
                       {new Date(idea.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  {report && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusColor[report.status] ?? statusColor.queued}`}>
-                      report: {report.status}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {report && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusColor[report.status] ?? statusColor.queued}`}>
+                        report: {report.status}
+                      </span>
+                    )}
+                    {report && (bugCountByReport.get(report.id) ?? 0) > 0 && (
+                      <Link
+                        href={`/app/admin/reports/${report.id}`}
+                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 bg-red-500/10 text-red-300 light:bg-red-50 light:text-red-700 hover:bg-red-500/20 light:hover:bg-red-100 transition-colors"
+                      >
+                        {bugCountByReport.get(report.id)} bug{bugCountByReport.get(report.id) === 1 ? '' : 's'}
+                      </Link>
+                    )}
+                  </div>
                 </div>
               )
             })}

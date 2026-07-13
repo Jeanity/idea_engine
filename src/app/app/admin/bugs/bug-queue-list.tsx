@@ -195,6 +195,14 @@ function BugItem({ row, onDeleted }: { row: BugRow; onDeleted: () => void }) {
               </option>
             ))}
           </select>
+          {row.report_id && (
+            <Link
+              href={`/app/admin/reports/${row.report_id}`}
+              className="text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 hover:text-white light:border-gray-200 light:text-gray-600 light:hover:border-gray-300 light:hover:text-gray-900 text-center transition-colors"
+            >
+              View report
+            </Link>
+          )}
           <DeleteButton bugId={row.id} onDeleted={onDeleted} />
         </div>
       </div>
