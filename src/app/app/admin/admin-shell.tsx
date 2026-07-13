@@ -117,12 +117,16 @@ function isChildActive(child: NavChild, pathname: string): boolean {
 // ---------------------------------------------------------------------------
 // Live nav status (GET /api/admin/nav-status) — survey-active dot on Surveys,
 // and "new since I last visited that page" count badges on Contact, Feedback,
-// Bugs, and Errors (migration 023, admin_seen). Fetched on mount, on every
-// route change (so the queues feel live as Danny works through them), and on
-// a 60s poll — plus once more whenever a MarkSeen component finishes marking
-// a page seen (see admin-nav-events.ts) so the badge for the page you just
-// opened clears immediately rather than waiting for the next poll. Any fetch
-// failure is silent — no badges, no error UI.
+// Bugs, Errors, and Evergreen (migration 023, admin_seen). Evergreen's badge
+// was originally state-based ("entries awaiting review", shipped 56ab53f) —
+// Workstream C1 reframed it to the same seen-based semantics as the rest,
+// since New/Approved entries are both served identically and the light now
+// just means "go glance at what's new," not "action required." Fetched on
+// mount, on every route change (so the queues feel live as Danny works
+// through them), and on a 60s poll — plus once more whenever a MarkSeen
+// component finishes marking a page seen (see admin-nav-events.ts) so the
+// badge for the page you just opened clears immediately rather than waiting
+// for the next poll. Any fetch failure is silent — no badges, no error UI.
 // ---------------------------------------------------------------------------
 
 interface NavStatus {
@@ -164,8 +168,7 @@ function badgeDescription(href: string, status: NavStatus): string {
   if (href === '/app/admin/feedback' && status.feedbackCount > 0) return ` — ${status.feedbackCount} new since last visit`
   if (href === '/app/admin/bugs' && status.bugsCount > 0) return ` — ${status.bugsCount} new since last visit`
   if (href === '/app/admin/errors' && status.errorsCount > 0) return ` — ${status.errorsCount} new since last visit`
-  // State-based, not seen-based: reflects rows awaiting review right now.
-  if (href === '/app/admin/evergreen' && status.evergreenCount > 0) return ` — ${status.evergreenCount} awaiting review`
+  if (href === '/app/admin/evergreen' && status.evergreenCount > 0) return ` — ${status.evergreenCount} new`
   return ''
 }
 

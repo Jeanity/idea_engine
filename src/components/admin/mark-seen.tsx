@@ -3,15 +3,16 @@
 import { useEffect } from 'react'
 import { ADMIN_NAV_SEEN_EVENT } from '@/lib/admin-nav-events'
 
-type Section = 'contact' | 'feedback' | 'bugs' | 'errors'
+type Section = 'contact' | 'feedback' | 'bugs' | 'errors' | 'evergreen'
 
 /**
  * Fires POST /api/admin/nav-status/seen once on mount to record "I just
  * visited this section" on the caller's own profile (migration 023,
- * admin_seen). Mounted once on each of the four badge-bearing admin pages:
- * /app/admin/contact, /app/admin/feedback, /app/admin/bugs, /app/admin/errors.
- * Renders nothing. Fails silently — a failed mark-seen just means the badge
- * doesn't clear until the next real visit, never a user-facing error.
+ * admin_seen). Mounted once on each of the five badge-bearing admin pages:
+ * /app/admin/contact, /app/admin/feedback, /app/admin/bugs, /app/admin/errors,
+ * /app/admin/evergreen. Renders nothing. Fails silently — a failed mark-seen
+ * just means the badge doesn't clear until the next real visit, never a
+ * user-facing error.
  *
  * See src/lib/admin-nav-events.ts for why this dispatches a window event
  * once the POST settles (closes a race with admin-shell's route-change

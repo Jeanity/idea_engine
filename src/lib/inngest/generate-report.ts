@@ -30,6 +30,7 @@ import {
   lookupEvergreenBaseline,
   storeEvergreenBaseline,
   mergeComplianceItems,
+  isMissingEvergreenTable,
   type EvergreenBaseline,
   type EvergreenLookupResult,
 } from '@/lib/evergreen'
@@ -339,6 +340,15 @@ export const generateReport = inngest.createFunction(
     const stepMetas: Record<string, StepMeta> = {}
     const sectionStatus: Record<string, SectionStatus> = {}
 
+    // Populated only when a REAL (canonical, DB-backed) evergreen baseline
+    // was served this run (Workstream C1 — patchability). Stashed into
+    // sections._meta at assemble time so a later admin regenerate-and-patch
+    // action (Workstream C2) can recompute legal_compliance from a new
+    // baseline revision without re-running the idea-specific overlay call.
+    // Stays null for the legacy branch (no baseline / disapproved / mock).
+    let evergreenMetaStash: { id: string; updated_at: string; review_status_at_use: 'unreviewed' | 'approved' } | null = null
+    let complianceOverlayItemsStash: ComplianceItem[] | null = null
+
     function bankStep(id: string, outcome: AiStepOutcome<unknown>) {
       stepMetas[id] = outcome.meta
       totalCostUsd += outcome.costUsd
@@ -566,6 +576,13 @@ export const generateReport = inngest.createFunction(
     // legacy branch below with NO extra AI call, so a report never differs in
     // behaviour or cost just because Danny hasn't run a migration yet (see
     // isMissingTable convention, src/lib/app-settings.ts).
+    //
+    // C1: the lookup is quad-state. A 'disapproved' row falls straight
+    // through to the same legacy branch as 'table_missing' below (evergreen-
+    // Baseline stays null — no baseline call, no store, no usage row) — Danny
+    // disapproved this entry, so it's never served and never auto-regenerated
+    // until an explicit regenerate (Workstream C2). Only 'miss' triggers a
+    // fresh generation call below.
     const complianceCountryCode = (idea.location_country ?? '').toUpperCase()
 
     const evergreenLookup: EvergreenLookupResult = provider === 'mock'
@@ -613,8 +630,9 @@ export const generateReport = inngest.createFunction(
         // Own step.run, per the mark-running/persistSections convention in
         // this file — every DB touch must be memoized or it re-fires on
         // every Inngest replay. Skipped entirely for mock (A3(0)).
+        let storedRow: EvergreenBaseline | null = null
         if (provider !== 'mock') {
-          await step.run('evergreen-compliance-store', () =>
+          storedRow = await step.run('evergreen-compliance-store', () =>
             storeEvergreenBaseline(supabase, {
               countryCode: complianceCountryCode,
               archetype: idea.archetype,
@@ -626,18 +644,31 @@ export const generateReport = inngest.createFunction(
             })
           )
         }
-        evergreenBaseline = {
-          id: '',
-          countryCode: complianceCountryCode,
-          region: '',
-          archetype: idea.archetype,
-          section: 'compliance',
-          items: freshItems,
-          reviewStatus: 'unreviewed',
-          generatedByModel,
-          generationCostUsd: baselineOutcome.costUsd,
-          sourceReportId: reportId,
-          expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+        // C1: prefer the row the database actually assigned (canonical id +
+        // updated_at) over an in-memory reconstruction — those fields are
+        // what evergreen_report_usage's FK and the _meta stash reference, and
+        // an in-memory guess would drift from what's really stored.
+        if (storedRow) {
+          evergreenBaseline = storedRow
+        } else {
+          // Store failed/skipped (mock, or a swallowed DB error) — this
+          // report still gets the freshly generated content, but there's no
+          // canonical row to stash into _meta or reference from
+          // evergreen_report_usage (id stays '' as that sentinel below).
+          evergreenBaseline = {
+            id: '',
+            countryCode: complianceCountryCode,
+            region: '',
+            archetype: idea.archetype,
+            section: 'compliance',
+            items: freshItems,
+            reviewStatus: 'unreviewed',
+            generatedByModel,
+            generationCostUsd: baselineOutcome.costUsd,
+            sourceReportId: reportId,
+            expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
         }
       }
       // On failure evergreenBaseline stays null — the overlay call below runs
@@ -684,6 +715,22 @@ export const generateReport = inngest.createFunction(
       // never triggers the inferred-fallback chain on top of a good
       // baseline. That's the cost this whole feature exists to delete.
       sectionStatus.legal_compliance = 'live_ok'
+
+      // C1 exposure tagging: only when a REAL, canonical (DB-backed) baseline
+      // was served — id === '' is the in-memory-reconstruction sentinel set
+      // above when the store failed/was skipped, and mock runs never touch
+      // the cache at all (A3(0)). Both stash the overlay's own pre-merge
+      // items (not the merged result) so a later patch (Workstream C2) can
+      // recompute legal_compliance against a NEW baseline revision without
+      // re-running this idea-specific overlay call.
+      if (provider !== 'mock' && baselineForOverlay.id !== '') {
+        evergreenMetaStash = {
+          id: baselineForOverlay.id,
+          updated_at: baselineForOverlay.updatedAt,
+          review_status_at_use: baselineForOverlay.reviewStatus,
+        }
+        complianceOverlayItemsStash = overlayItems
+      }
     } else {
       // A3(3b) — no baseline (table missing, or generation failed): exact
       // pre-existing behaviour, unchanged safety net.
@@ -747,6 +794,33 @@ export const generateReport = inngest.createFunction(
         sectionStatus.legal_compliance = 'fallback_inferred'
       }
     }
+
+    // C1 exposure tagging: one evergreen_report_usage row per report that
+    // was actually served a canonical baseline (evergreenMetaStash is only
+    // set in that case — see 3a above). Own step.run per the mark-running
+    // convention in this file. Never fails the report: a missing table
+    // (migration 031 not run) or any other insert error is logged and the
+    // run continues exactly as if this step didn't exist.
+    if (evergreenMetaStash) {
+      const stash = evergreenMetaStash
+      await step.run('evergreen-usage-record', async () => {
+        const { error } = await supabase.from('evergreen_report_usage').insert({
+          evergreen_id: stash.id,
+          report_id: reportId,
+          user_id: userId,
+          evergreen_updated_at: stash.updated_at,
+          approved_at_use: stash.review_status_at_use === 'approved',
+        })
+        if (error) {
+          if (isMissingEvergreenTable(error)) {
+            console.error('evergreen-usage-record: evergreen_report_usage table not found (migration 031 not run) — skipping')
+          } else {
+            console.error('evergreen-usage-record: insert failed', error)
+          }
+        }
+      })
+    }
+
     sections.legal_compliance = legalCompliance
     await persistSections('persist-compliance')
 
@@ -850,6 +924,15 @@ export const generateReport = inngest.createFunction(
         partial,
         section_status: sectionStatus,
         steps: stepMetas,
+        // C1 patchability stash — only present when a canonical evergreen
+        // baseline was actually served this run (see evergreenMetaStash
+        // above). A later admin regenerate-and-patch action (Workstream C2)
+        // recomputes legal_compliance = merge(new baseline items, these
+        // stashed overlay items) without re-running the overlay call.
+        // Reports generated before this shipped have no stash and simply
+        // aren't patchable.
+        ...(evergreenMetaStash ? { evergreen: evergreenMetaStash } : {}),
+        ...(complianceOverlayItemsStash ? { compliance_overlay_items: complianceOverlayItemsStash } : {}),
       }
 
       const competitorList = Array.isArray(competitors) ? competitors as Array<Record<string, unknown>> : []

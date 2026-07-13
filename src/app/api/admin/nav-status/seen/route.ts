@@ -6,10 +6,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Marks one admin nav section as "seen as of now" on the caller's own
 // profiles row (migration 023, admin_seen jsonb). Fired once on mount by
 // <MarkSeen section="..."/> (src/components/admin/mark-seen.tsx), mounted on
-// each of the four badge-bearing admin pages: contact, feedback, bugs,
-// errors. Once this succeeds, the corresponding nav badge in admin-shell.tsx
-// clears on its next /api/admin/nav-status refetch — see MarkSeen for how
-// the refetch-race with the route-change fetch is resolved.
+// each of the five badge-bearing admin pages: contact, feedback, bugs,
+// errors, evergreen (evergreen added Workstream C1 — its badge switched from
+// state-based "awaiting review" to this same seen-based semantics). Once
+// this succeeds, the corresponding nav badge in admin-shell.tsx clears on its
+// next /api/admin/nav-status refetch — see MarkSeen for how the refetch-race
+// with the route-change fetch is resolved.
 //
 // The /app/admin layout gates the PAGE, not this API route — every admin
 // route re-checks isAdminEmail itself, per project ground rules.
@@ -19,7 +21,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // 001's "profiles: update own" RLS policy already permits exactly that, same
 // rationale as PATCH /api/admin/layout (migration 021).
 
-const SECTIONS = ['contact', 'feedback', 'bugs', 'errors'] as const
+const SECTIONS = ['contact', 'feedback', 'bugs', 'errors', 'evergreen'] as const
 type Section = (typeof SECTIONS)[number]
 
 function isSection(v: unknown): v is Section {

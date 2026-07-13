@@ -25,7 +25,8 @@ export type SurveyAudience = 'all' | 'first_report' | 'first_purchase' | 'promo_
 export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
 export type MessageTemplateKind = 'invite' | 'contact_reply' | 'feedback_reply'
 export type EvergreenSectionKind = 'compliance' | 'financing' | 'marketing'
-export type EvergreenReviewStatus = 'unreviewed' | 'approved'
+export type EvergreenReviewStatus = 'unreviewed' | 'approved' | 'disapproved'
+export type EvergreenRemediationKind = 'patched' | 'notified'
 
 export type Database = {
   public: {
@@ -946,6 +947,8 @@ export type Database = {
           items: Json
           review_status: EvergreenReviewStatus
           reviewed_at: string | null
+          disapproved_at: string | null
+          disapprove_note: string | null
           generated_by_model: string
           generation_cost_usd: number
           source_report_id: string | null
@@ -962,6 +965,8 @@ export type Database = {
           items: Json
           review_status?: EvergreenReviewStatus
           reviewed_at?: string | null
+          disapproved_at?: string | null
+          disapprove_note?: string | null
           generated_by_model: string
           generation_cost_usd?: number
           source_report_id?: string | null
@@ -976,10 +981,41 @@ export type Database = {
           items?: Json
           review_status?: EvergreenReviewStatus
           reviewed_at?: string | null
+          disapproved_at?: string | null
+          disapprove_note?: string | null
           generated_by_model?: string
           generation_cost_usd?: number
           source_report_id?: string | null
           expires_at?: string
+        }
+        Relationships: []
+      }
+      evergreen_report_usage: {
+        Row: {
+          id: string
+          created_at: string
+          evergreen_id: string
+          report_id: string
+          user_id: string
+          evergreen_updated_at: string
+          approved_at_use: boolean
+          remediated_at: string | null
+          remediation: EvergreenRemediationKind | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          evergreen_id: string
+          report_id: string
+          user_id: string
+          evergreen_updated_at: string
+          approved_at_use: boolean
+          remediated_at?: string | null
+          remediation?: EvergreenRemediationKind | null
+        }
+        Update: {
+          remediated_at?: string | null
+          remediation?: EvergreenRemediationKind | null
         }
         Relationships: []
       }

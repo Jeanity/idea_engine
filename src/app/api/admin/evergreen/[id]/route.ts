@@ -15,6 +15,13 @@ function isMissingTable(error: { code?: string } | null | undefined): boolean {
   return error?.code === '42P01' || error?.code === 'PGRST205'
 }
 
+// Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
+// in schema cache" — both mean migration 031 (disapproved_at/disapprove_note)
+// hasn't been run yet.
+function isMissingColumn(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42703' || error?.code === 'PGRST204'
+}
+
 /** The acting admin's email on success, or a NextResponse to return as-is (401/403). */
 async function requireAdmin(): Promise<{ email: string } | NextResponse> {
   const supabase = await createDbClient()
@@ -26,9 +33,17 @@ async function requireAdmin(): Promise<{ email: string } | NextResponse> {
   return { email: user.email! }
 }
 
+const MAX_DISAPPROVE_NOTE_LENGTH = 2000
+
 // PATCH: { action: 'approve' } → review_status 'approved', reviewed_at now.
-// review_status is informational only (phase 1) — this never gates serving,
-// it just lets Danny mark an entry as eyeballed.
+// review_status is informational for 'approved' (phase 1) — approving never
+// gates serving, it just lets Danny mark an entry as eyeballed. The other
+// supported action, { action: 'disapprove', note }, is NOT informational
+// (Workstream C1): it flips review_status to 'disapproved', which the report
+// pipeline's quad-state lookup (src/lib/evergreen.ts) treats as "never
+// served, never auto-regenerated" — the pipeline falls back to its
+// pre-evergreen legacy per-report compliance search until an explicit
+// regenerate (Workstream C2, not built yet).
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -42,38 +57,93 @@ export async function PATCH(
   }
 
   const body = await request.json().catch(() => ({}))
-  if (body.action !== 'approve') {
-    return NextResponse.json({ error: "Only { action: 'approve' } is supported." }, { status: 400 })
+
+  if (body.action === 'approve') {
+    const service = createServiceClient()
+    const { error } = await service
+      .from('evergreen_baselines')
+      .update({ review_status: 'approved', reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) {
+      if (isMissingTable(error)) {
+        return NextResponse.json(
+          { error: 'Evergreen baselines table is not available right now — please try again later.' },
+          { status: 503 }
+        )
+      }
+      console.error('Error approving evergreen baseline:', error)
+      await logError({
+        source: 'api:admin/evergreen/[id]',
+        message: `Approve evergreen baseline failed: ${error.message}`,
+        detail: error,
+        path: 'PATCH /api/admin/evergreen/[id]',
+      })
+      return NextResponse.json({ error: 'Failed to approve the baseline.' }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
   }
 
-  const service = createServiceClient()
-  const { error } = await service
-    .from('evergreen_baselines')
-    .update({ review_status: 'approved', reviewed_at: new Date().toISOString() })
-    .eq('id', id)
-
-  if (error) {
-    if (isMissingTable(error)) {
+  if (body.action === 'disapprove') {
+    const note = typeof body.note === 'string' ? body.note.trim() : ''
+    if (!note) {
+      return NextResponse.json({ error: 'A note explaining the disapproval is required.' }, { status: 400 })
+    }
+    if (note.length > MAX_DISAPPROVE_NOTE_LENGTH) {
       return NextResponse.json(
-        { error: 'Evergreen baselines table is not available right now — please try again later.' },
-        { status: 503 }
+        { error: `Note must be ${MAX_DISAPPROVE_NOTE_LENGTH} characters or fewer.` },
+        { status: 400 }
       )
     }
-    console.error('Error approving evergreen baseline:', error)
-    await logError({
-      source: 'api:admin/evergreen/[id]',
-      message: `Approve evergreen baseline failed: ${error.message}`,
-      detail: error,
-      path: 'PATCH /api/admin/evergreen/[id]',
-    })
-    return NextResponse.json({ error: 'Failed to approve the baseline.' }, { status: 500 })
+
+    const service = createServiceClient()
+    const { error } = await service
+      .from('evergreen_baselines')
+      .update({ review_status: 'disapproved', disapproved_at: new Date().toISOString(), disapprove_note: note })
+      .eq('id', id)
+
+    if (error) {
+      if (isMissingTable(error)) {
+        return NextResponse.json(
+          { error: 'Evergreen baselines table is not available right now — please try again later.' },
+          { status: 503 }
+        )
+      }
+      // Migration 031 not yet run: either the review_status CHECK still only
+      // allows ('unreviewed', 'approved') — Postgres 23514 (check_violation)
+      // — or the disapproved_at/disapprove_note columns don't exist yet.
+      if (error.code === '23514' || isMissingColumn(error)) {
+        return NextResponse.json(
+          { error: 'Disapprove is not available yet — the required migration has not been run.' },
+          { status: 503 }
+        )
+      }
+      console.error('Error disapproving evergreen baseline:', error)
+      await logError({
+        source: 'api:admin/evergreen/[id]',
+        message: `Disapprove evergreen baseline failed: ${error.message}`,
+        detail: error,
+        path: 'PATCH /api/admin/evergreen/[id]',
+      })
+      return NextResponse.json({ error: 'Failed to disapprove the baseline.' }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json(
+    { error: "Only { action: 'approve' } or { action: 'disapprove', note } are supported." },
+    { status: 400 }
+  )
 }
 
 // DELETE: evicts the row — the next report from this country x archetype x
-// section regenerates it. No confirm UI beyond the caller's window.confirm().
+// section regenerates it. No confirm UI beyond the caller's window.confirm()
+// (its copy warns that usage history is deleted with it). That warning is
+// accurate at the DB level too: evergreen_report_usage.evergreen_id
+// references this row ON DELETE CASCADE (migration 031), so evicting a row
+// also deletes its exposure-tagging history — no extra query needed here.
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

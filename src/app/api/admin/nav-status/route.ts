@@ -3,11 +3,15 @@ import { isAdminEmail } from '@/lib/admin'
 import { NextResponse } from 'next/server'
 
 // Powers the live nav badges in src/app/app/admin/admin-shell.tsx: survey-active
-// dot on Surveys, "new since I last visited that page" counts on Contact,
-// Feedback, Bugs, and Errors (migration 023, admin_seen), and an
-// awaiting-review count on Evergreen (state-based — clears on approve/evict,
-// not on visit). The /app/admin
-// layout gates the PAGE, not this API route — every admin route re-checks
+// dot on Surveys, and "new since I last visited that page" counts on Contact,
+// Feedback, Bugs, Errors, and Evergreen (migration 023, admin_seen). Evergreen
+// (Workstream C1) was originally state-based ("entries awaiting review",
+// shipped 56ab53f) — reframed to match "New"/"Approved" both being served
+// identically: the badge now means "new evergreen entries since I last opened
+// the page" (updated_at > seen.evergreen), same seen-based semantics as
+// everything else here. A regenerated entry bumps updated_at, so it lights
+// the badge again even though the row already existed. The /app/admin layout
+// gates the PAGE, not this API route — every admin route re-checks
 // isAdminEmail itself, per project ground rules. The service client is only
 // ever created AFTER that check passes (matches src/api/admin/stats).
 //
@@ -15,7 +19,7 @@ import { NextResponse } from 'next/server'
 // 42P01/PGRST205 for tables that predate a given migration) — this endpoint
 // never 500s just because one queue's table is missing.
 
-type Section = 'contact' | 'feedback' | 'bugs' | 'errors'
+type Section = 'contact' | 'feedback' | 'bugs' | 'errors' | 'evergreen'
 type SeenMap = Partial<Record<Section, string>>
 
 // Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
@@ -88,10 +92,11 @@ export async function GET() {
     seenColumnMissing
       ? ZERO_RESULT
       : service.from('error_log').select('id', { count: 'exact', head: true }).gt('occurred_at', seen.errors ?? EPOCH),
-    // Evergreen is state-based, not seen-based: the light means "entries are
-    // awaiting review" and clears when they're approved or evicted, not when
-    // the page is visited — so it deliberately ignores admin_seen.
-    service.from('evergreen_baselines').select('id', { count: 'exact', head: true }).eq('review_status', 'unreviewed'),
+    // Seen-based like Bugs/Errors (C1): no pre-023 fallback semantics to
+    // preserve, so it simply reads as 0 until migration 023 lands.
+    seenColumnMissing
+      ? ZERO_RESULT
+      : service.from('evergreen_baselines').select('id', { count: 'exact', head: true }).gt('updated_at', seen.evergreen ?? EPOCH),
   ])
 
   if (surveysRes.error && !isMissingTable(surveysRes.error)) {
