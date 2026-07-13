@@ -209,7 +209,11 @@ OUTPUT RULE for bare JSON array, official-URL rules copied verbatim from
 `compliance.ts` — never fabricate URLs, copy from live search results).
 
 **`compliance-baseline.ts`** — `COMPLIANCE_BASELINE_SYSTEM_PROMPT` +
-`buildComplianceBaselineMessage({ archetype, location_country, location_region })`.
+`buildComplianceBaselineMessage({ archetype, location_country })`.
+(AMENDED 2026-07-14 after the live test: the original spec also passed
+`location_region`, which put the first founder's council/state items into the
+nationwide cache entry. The baseline is strictly country-level; state/local
+requirements are the overlay's job — it receives the founder's region.)
 Asks for the 4–8 requirements that apply to essentially EVERY new business of
 this archetype in this country: registration, tax registration thresholds,
 consumer law, privacy obligations, plus archetype-generic items (e.g. software

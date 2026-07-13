@@ -591,9 +591,10 @@ export const generateReport = inngest.createFunction(
         6144,
         (maxTokens) => callAI({
           messages: [{ role: 'user', content: buildComplianceBaselineMessage({
+            // Country ONLY — the entry is cached nationwide; the founder's
+            // region must not leak into it (live-test lesson 2026-07-14).
             archetype: idea.archetype,
             location_country: idea.location_country,
-            location_region: idea.location_region,
           }) }],
           system: COMPLIANCE_BASELINE_SYSTEM_PROMPT,
           maxTokens,
