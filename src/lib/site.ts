@@ -17,3 +17,8 @@ export const SITE_DESCRIPTION =
 export const SOCIAL_LINKS = {
   facebook: 'https://www.facebook.com/makeyourideareal/',
 }
+
+/** GA4 Measurement ID (Danny's "HadIdea site" web stream, created
+ *  2026-07-14). Public by nature — it ships in page HTML on every GA site.
+ *  Loaded ONLY behind analytics consent; see components/google-analytics.tsx. */
+export const GA_MEASUREMENT_ID = 'G-GJPHMDFNXD'

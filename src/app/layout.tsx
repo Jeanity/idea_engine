@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { AnalyticsBeacon } from '@/components/analytics-beacon'
+import { GoogleAnalytics } from '@/components/google-analytics'
 import { CookieConsentBanner } from '@/components/cookie-consent'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, SOCIAL_LINKS } from '@/lib/site'
 
@@ -109,6 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <i /><i /><i /><i />
         </div>
         <AnalyticsBeacon />
+        <GoogleAnalytics />
         {children}
         <CookieConsentBanner />
       </body>

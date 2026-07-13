@@ -9,7 +9,18 @@
 export const CONSENT_COOKIE = 'ie_consent'
 export const CONSENT_TTL_S = 365 * 24 * 60 * 60 // ~12 months
 
+/**
+ * Bump whenever what a category MEANS changes — the banner promises "if
+ * that ever changes, we'll ask first", and this is the asking mechanism: an
+ * older (or missing) version parses as null = undecided, so the banner
+ * reshows and the previous choice is not carried over.
+ *   v2 (2026-07-14): "analytics" now includes Google Analytics, not just
+ *   our own first-party counter.
+ */
+export const CONSENT_VERSION = 2
+
 export interface ConsentValue {
+  v: number
   analytics: boolean
   at: string
 }
@@ -23,14 +34,16 @@ export function parseConsentCookie(cookieString: string): ConsentValue | null {
     if (
       parsed &&
       typeof parsed === 'object' &&
+      (parsed as Record<string, unknown>).v === CONSENT_VERSION &&
       typeof (parsed as Record<string, unknown>).analytics === 'boolean' &&
       typeof (parsed as Record<string, unknown>).at === 'string'
     ) {
-      return { analytics: (parsed as ConsentValue).analytics, at: (parsed as ConsentValue).at }
+      return { v: CONSENT_VERSION, analytics: (parsed as ConsentValue).analytics, at: (parsed as ConsentValue).at }
     }
   } catch {
     // Malformed cookie — treat as undecided.
   }
+  // Absent, malformed, or from an older CONSENT_VERSION — all mean "ask".
   return null
 }
 
@@ -60,7 +73,7 @@ export function hasAnalyticsConsent(): boolean {
 
 /** Persist a consent decision as the `ie_consent` cookie. */
 export function writeConsent(analytics: boolean): ConsentValue {
-  const value: ConsentValue = { analytics, at: new Date().toISOString() }
+  const value: ConsentValue = { v: CONSENT_VERSION, analytics, at: new Date().toISOString() }
   if (typeof document !== 'undefined') {
     const secure = typeof location !== 'undefined' && location.protocol === 'https:'
     document.cookie = serializeConsentCookie(value, secure)
@@ -93,6 +106,6 @@ export function openConsentManager(): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(CONSENT_OPEN_MANAGE_EVENT))
 }
 
-// TODO(GA): once Google Analytics is added, gate its loader on
-// `hasAnalyticsConsent()` the same way the beacon is gated below, and call it
-// again on CONSENT_CHANGED_EVENT so declining removes/stops it immediately.
+// Google Analytics loads via src/components/google-analytics.tsx — gated on
+// `hasAnalyticsConsent()`, re-synced on CONSENT_CHANGED_EVENT (declining sets
+// GA's official disable flag and deletes its cookies immediately).

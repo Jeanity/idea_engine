@@ -85,9 +85,9 @@ export function CookieConsentBanner() {
         {visibility === 'banner' && (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-300 light:text-gray-600">
-              These aren&apos;t the creepy kind of cookies. Essentials keep you signed in; one
-              optional counter tells us what&apos;s working. If that ever changes, we&apos;ll ask
-              first.{' '}
+              These aren&apos;t the creepy kind of cookies. Essentials keep you signed in; optional
+              analytics — our own counter plus Google Analytics — tell us what&apos;s working. If
+              that ever changes, we&apos;ll ask first.{' '}
               <Link href="/privacy" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
                 See for yourself
               </Link>
@@ -151,7 +151,9 @@ export function CookieConsentBanner() {
                 <div>
                   <p className="text-sm font-medium text-slate-200 light:text-gray-800">Analytics</p>
                   <p className="mt-0.5 text-xs text-slate-500 light:text-gray-500">
-                    Anonymous page-view counts that help us see what&apos;s working. Off by default.
+                    Our own anonymous page-view counter, plus Google Analytics (sets{' '}
+                    <code>_ga</code> cookies to tell visitors apart). Off by default; declining
+                    also deletes any existing analytics cookies.
                   </p>
                 </div>
                 <button

@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <ul className="mt-3 list-disc space-y-1.5 pl-5">
           <li>Account information: your email address and any profile details you add (username, display name).</li>
           <li>Idea content: the ideas, answers, and reports you create.</li>
-          <li>Basic analytics events (page views, session activity) to understand product usage — no third-party ad trackers.</li>
+          <li>Basic analytics events (page views, session activity) to understand product usage, plus — only if you opt in — Google Analytics. No ad trackers.</li>
         </ul>
       </section>
 
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
 
       <section>
         <H2>6. Cookies</H2>
-        <p className="mt-3">We use three categories of first-party cookies, and nothing from third-party ad networks:</p>
+        <p className="mt-3">We use three categories of cookies — all set on our own domain, and nothing from ad networks:</p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5">
           <li>
             <strong>Necessary</strong> — authentication cookies set by our sign-in service (they
@@ -89,9 +89,12 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Analytics</strong> — a session cookie and a persistent visitor cookie (
-            <code>ie_vid</code>) we use to count page views and understand product usage. Off by
-            default; you choose whether to allow it in the cookie banner or via &quot;Cookie
-            preferences&quot; in the footer.
+            <code>ie_vid</code>) we use to count page views and understand product usage, plus
+            Google Analytics, which sets its own cookies (<code>_ga</code> and{' '}
+            <code>_ga_*</code>) to tell visitors apart and measure usage on Google&apos;s side.
+            All of it is off by default; you choose whether to allow it in the cookie banner or
+            via &quot;Cookie preferences&quot; in the footer, and declining (or changing your
+            mind later) also deletes the analytics cookies already set.
           </li>
         </ul>
         <p className="mt-3">
