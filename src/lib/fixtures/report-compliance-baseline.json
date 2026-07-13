@@ -1,0 +1,44 @@
+[
+  {
+    "item": "Australian Business Number (ABN) registration",
+    "summary": "Register for an ABN before invoicing or trading — it identifies your business to the ATO and other businesses, and is required to register for GST, open a business bank account, and avoid pay-as-you-go withholding on payments you receive.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.abr.gov.au/business-super-funds-charities/applying-abn"
+  },
+  {
+    "item": "GST registration (once turnover exceeds $75,000)",
+    "summary": "You must register for GST within 21 days of your GST turnover exceeding $75,000 in a 12-month period. Once registered you charge GST on taxable sales and can claim GST credits on business purchases.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/registering-for-gst"
+  },
+  {
+    "item": "Australian Consumer Law (ACL) compliance",
+    "summary": "The ACL applies consumer guarantees that cannot be excluded by any contract term — your refund, warranty, and advertising practices must not misrepresent these rights. Misleading or deceptive conduct is enforced by the ACCC.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.accc.gov.au/business/business-obligations/australian-consumer-law"
+  },
+  {
+    "item": "Privacy Act obligations (personal data handling)",
+    "summary": "If you collect personal information from customers and either have turnover above $3 million or handle certain sensitive categories, the Privacy Act and Australian Privacy Principles apply. A clear, compliant privacy policy is good practice regardless of turnover.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://www.oaic.gov.au/privacy/privacy-legislation/the-privacy-act"
+  },
+  {
+    "item": "Business name registration (if trading under a name other than your own)",
+    "summary": "If you trade under any name other than your own personal legal name, you must register that business name with ASIC before you start using it.",
+    "severity": "required",
+    "jurisdiction": "Federal, Australia",
+    "official_source_url": "https://asic.gov.au/for-business/registering-a-business-name/"
+  },
+  {
+    "item": "Public liability insurance",
+    "summary": "Not a statutory requirement for most sole traders, but strongly advised — it covers claims for property damage or injury caused to a third party in the course of doing business, and many commercial clients or venues will not engage you without it.",
+    "severity": "recommended",
+    "jurisdiction": "Australia",
+    "official_source_url": "https://business.gov.au/risk-management/insurance/business-insurance"
+  }
+]

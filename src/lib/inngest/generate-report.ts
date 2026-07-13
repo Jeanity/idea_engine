@@ -17,7 +17,22 @@ import {
   COMPLIANCE_FALLBACK_SYSTEM_PROMPT,
   buildComplianceFallbackMessage,
 } from '@/lib/prompts/compliance-fallback'
-import { staticComplianceBaseline } from '@/lib/compliance-baseline'
+import {
+  COMPLIANCE_BASELINE_SYSTEM_PROMPT,
+  buildComplianceBaselineMessage,
+} from '@/lib/prompts/compliance-baseline'
+import {
+  COMPLIANCE_OVERLAY_SYSTEM_PROMPT,
+  buildComplianceOverlayMessage,
+} from '@/lib/prompts/compliance-overlay'
+import { staticComplianceBaseline, type ComplianceItem } from '@/lib/compliance-baseline'
+import {
+  lookupEvergreenBaseline,
+  storeEvergreenBaseline,
+  mergeComplianceItems,
+  type EvergreenBaseline,
+  type EvergreenLookupResult,
+} from '@/lib/evergreen'
 import { logError } from '@/lib/log-error'
 import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import {
@@ -538,66 +553,198 @@ export const generateReport = inngest.createFunction(
       await persistSections('persist-funding')
     }
 
-    // ── Step 3: Compliance check (live search → inferred → static) ──
-    const compliancePrimary = await aiStep(
-      step,
-      'compliance-check',
-      6144,
-      (maxTokens) => callAI({
-        messages: [{ role: 'user', content: buildComplianceMessage({
+    // ── Step 3: Compliance check (evergreen baseline + overlay, legacy fallback) ──
+    // A3(0) provider guard: mock demo runs never touch the evergreen cache —
+    // no reads, no writes — so fixture data can never poison a real cache
+    // entry and demo runs never depend on DB state. Mock mode still exercises
+    // the two-call baseline+overlay shape (via fixtures below), just as a
+    // guaranteed "miss" that's never stored.
+    //
+    // A3(1) cache read, and the missing-migration guard: if evergreen_baselines
+    // (030) hasn't been run yet, lookupEvergreenBaseline reports
+    // 'table_missing' rather than 'miss' — that takes the exact pre-existing
+    // legacy branch below with NO extra AI call, so a report never differs in
+    // behaviour or cost just because Danny hasn't run a migration yet (see
+    // isMissingTable convention, src/lib/app-settings.ts).
+    const complianceCountryCode = (idea.location_country ?? '').toUpperCase()
+
+    const evergreenLookup: EvergreenLookupResult = provider === 'mock'
+      ? { status: 'miss' }
+      : await step.run('evergreen-compliance-read', () =>
+          lookupEvergreenBaseline(supabase, {
+            countryCode: complianceCountryCode,
+            archetype: idea.archetype,
+            section: 'compliance',
+          })
+        )
+
+    let evergreenBaseline: EvergreenBaseline | null =
+      evergreenLookup.status === 'hit' ? evergreenLookup.baseline : null
+
+    // A3(2) On MISS — one-time baseline research call, amortized over every
+    // future report from this country x archetype (deliberate Sonnet
+    // exception to Haiku-first — see A3 rationale in the evergreen spec).
+    if (evergreenLookup.status === 'miss') {
+      const baselineOutcome = await aiStep(
+        step,
+        'evergreen-compliance-baseline',
+        6144,
+        (maxTokens) => callAI({
+          messages: [{ role: 'user', content: buildComplianceBaselineMessage({
+            archetype: idea.archetype,
+            location_country: idea.location_country,
+            location_region: idea.location_region,
+          }) }],
+          system: COMPLIANCE_BASELINE_SYSTEM_PROMPT,
+          maxTokens,
+          tag: 'report:compliance-baseline',
+          tools: webSearchTool(4),
+          model: DEFAULT_MODEL,
+          provider,
+        }),
+        r => parseJsonArray(r) as unknown as ComplianceItem[],
+      )
+      bankStep('evergreen-compliance-baseline', baselineOutcome)
+
+      if (baselineOutcome.status === 'ok' && isNonEmptyArray(baselineOutcome.value)) {
+        const freshItems = baselineOutcome.value as ComplianceItem[]
+        const generatedByModel = baselineOutcome.meta.model ?? DEFAULT_MODEL
+        // Own step.run, per the mark-running/persistSections convention in
+        // this file — every DB touch must be memoized or it re-fires on
+        // every Inngest replay. Skipped entirely for mock (A3(0)).
+        if (provider !== 'mock') {
+          await step.run('evergreen-compliance-store', () =>
+            storeEvergreenBaseline(supabase, {
+              countryCode: complianceCountryCode,
+              archetype: idea.archetype,
+              section: 'compliance',
+              items: freshItems,
+              model: generatedByModel,
+              costUsd: baselineOutcome.costUsd,
+              sourceReportId: reportId,
+            })
+          )
+        }
+        evergreenBaseline = {
+          id: '',
+          countryCode: complianceCountryCode,
+          region: '',
           archetype: idea.archetype,
-          location_country: idea.location_country,
-          location_region: idea.location_region,
-          restatement: idea.restatement,
-          sales_channel: mapsTo['idea.sales_channel'] ?? null,
-          production_location: mapsTo['cost.production_location'] ?? null,
-        }) }],
-        system: COMPLIANCE_SYSTEM_PROMPT,
-        maxTokens,
-        tag: 'report:compliance',
-        tools: webSearchTool(3),
-        model: stepModel('compliance'),
-        provider,
-      }),
-      parseJsonArray,
-    )
-    bankStep('compliance-check', compliancePrimary)
+          section: 'compliance',
+          items: freshItems,
+          reviewStatus: 'unreviewed',
+          generatedByModel,
+          generationCostUsd: baselineOutcome.costUsd,
+          sourceReportId: reportId,
+          expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+      }
+      // On failure evergreenBaseline stays null — the overlay call below runs
+      // in legacy mode (3b) and nothing is stored (A3(2)).
+    }
 
     let legalCompliance: unknown
-    if (compliancePrimary.status === 'ok' && isNonEmptyArray(compliancePrimary.value)) {
-      legalCompliance = compliancePrimary.value
-      sectionStatus.legal_compliance = 'live_ok'
-    } else {
-      const complianceFallback = await aiStep(
+    if (evergreenBaseline) {
+      // A3(3a) — baseline present (cache hit or freshly generated): a
+      // narrower, cheaper overlay call asks only for what's specific to this
+      // idea. Keeps the 'compliance-check' step id — it stays the per-report step.
+      const baselineForOverlay = evergreenBaseline
+      const overlayOutcome = await aiStep(
         step,
-        'compliance-check-fallback',
-        4096,
+        'compliance-check',
+        6144,
         (maxTokens) => callAI({
-          messages: [{ role: 'user', content: buildComplianceFallbackMessage({
+          messages: [{ role: 'user', content: buildComplianceOverlayMessage({
             archetype: idea.archetype,
             location_country: idea.location_country,
             location_region: idea.location_region,
             restatement: idea.restatement,
             sales_channel: mapsTo['idea.sales_channel'] ?? null,
-            business_model: mapsTo['idea.business_model'] ?? mapsTo['pricing.model'] ?? null,
+            production_location: mapsTo['cost.production_location'] ?? null,
+            baseline_items: baselineForOverlay.items,
           }) }],
-          system: COMPLIANCE_FALLBACK_SYSTEM_PROMPT,
+          system: COMPLIANCE_OVERLAY_SYSTEM_PROMPT,
           maxTokens,
-          tag: 'report:compliance-fallback',
-          model: HAIKU_MODEL,
+          tag: 'report:compliance',
+          tools: webSearchTool(2),
+          model: stepModel('compliance'),
           provider,
         }),
         parseJsonArray,
       )
-      bankStep('compliance-check-fallback', complianceFallback)
-      if (complianceFallback.status === 'ok' && isNonEmptyArray(complianceFallback.value)) {
-        legalCompliance = complianceFallback.value
+      bankStep('compliance-check', overlayOutcome)
+
+      const overlayItems = overlayOutcome.status === 'ok'
+        ? (overlayOutcome.value as ComplianceItem[])
+        : [] // [] is a valid, expected overlay answer — and the safe substitute on failure.
+      legalCompliance = mergeComplianceItems(baselineForOverlay.items, overlayItems)
+      // A3(4): baseline is real, searched, source-backed content — an
+      // overlay failure never demotes the section to fallback_inferred, and
+      // never triggers the inferred-fallback chain on top of a good
+      // baseline. That's the cost this whole feature exists to delete.
+      sectionStatus.legal_compliance = 'live_ok'
+    } else {
+      // A3(3b) — no baseline (table missing, or generation failed): exact
+      // pre-existing behaviour, unchanged safety net.
+      const compliancePrimary = await aiStep(
+        step,
+        'compliance-check',
+        6144,
+        (maxTokens) => callAI({
+          messages: [{ role: 'user', content: buildComplianceMessage({
+            archetype: idea.archetype,
+            location_country: idea.location_country,
+            location_region: idea.location_region,
+            restatement: idea.restatement,
+            sales_channel: mapsTo['idea.sales_channel'] ?? null,
+            production_location: mapsTo['cost.production_location'] ?? null,
+          }) }],
+          system: COMPLIANCE_SYSTEM_PROMPT,
+          maxTokens,
+          tag: 'report:compliance',
+          tools: webSearchTool(3),
+          model: stepModel('compliance'),
+          provider,
+        }),
+        parseJsonArray,
+      )
+      bankStep('compliance-check', compliancePrimary)
+
+      if (compliancePrimary.status === 'ok' && isNonEmptyArray(compliancePrimary.value)) {
+        legalCompliance = compliancePrimary.value
+        sectionStatus.legal_compliance = 'live_ok'
       } else {
-        // Deterministic last resort — never leaves the tab blank.
-        legalCompliance = staticComplianceBaseline(idea.archetype, idea.location_country)
-        stepMetas['compliance-check-static'] = { status: 'ok', input_tokens: 0, output_tokens: 0, web_search_requests: 0, cost_usd: 0 }
+        const complianceFallback = await aiStep(
+          step,
+          'compliance-check-fallback',
+          4096,
+          (maxTokens) => callAI({
+            messages: [{ role: 'user', content: buildComplianceFallbackMessage({
+              archetype: idea.archetype,
+              location_country: idea.location_country,
+              location_region: idea.location_region,
+              restatement: idea.restatement,
+              sales_channel: mapsTo['idea.sales_channel'] ?? null,
+              business_model: mapsTo['idea.business_model'] ?? mapsTo['pricing.model'] ?? null,
+            }) }],
+            system: COMPLIANCE_FALLBACK_SYSTEM_PROMPT,
+            maxTokens,
+            tag: 'report:compliance-fallback',
+            model: HAIKU_MODEL,
+            provider,
+          }),
+          parseJsonArray,
+        )
+        bankStep('compliance-check-fallback', complianceFallback)
+        if (complianceFallback.status === 'ok' && isNonEmptyArray(complianceFallback.value)) {
+          legalCompliance = complianceFallback.value
+        } else {
+          // Deterministic last resort — never leaves the tab blank.
+          legalCompliance = staticComplianceBaseline(idea.archetype, idea.location_country)
+          stepMetas['compliance-check-static'] = { status: 'ok', input_tokens: 0, output_tokens: 0, web_search_requests: 0, cost_usd: 0 }
+        }
+        sectionStatus.legal_compliance = 'fallback_inferred'
       }
-      sectionStatus.legal_compliance = 'fallback_inferred'
     }
     sections.legal_compliance = legalCompliance
     await persistSections('persist-compliance')

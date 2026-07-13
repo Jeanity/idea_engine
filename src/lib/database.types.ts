@@ -24,6 +24,8 @@ export type SurveyPlacement = 'full_report_end' | 'initial_report_end' | 'accoun
 export type SurveyAudience = 'all' | 'first_report' | 'first_purchase' | 'promo_users' | 'repeat_users'
 export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
 export type MessageTemplateKind = 'invite' | 'contact_reply' | 'feedback_reply'
+export type EvergreenSectionKind = 'compliance' | 'financing' | 'marketing'
+export type EvergreenReviewStatus = 'unreviewed' | 'approved'
 
 export type Database = {
   public: {
@@ -929,6 +931,55 @@ export type Database = {
         Update: {
           email?: string
           notified_at?: string | null
+        }
+        Relationships: []
+      }
+      evergreen_baselines: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          country_code: string
+          region: string
+          archetype: string
+          section: EvergreenSectionKind
+          items: Json
+          review_status: EvergreenReviewStatus
+          reviewed_at: string | null
+          generated_by_model: string
+          generation_cost_usd: number
+          source_report_id: string | null
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          country_code: string
+          region?: string
+          archetype: string
+          section: EvergreenSectionKind
+          items: Json
+          review_status?: EvergreenReviewStatus
+          reviewed_at?: string | null
+          generated_by_model: string
+          generation_cost_usd?: number
+          source_report_id?: string | null
+          expires_at: string
+        }
+        Update: {
+          updated_at?: string
+          country_code?: string
+          region?: string
+          archetype?: string
+          section?: EvergreenSectionKind
+          items?: Json
+          review_status?: EvergreenReviewStatus
+          reviewed_at?: string | null
+          generated_by_model?: string
+          generation_cost_usd?: number
+          source_report_id?: string | null
+          expires_at?: string
         }
         Relationships: []
       }

@@ -16,6 +16,7 @@ import {
   DollarSign,
   AlertTriangle,
   Bug,
+  Sprout,
   Settings,
   UserCircle,
   LayoutTemplate,
@@ -95,6 +96,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/app/admin/errors', label: 'Errors', icon: AlertTriangle },
       { href: '/app/admin/bugs', label: 'Bugs', icon: Bug },
+      { href: '/app/admin/evergreen', label: 'Evergreen', icon: Sprout },
       { href: '/app/admin/settings', label: 'Settings', icon: Settings },
       { href: '/app/account', label: 'My account', icon: UserCircle, noActive: true },
     ],
