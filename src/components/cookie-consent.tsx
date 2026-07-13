@@ -86,8 +86,8 @@ export function CookieConsentBanner() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-300 light:text-gray-600">
               These aren&apos;t the creepy kind of cookies. Essentials keep you signed in; optional
-              analytics — our own counter plus Google Analytics — tell us what&apos;s working. If
-              that ever changes, we&apos;ll ask first.{' '}
+              analytics count your visit so we can see what&apos;s working — nothing follows you
+              once you leave. If that ever changes, we&apos;ll ask first.{' '}
               <Link href="/privacy" className="text-indigo-300 underline hover:text-indigo-200 light:text-indigo-600 light:hover:text-indigo-700">
                 See for yourself
               </Link>
