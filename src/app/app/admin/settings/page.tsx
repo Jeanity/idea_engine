@@ -4,6 +4,7 @@ import { ReportModelPicker } from './model-picker'
 import { PromoCard } from './promo-card'
 import { TeaserGatingCard } from './teaser-gating-card'
 import { SmexyCard } from './smexy-card'
+import { EngineCard } from './engine-card'
 
 export const metadata = { title: 'Settings — Admin — HadIdea' }
 
@@ -25,6 +26,10 @@ export default async function AdminSettingsPage() {
       <p className="text-sm text-slate-400 light:text-gray-500 mb-8">
         Admin experiment controls.
       </p>
+
+      <div className="mb-8">
+        <EngineCard />
+      </div>
 
       <div className="mb-8">
         <PromoCard />

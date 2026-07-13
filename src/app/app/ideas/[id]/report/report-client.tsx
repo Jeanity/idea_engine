@@ -13,6 +13,7 @@ import { SurveyCard, type SurveyData } from '@/components/survey-card'
 import { BugReportWidget } from '@/components/bug-report-widget'
 import { StartOverButton } from '@/components/start-over-button'
 import { SiteFooter } from '@/components/site-footer'
+import { ServiceNotice } from '@/components/service-notice'
 
 interface ReportData {
   id: string
@@ -311,6 +312,9 @@ function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
 }) {
   const [report, setReport] = useState<ReportData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Set alongside `error` when the failure was the engine kill switch's 503
+  // (src/lib/service-mode.ts) — swaps the retry line for ServiceNotice below.
+  const [serviceMode, setServiceMode] = useState(false)
   const [generating, setGenerating] = useState(false)
   // When we FIRST saw this run in 'queued' (null once it starts running),
   // the over-threshold flag derived from it on each poll tick (a ref + poll-
@@ -323,6 +327,7 @@ function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
 
   const triggerGeneration = useCallback(async () => {
     setGenerating(true)
+    setServiceMode(false)
     try {
       const res = await fetch('/api/reports', {
         method: 'POST',
@@ -332,7 +337,10 @@ function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
       // Server errors can return an empty/non-JSON body — don't let the
       // parse error ("Unexpected end of JSON input") mask the real status.
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.error ?? `Report generation failed to start (server error ${res.status}). Please try again.`)
+      if (!res.ok) {
+        if (data.service_mode) setServiceMode(true)
+        throw new Error(data.error ?? `Report generation failed to start (server error ${res.status}). Please try again.`)
+      }
       setReport(prev => prev ?? { id: data.reportId, status: data.status, sections: {}, preview_sections: {}, error: null })
       if (data.status === 'queued') queuedSinceRef.current ??= Date.now()
     } catch (err) {
@@ -403,13 +411,19 @@ function ProgressScreen({ ideaId, restatement, fullRun, onComplete }: {
           <BouncingBlob sizePx={280} className="bg-cyan-500/15" fx={0.55} fy={0.4} />
         </div>
         <div className="relative z-10 max-w-2xl mx-auto px-6 py-24 text-center">
-          <p className="text-red-300 text-sm mb-4">{error}</p>
-          <button
-            onClick={() => { setError(null); triggerGeneration() }}
-            className="text-sm text-indigo-400 hover:underline"
-          >
-            Try again
-          </button>
+          {serviceMode ? (
+            <ServiceNotice message={error} />
+          ) : (
+            <>
+              <p className="text-red-300 text-sm mb-4">{error}</p>
+              <button
+                onClick={() => { setError(null); triggerGeneration() }}
+                className="text-sm text-indigo-400 hover:underline"
+              >
+                Try again
+              </button>
+            </>
+          )}
           <p className="mt-6 text-xs text-slate-500">
             Keeps happening?{' '}
             <Link href="/support" className="text-slate-400 hover:text-white underline underline-offset-2">
@@ -962,10 +976,14 @@ function LockedSectionCard({ title, description, skeleton, hook, costPreview }: 
 function PromoUnlockButton({ ideaId, onStart }: { ideaId: string; onStart: () => void }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Set alongside `error` when the failure was the engine kill switch's 503
+  // (src/lib/service-mode.ts) — swaps the plain error line for ServiceNotice.
+  const [serviceMode, setServiceMode] = useState(false)
 
   async function handleClick() {
     setLoading(true)
     setError('')
+    setServiceMode(false)
     try {
       const res = await fetch('/api/reports/full', {
         method: 'POST',
@@ -975,6 +993,7 @@ function PromoUnlockButton({ ideaId, onStart }: { ideaId: string; onStart: () =>
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
         setError(d.error ?? 'Could not start your full report. Please try again.')
+        setServiceMode(d.service_mode === true)
         return
       }
       onStart()
@@ -983,6 +1002,14 @@ function PromoUnlockButton({ ideaId, onStart }: { ideaId: string; onStart: () =>
     } finally {
       setLoading(false)
     }
+  }
+
+  if (serviceMode) {
+    return (
+      <div className="mt-5">
+        <ServiceNotice message={error} />
+      </div>
+    )
   }
 
   return (

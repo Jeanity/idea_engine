@@ -1,6 +1,7 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { isAdminEmail } from '@/lib/admin'
 import { inngest } from '@/lib/inngest'
+import { readServiceMode, SERVICE_MODE_MESSAGE } from '@/lib/service-mode'
 import { checkAndApplyPromoGate, recordPromoIdentity } from '@/lib/promo'
 import { firstForwardedIp } from '@/lib/promo-abuse'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -19,6 +20,14 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const isAdmin = isAdminEmail(user.email)
+
+  // Engine kill switch (src/lib/service-mode.ts): checked before the ownership
+  // read and promo-gate below, both of which precede the actual AI spend.
+  // Admin's own "test mode" run must still work while paused (that's the
+  // whole point of the bypass), so this only ever blocks non-admins.
+  if (!isAdmin && (await readServiceMode(createServiceClient()))) {
+    return NextResponse.json({ error: SERVICE_MODE_MESSAGE, service_mode: true }, { status: 503 })
+  }
 
   const body = await request.json()
   const { idea_id } = body

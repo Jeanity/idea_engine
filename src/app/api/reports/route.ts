@@ -2,6 +2,7 @@ import { createDbClient, createServiceClient } from '@/lib/db'
 import { inngest } from '@/lib/inngest'
 import { maybeGateReport } from '@/lib/teaser-gating'
 import { isAdminEmail } from '@/lib/admin'
+import { readServiceMode, SERVICE_MODE_MESSAGE } from '@/lib/service-mode'
 import {
   countRecentIdeas,
   evaluateGenerationLimit,
@@ -14,6 +15,14 @@ export async function POST(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  // Engine kill switch (src/lib/service-mode.ts): both a fresh teaser and a
+  // forced regeneration spend AI, so both must stop here — before the ownership
+  // read below, let alone the Inngest fire. Admin bypass so Danny can keep
+  // testing while paused.
+  if (!isAdminEmail(user.email) && (await readServiceMode(createServiceClient()))) {
+    return NextResponse.json({ error: SERVICE_MODE_MESSAGE, service_mode: true }, { status: 503 })
+  }
 
   const body = await request.json()
   const { idea_id } = body

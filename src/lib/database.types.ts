@@ -911,6 +911,27 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_notify: {
+        Row: {
+          id: string
+          user_id: string
+          email: string
+          created_at: string
+          notified_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email: string
+          created_at?: string
+          notified_at?: string | null
+        }
+        Update: {
+          email?: string
+          notified_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

@@ -1,6 +1,8 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { callAI } from '@/lib/ai'
 import { providerOverrideForUser } from '@/lib/demo-mode'
+import { isAdminEmail } from '@/lib/admin'
+import { readServiceMode, SERVICE_MODE_MESSAGE } from '@/lib/service-mode'
 import { CLASSIFY_SYSTEM_PROMPT, buildClassifyUserMessage } from '@/lib/prompts/classify'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { IdeaArchetype } from '@/lib/database.types'
@@ -55,6 +57,13 @@ export async function POST(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  // Engine kill switch (src/lib/service-mode.ts): blocks new intake outright
+  // so nobody walks a wizard into a wall — checked before the classify call
+  // below spends anything. Admin bypass so Danny can keep testing while paused.
+  if (!isAdminEmail(user.email) && (await readServiceMode(createServiceClient()))) {
+    return NextResponse.json({ error: SERVICE_MODE_MESSAGE, service_mode: true }, { status: 503 })
+  }
 
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })

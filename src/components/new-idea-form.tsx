@@ -2,17 +2,20 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ServiceNotice } from '@/components/service-notice'
 
 export default function NewIdeaForm() {
   const router = useRouter()
   const [rawText, setRawText] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [serviceMode, setServiceMode] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setStatus('loading')
     setErrorMsg('')
+    setServiceMode(false)
 
     const res = await fetch('/api/ideas', {
       method: 'POST',
@@ -23,6 +26,7 @@ export default function NewIdeaForm() {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
       setErrorMsg(body.error ?? 'Something went wrong. Please try again.')
+      setServiceMode(body.service_mode === true)
       setStatus('error')
       return
     }
@@ -35,7 +39,9 @@ export default function NewIdeaForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {errorMsg && (
+      {serviceMode ? (
+        <ServiceNotice message={errorMsg} />
+      ) : errorMsg && (
         <div className="rounded-lg border border-red-400/20 bg-red-400/10 light:border-red-100 light:bg-red-50 p-3 text-sm text-red-300 light:text-red-600">
           {errorMsg}
         </div>
