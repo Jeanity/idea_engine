@@ -3,8 +3,10 @@ import { isAdminEmail } from '@/lib/admin'
 import { NextResponse } from 'next/server'
 
 // Powers the live nav badges in src/app/app/admin/admin-shell.tsx: survey-active
-// dot on Surveys, and "new since I last visited that page" counts on Contact,
-// Feedback, Bugs, and Errors (migration 023, admin_seen). The /app/admin
+// dot on Surveys, "new since I last visited that page" counts on Contact,
+// Feedback, Bugs, and Errors (migration 023, admin_seen), and an
+// awaiting-review count on Evergreen (state-based — clears on approve/evict,
+// not on visit). The /app/admin
 // layout gates the PAGE, not this API route — every admin route re-checks
 // isAdminEmail itself, per project ground rules. The service client is only
 // ever created AFTER that check passes (matches src/api/admin/stats).
@@ -70,7 +72,7 @@ export async function GET() {
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const ZERO_RESULT = Promise.resolve({ count: 0, error: null } as { count: number | null; error: { code?: string } | null })
 
-  const [surveysRes, contactRes, feedbackRes, bugsRes, errorsRes] = await Promise.all([
+  const [surveysRes, contactRes, feedbackRes, bugsRes, errorsRes, evergreenRes] = await Promise.all([
     // Any active survey row lights the Surveys dot (migration 025 —
     // per-survey active replaced the old app_settings on/off flag).
     service.from('surveys').select('id', { count: 'exact', head: true }).eq('active', true),
@@ -86,6 +88,10 @@ export async function GET() {
     seenColumnMissing
       ? ZERO_RESULT
       : service.from('error_log').select('id', { count: 'exact', head: true }).gt('occurred_at', seen.errors ?? EPOCH),
+    // Evergreen is state-based, not seen-based: the light means "entries are
+    // awaiting review" and clears when they're approved or evicted, not when
+    // the page is visited — so it deliberately ignores admin_seen.
+    service.from('evergreen_baselines').select('id', { count: 'exact', head: true }).eq('review_status', 'unreviewed'),
   ])
 
   if (surveysRes.error && !isMissingTable(surveysRes.error)) {
@@ -103,6 +109,9 @@ export async function GET() {
   if (errorsRes.error && !isMissingTable(errorsRes.error)) {
     console.error('Admin nav-status: errors query failed:', errorsRes.error)
   }
+  if (evergreenRes.error && !isMissingTable(evergreenRes.error)) {
+    console.error('Admin nav-status: evergreen query failed:', evergreenRes.error)
+  }
 
   return NextResponse.json({
     surveyActive: !surveysRes.error && (surveysRes.count ?? 0) > 0,
@@ -110,5 +119,6 @@ export async function GET() {
     feedbackCount: feedbackRes.error ? 0 : feedbackRes.count ?? 0,
     bugsCount: bugsRes.error ? 0 : bugsRes.count ?? 0,
     errorsCount: errorsRes.error ? 0 : errorsRes.count ?? 0,
+    evergreenCount: evergreenRes.error ? 0 : evergreenRes.count ?? 0,
   })
 }

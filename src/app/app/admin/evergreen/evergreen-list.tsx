@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import type { ComplianceItem } from '@/lib/compliance-baseline'
 import type { EvergreenReviewStatus } from '@/lib/database.types'
+import { ADMIN_NAV_SEEN_EVENT } from '@/lib/admin-nav-events'
 
 export interface EvergreenRow {
   id: string
@@ -60,6 +61,10 @@ function EvergreenItem({
         return
       }
       setStatus('approved')
+      // The Evergreen nav badge counts unreviewed rows — poke admin-shell to
+      // refetch nav-status now so the count drops immediately, not on the
+      // next 60s poll (same event MarkSeen uses, admin-nav-events.ts).
+      window.dispatchEvent(new Event(ADMIN_NAV_SEEN_EVENT))
       router.refresh()
     } catch {
       setError('Network error — please try again')
@@ -82,6 +87,8 @@ function EvergreenItem({
         return
       }
       onDeleted()
+      // Evicting an unreviewed row also lowers the nav badge count.
+      window.dispatchEvent(new Event(ADMIN_NAV_SEEN_EVENT))
       router.refresh()
     } catch {
       setError('Network error — please try again')

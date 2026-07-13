@@ -131,6 +131,7 @@ interface NavStatus {
   feedbackCount: number
   bugsCount: number
   errorsCount: number
+  evergreenCount: number
 }
 
 const EMPTY_NAV_STATUS: NavStatus = {
@@ -139,6 +140,7 @@ const EMPTY_NAV_STATUS: NavStatus = {
   feedbackCount: 0,
   bugsCount: 0,
   errorsCount: 0,
+  evergreenCount: 0,
 }
 const NAV_STATUS_POLL_MS = 60_000
 
@@ -151,6 +153,7 @@ function getNavBadge(href: string, status: NavStatus): { kind: BadgeKind; count:
   if (href === '/app/admin/feedback') return { kind: status.feedbackCount > 0 ? 'count-amber' : 'none', count: status.feedbackCount }
   if (href === '/app/admin/bugs') return { kind: status.bugsCount > 0 ? 'count-amber' : 'none', count: status.bugsCount }
   if (href === '/app/admin/errors') return { kind: status.errorsCount > 0 ? 'count-red' : 'none', count: status.errorsCount }
+  if (href === '/app/admin/evergreen') return { kind: status.evergreenCount > 0 ? 'count-amber' : 'none', count: status.evergreenCount }
   return { kind: 'none', count: 0 }
 }
 
@@ -161,6 +164,8 @@ function badgeDescription(href: string, status: NavStatus): string {
   if (href === '/app/admin/feedback' && status.feedbackCount > 0) return ` — ${status.feedbackCount} new since last visit`
   if (href === '/app/admin/bugs' && status.bugsCount > 0) return ` — ${status.bugsCount} new since last visit`
   if (href === '/app/admin/errors' && status.errorsCount > 0) return ` — ${status.errorsCount} new since last visit`
+  // State-based, not seen-based: reflects rows awaiting review right now.
+  if (href === '/app/admin/evergreen' && status.evergreenCount > 0) return ` — ${status.evergreenCount} awaiting review`
   return ''
 }
 
@@ -169,7 +174,7 @@ function badgeDescription(href: string, status: NavStatus): string {
  *  where the per-item indicators below are literally invisible (drawer closed). */
 function overallSeverity(status: NavStatus): 'red' | 'amber' | 'emerald' | null {
   if (status.errorsCount > 0) return 'red'
-  if (status.bugsCount > 0 || status.contactCount > 0 || status.feedbackCount > 0) return 'amber'
+  if (status.bugsCount > 0 || status.contactCount > 0 || status.feedbackCount > 0 || status.evergreenCount > 0) return 'amber'
   if (status.surveyActive) return 'emerald'
   return null
 }
@@ -193,6 +198,7 @@ function useNavStatus(pathname: string): NavStatus {
           feedbackCount: Number.isFinite(data.feedbackCount) ? data.feedbackCount : 0,
           bugsCount: Number.isFinite(data.bugsCount) ? data.bugsCount : 0,
           errorsCount: Number.isFinite(data.errorsCount) ? data.errorsCount : 0,
+          evergreenCount: Number.isFinite(data.evergreenCount) ? data.evergreenCount : 0,
         })
       } catch {
         /* silent — no badges on failure */
