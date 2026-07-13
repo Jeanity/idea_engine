@@ -51,9 +51,11 @@ const BASE_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Coming soon',
     comingSoon: [
-      // One content surface, not Blog + Articles (Danny, 2026-07-14) —
-      // "Guides" promises utility and matches the planned SEO content.
-      { label: 'Guides', icon: Newspaper },
+      // One content surface, not Blog + Articles (Danny, 2026-07-14).
+      // "Blog" chosen deliberately over Guides/Notebook/Stories: the planned
+      // content mixes founder story, product philosophy, AND how-tos — which
+      // is precisely what a blog is, and the label everyone understands.
+      { label: 'Blog', icon: Newspaper },
       { label: 'Forum', icon: MessageSquare },
     ],
   },
