@@ -410,6 +410,74 @@ here). Admin row target: "NZ (New Zealand) · New · 6 reports on this version
   notify against a test-account cohort — report section actually changes,
   usage rows marked, email received on the test account.
 
+## Workstream D — evergreen audit follow-ups (added 2026-07-14, from Fable's post-C audit, Danny approved)
+
+Three gaps found auditing the shipped feature. (Audit items #1/#2 — warm
+script resurrecting disapproved entries, serverless-sized remediation cap —
+were fixed directly in 34f0957 and are NOT in scope here.)
+
+### D1 — remediation UI only surfaces after a disapproval (#3)
+Cohorts accrue on ANY revision bump — a routine expiry refresh or warm-script
+re-run supersedes perfectly good content, and those users need no
+remediation. The UI must stop presenting every cohort as a call to action.
+- **Migration 032**: `evergreen_baselines` gains `last_disapproved_at
+  timestamptz null`. Set alongside disapproved_at on every disapprove.
+  UNLIKE disapproved_at/disapprove_note, it is NEVER cleared — not by
+  approve, not by storeEvergreenBaseline/regenerate — it is the permanent
+  "this key has a disapproval in its history" marker that survives the
+  regenerate cycle (which resets the other two).
+- Disapprove route sets it (43703/PGRST204 → same friendly missing-migration
+  handling, now naming 032).
+- Evergreen list UI: the "Remediate…" control renders ONLY when cohort > 0
+  AND last_disapproved_at is non-null. Otherwise, cohort > 0 renders a muted
+  informational line: "N reports used older versions of this entry — no
+  action needed unless the old version was wrong." (Server passes
+  last_disapproved_at through with the row; tolerate the column missing
+  pre-032 by treating it as null → informational line only.)
+
+### D2 — orphaned usage rows drain instead of accreting (#4)
+- **Migration 032 (same file)**: widen the `remediation` CHECK to
+  ('patched', 'notified', 'orphaned').
+- Remediate route: when the per-row report load succeeds as a QUERY but the
+  report row is absent (deleted idea/report — `!report && !reportError`),
+  mark the usage row remediated_at=now, remediation='orphaned' (counts in a
+  new `orphaned` summary field, not `skipped`). A genuine query ERROR stays
+  skipped/retryable. Update EvergreenRemediationKind and the UI summary line.
+- Account deletion (`src/app/api/profile/delete-account/route.ts`): delete
+  the user's evergreen_report_usage rows (service client, missing-table
+  tolerant) alongside the existing cleanup — the rows carry a user_id and
+  have no FK to auth.users, so they'd otherwise outlive the account.
+- Idea deletion: check whether deleting an idea removes its report row (RLS/
+  cascade); if report rows survive or not, the orphan-marking path above is
+  the safety net either way — no extra work unless the check reveals report
+  rows are hard-deleted, in which case note it in the report only.
+
+### D3 — trace links between reports and evergreen entries (#5)
+The triage loop is "user files bug → admin opens report inspector →
+compliance looks wrong → which entry fed it?" and its inverse. Two links:
+- Report inspector (`/app/app/admin/reports/[id]/page.tsx`): when
+  `sections._meta.evergreen` exists, render an "Evergreen entry" line in the
+  diagnostics card — country/archetype if cheaply resolvable (one service
+  read by id; entry may be deleted → show "entry no longer exists"), the
+  revision timestamp, review_status_at_use, and a link to
+  `/app/admin/evergreen?highlight=<id>`.
+- Evergreen page: accept `?highlight=<id>` — the matching row renders
+  pre-expanded (and/or visually marked). Row expansion gains an "Affected
+  reports" block: usage rows for that entry (all revisions), newest first,
+  capped at 20 with a "+N more" count — each linking to
+  `/app/admin/reports/<report_id>` with used-at date and a
+  current/superseded revision tag. Reuse the usage rows page.tsx already
+  fetches; no new endpoint.
+
+### D verification
+- Usual suite: tsc clean, vitest green (helpers for the D1 gating predicate
+  and D2 orphan classification as pure functions), lint at the 18 baseline,
+  prod build.
+- Cannot run migration 032 or live flows — state plainly.
+- Danny runs 032 manually; everything degrades gracefully before it
+  (remediate keeps working with 'orphaned' unavailable → those rows stay
+  skipped; D1 control falls back to the informational line).
+
 ## Sequencing & review
 
 1. Implementer run 1: Workstream B. → Fable review. ✅ shipped 138d726.
