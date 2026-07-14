@@ -42,8 +42,11 @@
  * error and moves on to the next; the run only exits non-zero if EVERY
  * attempted generation failed.
  */
-import { config } from 'dotenv'
-config({ path: '.env.local' })
+// MUST be the first import: src/lib/ai.ts constructs its Anthropic client at
+// module scope, and hoisted imports evaluate before any statement in this
+// file — a bare config() call here left the client keyless (all 40 warm
+// calls failed live, 2026-07-14). See scripts/load-env.ts.
+import './load-env'
 
 import { createClient, type SupabaseClient, type PostgrestError } from '@supabase/supabase-js'
 import { readdirSync } from 'fs'
