@@ -48,11 +48,15 @@
 --   behaviour as before this migration existed), rather than crashing the
 --   whole remediation run.
 
+-- IF NOT EXISTS / IF EXISTS: unlike 030/031, this migration is deliberately
+-- idempotent — an accidental double-run is a harmless no-op (drop+re-add of
+-- the identical 3-value constraint) instead of a rolled-back 42701 error.
+-- Danny double-ran 031 by accident on 2026-07-14; cheap insurance.
 alter table public.evergreen_baselines
-  add column last_disapproved_at timestamptz null;
+  add column if not exists last_disapproved_at timestamptz null;
 
 alter table public.evergreen_report_usage
-  drop constraint evergreen_report_usage_remediation_check;
+  drop constraint if exists evergreen_report_usage_remediation_check;
 
 alter table public.evergreen_report_usage
   add constraint evergreen_report_usage_remediation_check
