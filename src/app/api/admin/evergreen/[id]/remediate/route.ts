@@ -32,7 +32,12 @@ const MAX_NOTE_LENGTH = 2000
 // Sequential per cohort report, capped per invocation — re-running the action
 // processes the next batch (already-remediated rows are excluded by the
 // cohort predicate, so re-clicking is safe, not double-work).
-const MAX_ROWS_PER_RUN = 100
+// Kept small: each row is a DB read + write + an SMTP send, all sequential
+// inside ONE serverless invocation, and Vercel Hobby function limits are
+// short. The action is idempotent (remediated rows never reprocess), so a
+// bigger cohort is just "click again until remaining is 0". Move to an
+// Inngest job before raising this.
+const MAX_ROWS_PER_RUN = 20
 
 type Mode = 'patch' | 'notify'
 type RemediationKind = 'patched' | 'notified'
