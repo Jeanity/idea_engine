@@ -67,7 +67,11 @@ import type { ComplianceItem } from '../src/lib/compliance-baseline'
 // Flat per-entry cost estimate used ONLY for the --dry-run / --max-spend
 // projection printed before any real call is made. Real stored costs always
 // come from the actual callAI result (r.costUsd), never this constant.
-const ESTIMATED_COST_PER_ENTRY = 0.18
+// 0.30 = the measured 2026-07-14 AU average (~$0.25/call — search-result
+// input tokens run bigger than the original $0.18 guess) plus headroom for
+// the occasional second attempt. Better to over-quote than to let
+// --max-spend approve a run that bills past what the operator was told.
+const ESTIMATED_COST_PER_ENTRY = 0.30
 
 // ---- Tolerant JSON-array extraction — mirrors extractJson/parseJsonArray in
 // src/lib/inngest/generate-report.ts exactly. Those are module-private there
@@ -243,32 +247,59 @@ interface GenerateResult {
  * 'anthropic' — never inherited from AI_PROVIDER — so an operator with
  * AI_PROVIDER=mock in their .env.local can never write fixture data into the
  * shared cache table.
+ *
+ * Two attempts per pair, mirroring the pipeline's aiStep: the 2026-07-14 AU
+ * warm run lost 3 of 8 pairs (~$0.76 billed for nothing) to one-shot JSON
+ * parse failures the pipeline would have absorbed with its retry. Every
+ * attempt's cost is banked BEFORE parsing — the same run's summary claimed
+ * $0.55 while $1.31 was actually billed, because parse-failure costs were
+ * dropped. costUsd in the result is now always the true billed total for the
+ * pair across attempts.
  */
+const ATTEMPTS_PER_PAIR = 2
+
 async function generateOne(
   supabase: SupabaseClient<Database>,
   countryCode: string,
   archetype: string
 ): Promise<GenerateResult> {
-  try {
-    const r = await callAI({
-      messages: [{
-        role: 'user',
-        content: buildComplianceBaselineMessage({ archetype, location_country: countryCode }),
-      }],
-      system: COMPLIANCE_BASELINE_SYSTEM_PROMPT,
-      maxTokens: 6144,
-      tag: 'script:warm-evergreen',
-      tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 4 }],
-      model: DEFAULT_MODEL,
-      provider: 'anthropic',
-    })
+  let costUsd = 0
+  let lastError = ''
 
-    const rawItems = parseJsonArray(r)
-    const validItems = validateItems(rawItems)
+  for (let attempt = 1; attempt <= ATTEMPTS_PER_PAIR; attempt++) {
+    let validItems: ComplianceItem[]
+    let model: string
+    try {
+      const r = await callAI({
+        messages: [{
+          role: 'user',
+          content: buildComplianceBaselineMessage({ archetype, location_country: countryCode }),
+        }],
+        system: COMPLIANCE_BASELINE_SYSTEM_PROMPT,
+        maxTokens: 6144,
+        tag: 'script:warm-evergreen',
+        tools: [{ type: 'web_search_20250305' as const, name: 'web_search' as const, max_uses: 4 }],
+        model: DEFAULT_MODEL,
+        provider: 'anthropic',
+      })
+      // Bank the cost BEFORE parsing — a parse failure must not vanish from
+      // the summary; Anthropic billed the call either way.
+      costUsd += r.costUsd
+      model = r.model
 
-    if (validItems.length < 3) {
-      console.warn(`[${countryCode}/${archetype}] FAILED — only ${validItems.length} valid item(s) after parsing (need >= 3, got ${rawItems.length} raw). Skipping store.`)
-      return { status: 'failed', itemCount: validItems.length, costUsd: r.costUsd, error: `only ${validItems.length} valid items` }
+      const rawItems = parseJsonArray(r)
+      validItems = validateItems(rawItems)
+      if (validItems.length < 3) {
+        throw new Error(`only ${validItems.length} valid item(s) after parsing (need >= 3, got ${rawItems.length} raw)`)
+      }
+    } catch (err) {
+      // AICallError (truncation / no text block) carries the billed cost of
+      // the failed call — parse/validation errors were already banked above.
+      const e = err as { costUsd?: number }
+      if (typeof e.costUsd === 'number') costUsd += e.costUsd
+      lastError = err instanceof Error ? err.message : String(err)
+      console.warn(`[${countryCode}/${archetype}] attempt ${attempt}/${ATTEMPTS_PER_PAIR} failed — ${lastError}`)
+      continue
     }
 
     const stored = await storeEvergreenBaseline(supabase, {
@@ -276,28 +307,24 @@ async function generateOne(
       archetype,
       section: 'compliance',
       items: validItems,
-      model: r.model,
-      costUsd: r.costUsd,
+      model,
+      costUsd,
       sourceReportId: null,
     })
     if (!stored) {
-      // The call was billed but the row never landed — report the pair as
-      // failed so the operator knows it still needs a (re-)run.
-      console.warn(`[${countryCode}/${archetype}] FAILED — generation succeeded ($${r.costUsd.toFixed(4)}) but the upsert did not land (see error above).`)
-      return { status: 'failed', itemCount: validItems.length, costUsd: r.costUsd, error: 'store failed' }
+      // The call was billed but the row never landed — a retry would just
+      // re-bill against the same (likely persistent) DB problem, so report
+      // failed immediately for the operator to investigate.
+      console.warn(`[${countryCode}/${archetype}] FAILED — generation succeeded ($${costUsd.toFixed(4)}) but the upsert did not land (see error above).`)
+      return { status: 'failed', itemCount: validItems.length, costUsd, error: 'store failed' }
     }
 
-    console.log(`[${countryCode}/${archetype}] generated — ${validItems.length} items stored, $${r.costUsd.toFixed(4)}`)
-    return { status: 'generated', itemCount: validItems.length, costUsd: r.costUsd }
-  } catch (err) {
-    // AICallError (truncation / no text block) carries the already-billed
-    // cost even though the call is unusable — count it if present.
-    const e = err as { costUsd?: number }
-    const costUsd = typeof e.costUsd === 'number' ? e.costUsd : 0
-    const message = err instanceof Error ? err.message : String(err)
-    console.warn(`[${countryCode}/${archetype}] FAILED — ${message}`)
-    return { status: 'failed', itemCount: 0, costUsd, error: message }
+    console.log(`[${countryCode}/${archetype}] generated — ${validItems.length} items stored, $${costUsd.toFixed(4)} billed${attempt > 1 ? ` across ${attempt} attempts` : ''}`)
+    return { status: 'generated', itemCount: validItems.length, costUsd }
   }
+
+  console.warn(`[${countryCode}/${archetype}] FAILED after ${ATTEMPTS_PER_PAIR} attempts ($${costUsd.toFixed(4)} billed) — ${lastError}`)
+  return { status: 'failed', itemCount: 0, costUsd, error: lastError }
 }
 
 async function main() {
