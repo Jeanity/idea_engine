@@ -258,15 +258,32 @@ interface GenerateResult {
  */
 const ATTEMPTS_PER_PAIR = 2
 
+// Worst-case single-call reserve for the --max-spend runtime cap. A call's
+// cost can't be known before it's made (search-result input tokens vary;
+// observed range $0.19–$0.33), so the cap logic refuses to START a call
+// unless the billed total plus this reserve stays within --max-spend. The
+// 2026-07-14 run billed $3.67 against a quoted $3.30 ceiling because the cap
+// was only checked between pairs — a pair's retry meant two billed calls
+// after the last check. With the reserve checked before EVERY call, the run
+// stops while there is still room for one worst-case call, so the quoted
+// ceiling is a true never-exceed.
+const PER_CALL_RESERVE = 0.45
+
 async function generateOne(
   supabase: SupabaseClient<Database>,
   countryCode: string,
-  archetype: string
+  archetype: string,
+  budget?: { maxSpend: number; spentBefore: number }
 ): Promise<GenerateResult> {
   let costUsd = 0
   let lastError = ''
 
   for (let attempt = 1; attempt <= ATTEMPTS_PER_PAIR; attempt++) {
+    if (budget !== undefined && budget.spentBefore + costUsd + PER_CALL_RESERVE > budget.maxSpend) {
+      lastError = `spend cap: $${(budget.spentBefore + costUsd).toFixed(4)} billed + $${PER_CALL_RESERVE.toFixed(2)} reserve would exceed --max-spend $${budget.maxSpend.toFixed(2)} — call not attempted`
+      console.warn(`[${countryCode}/${archetype}] attempt ${attempt}/${ATTEMPTS_PER_PAIR} withheld — ${lastError}`)
+      break
+    }
     let validItems: ComplianceItem[]
     let model: string
     try {
@@ -443,16 +460,23 @@ async function main() {
 
   for (const p of toGenerate) {
     // Hard runtime cap, not just the upfront plan gate: --max-spend is
-    // enforced against the ACTUAL billed running total before every call.
-    // Even if this process is orphaned (2026-07-14: a "stopped" background
-    // run's child survived and billed $9.93 to completion), it cannot spend
-    // past the ceiling the operator was quoted.
-    if (maxSpend !== undefined && totalCost >= maxSpend) {
+    // enforced against the ACTUAL billed running total, with a worst-case
+    // per-call reserve checked before EVERY call (including retries, inside
+    // generateOne) — so the quoted ceiling is a true never-exceed, even if
+    // this process is orphaned (2026-07-14: a "stopped" background run's
+    // child survived and billed $9.93 to completion; the follow-up run then
+    // overshot a $3.30 cap to $3.67 because the check was only per-pair).
+    if (maxSpend !== undefined && totalCost + PER_CALL_RESERVE > maxSpend) {
       abortedForSpend = true
-      console.error(`\nSTOPPING: billed total $${totalCost.toFixed(4)} has reached --max-spend $${maxSpend.toFixed(2)}. Remaining pairs untouched; re-run later to resume (skip logic picks up where this stopped).`)
+      console.error(`\nSTOPPING: billed total $${totalCost.toFixed(4)} + $${PER_CALL_RESERVE.toFixed(2)} per-call reserve would exceed --max-spend $${maxSpend.toFixed(2)}. Remaining pairs untouched; re-run later to resume (skip logic picks up where this stopped).`)
       break
     }
-    const result = await generateOne(supabase, p.countryCode, p.archetype)
+    const result = await generateOne(
+      supabase,
+      p.countryCode,
+      p.archetype,
+      maxSpend !== undefined ? { maxSpend, spentBefore: totalCost } : undefined
+    )
     totalCost += result.costUsd
     if (result.status === 'generated') generated++
     else failed++
