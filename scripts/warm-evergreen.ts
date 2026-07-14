@@ -439,8 +439,19 @@ async function main() {
   let generated = 0
   let failed = 0
   let totalCost = 0
+  let abortedForSpend = false
 
   for (const p of toGenerate) {
+    // Hard runtime cap, not just the upfront plan gate: --max-spend is
+    // enforced against the ACTUAL billed running total before every call.
+    // Even if this process is orphaned (2026-07-14: a "stopped" background
+    // run's child survived and billed $9.93 to completion), it cannot spend
+    // past the ceiling the operator was quoted.
+    if (maxSpend !== undefined && totalCost >= maxSpend) {
+      abortedForSpend = true
+      console.error(`\nSTOPPING: billed total $${totalCost.toFixed(4)} has reached --max-spend $${maxSpend.toFixed(2)}. Remaining pairs untouched; re-run later to resume (skip logic picks up where this stopped).`)
+      break
+    }
     const result = await generateOne(supabase, p.countryCode, p.archetype)
     totalCost += result.costUsd
     if (result.status === 'generated') generated++
@@ -452,6 +463,7 @@ async function main() {
   console.log(`generated: ${generated}`)
   console.log(`skipped:   ${toSkip.length}`)
   console.log(`failed:    ${failed}`)
+  if (abortedForSpend) console.log(`not attempted (spend cap): ${toGenerate.length - generated - failed}`)
   console.log(`total cost: $${totalCost.toFixed(4)}`)
 
   if (toGenerate.length > 0 && generated === 0) {
