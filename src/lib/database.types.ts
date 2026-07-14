@@ -26,7 +26,7 @@ export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wontfix'
 export type MessageTemplateKind = 'invite' | 'contact_reply' | 'feedback_reply'
 export type EvergreenSectionKind = 'compliance' | 'financing' | 'marketing'
 export type EvergreenReviewStatus = 'unreviewed' | 'approved' | 'disapproved'
-export type EvergreenRemediationKind = 'patched' | 'notified'
+export type EvergreenRemediationKind = 'patched' | 'notified' | 'orphaned'
 
 export type Database = {
   public: {
@@ -949,6 +949,10 @@ export type Database = {
           reviewed_at: string | null
           disapproved_at: string | null
           disapprove_note: string | null
+          // Migration 032: permanent "this key has a disapproval in its
+          // history" marker — set alongside disapproved_at on every
+          // disapprove, never cleared by approve or storeEvergreenBaseline.
+          last_disapproved_at: string | null
           generated_by_model: string
           generation_cost_usd: number
           source_report_id: string | null
@@ -967,6 +971,7 @@ export type Database = {
           reviewed_at?: string | null
           disapproved_at?: string | null
           disapprove_note?: string | null
+          last_disapproved_at?: string | null
           generated_by_model: string
           generation_cost_usd?: number
           source_report_id?: string | null
@@ -983,6 +988,7 @@ export type Database = {
           reviewed_at?: string | null
           disapproved_at?: string | null
           disapprove_note?: string | null
+          last_disapproved_at?: string | null
           generated_by_model?: string
           generation_cost_usd?: number
           source_report_id?: string | null

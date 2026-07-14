@@ -7,6 +7,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react'
 import type { ComplianceItem } from '@/lib/compliance-baseline'
 import type { EvergreenReviewStatus } from '@/lib/database.types'
 import { ADMIN_NAV_SEEN_EVENT } from '@/lib/admin-nav-events'
+import { shouldOfferRemediation } from '@/lib/evergreen-remediation'
 
 export interface EvergreenRow {
   id: string
@@ -35,6 +36,19 @@ export interface EvergreenUsage {
   total: number
   beforeApproval: number
 }
+
+// Workstream D3 — one row per usage of this entry (any revision), for the
+// "Affected reports" block in row expansion. `current` distinguishes a
+// report served the row's live revision from one served a superseded
+// revision (mirrors the `evergreen_updated_at === row.updated_at` check
+// page.tsx already does for the cohort/usage counts above).
+export interface EvergreenAffectedReport {
+  report_id: string
+  created_at: string
+  current: boolean
+}
+
+const MAX_AFFECTED_REPORTS_SHOWN = 20
 
 function statusLabel(status: EvergreenReviewStatus): string {
   if (status === 'approved') return 'Approved'
@@ -77,6 +91,7 @@ function countryDisplayName(code: string): string {
 interface RemediateSummary {
   patched: number
   notified: number
+  orphaned: number
   emailsSent: number
   emailsFailed: number
   skipped: number
@@ -89,6 +104,9 @@ function EvergreenItem({
   usage,
   cohort,
   cohortUsers,
+  lastDisapprovedAt,
+  affected,
+  highlighted,
   onDeleted,
 }: {
   row: EvergreenRow
@@ -96,10 +114,15 @@ function EvergreenItem({
   usage: EvergreenUsage
   cohort: number
   cohortUsers: number
+  lastDisapprovedAt: string | null
+  affected: EvergreenAffectedReport[]
+  highlighted: boolean
   onDeleted: () => void
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  // Workstream D3: a row reached via /app/admin/evergreen?highlight=<id>
+  // (linked from the report inspector) renders pre-expanded, per the spec.
+  const [open, setOpen] = useState(highlighted)
   const [status, setStatus] = useState(row.review_status)
   const [disapproveNoteState, setDisapproveNoteState] = useState<{ note: string; disapprovedAt: string } | null>(
     row.review_status === 'disapproved' && row.disapprove_note
@@ -266,7 +289,10 @@ function EvergreenItem({
   const label = archetypeLabels[row.archetype] ?? row.archetype
 
   return (
-    <div className="px-5 py-4">
+    <div
+      id={`evergreen-${row.id}`}
+      className={`px-5 py-4 ${highlighted ? 'bg-indigo-500/5 ring-1 ring-inset ring-indigo-400/40 light:bg-indigo-50/60' : ''}`}
+    >
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <button
           onClick={() => setOpen(o => !o)}
@@ -395,7 +421,21 @@ function EvergreenItem({
         </div>
       )}
 
-      {cohort > 0 && (
+      {/* Workstream D1: cohorts accrue on ANY revision bump (a routine expiry
+          refresh or warm-script re-run supersedes perfectly good content,
+          not just a disapprove-driven fix), so "cohort > 0" alone is not a
+          call to action — the Remediate control only makes sense when this
+          key has a disapproval somewhere in its history
+          (last_disapproved_at, migration 032). Otherwise: a muted,
+          informational line, no button. */}
+      {cohort > 0 && !shouldOfferRemediation(cohort, lastDisapprovedAt) && (
+        <p className="mt-3 ml-6 max-w-lg text-xs text-slate-500 light:text-gray-400">
+          {cohort} report{cohort === 1 ? '' : 's'} used older version{cohort === 1 ? '' : 's'} of this entry — no
+          action needed unless the old version was wrong.
+        </p>
+      )}
+
+      {cohort > 0 && shouldOfferRemediation(cohort, lastDisapprovedAt) && (
         <div className="mt-3 ml-6 max-w-lg">
           {!showRemediateForm ? (
             <button
@@ -460,7 +500,7 @@ function EvergreenItem({
           )}
           {remediateSummary && (
             <p className="mt-2 text-[11px] text-slate-400 light:text-gray-500">
-              Patched {remediateSummary.patched} · Notified {remediateSummary.notified} · Emails sent {remediateSummary.emailsSent}
+              Patched {remediateSummary.patched} · Notified {remediateSummary.notified} · Orphaned {remediateSummary.orphaned} · Emails sent {remediateSummary.emailsSent}
               {remediateSummary.emailsFailed > 0 && ` (${remediateSummary.emailsFailed} failed)`} · Skipped {remediateSummary.skipped}
               {remediateSummary.remaining > 0 && ` · ${remediateSummary.remaining} still remaining — run again to continue`}
             </p>
@@ -469,7 +509,39 @@ function EvergreenItem({
       )}
 
       {open && (
-        <div className="mt-3 ml-6">
+        <div className="mt-3 ml-6 space-y-3">
+          {/* Workstream D3 — every report this entry (any revision) has been
+              served to, newest first, capped at MAX_AFFECTED_REPORTS_SHOWN.
+              Reuses the usage rows page.tsx already fetches for
+              usageByRow/cohortByRow — no new endpoint. */}
+          {affected.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-slate-400 light:text-gray-500 mb-1.5">
+                Affected reports ({affected.length})
+              </p>
+              <div className="space-y-1">
+                {affected.slice(0, MAX_AFFECTED_REPORTS_SHOWN).map(a => (
+                  <p key={`${a.report_id}-${a.created_at}`} className="text-xs text-slate-400 light:text-gray-500">
+                    <Link
+                      href={`/app/admin/reports/${a.report_id}`}
+                      className="text-indigo-300 light:text-indigo-600 underline underline-offset-2"
+                    >
+                      Report
+                    </Link>{' '}
+                    · used {new Date(a.created_at).toLocaleDateString()} ·{' '}
+                    <span className={a.current ? 'text-emerald-300 light:text-emerald-700' : 'text-amber-300 light:text-amber-700'}>
+                      {a.current ? 'current version' : 'superseded version'}
+                    </span>
+                  </p>
+                ))}
+                {affected.length > MAX_AFFECTED_REPORTS_SHOWN && (
+                  <p className="text-xs text-slate-500 light:text-gray-500">
+                    +{affected.length - MAX_AFFECTED_REPORTS_SHOWN} more
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           <pre className="overflow-x-auto text-xs text-slate-300 light:text-gray-700 bg-slate-950/60 light:bg-gray-50 px-3 py-3 rounded-lg border border-white/10 light:border-gray-200">
             {JSON.stringify(row.items, null, 2)}
           </pre>
@@ -485,12 +557,18 @@ export function EvergreenList({
   usageByRow,
   cohortByRow,
   cohortUsersByRow,
+  lastDisapprovedByRow,
+  affectedByRow,
+  highlightId,
 }: {
   rows: EvergreenRow[]
   archetypeLabels: Record<string, string>
   usageByRow: Record<string, EvergreenUsage>
   cohortByRow: Record<string, number>
   cohortUsersByRow: Record<string, number>
+  lastDisapprovedByRow: Record<string, string | null>
+  affectedByRow: Record<string, EvergreenAffectedReport[]>
+  highlightId: string | null
 }) {
   const [rows, setRows] = useState(initialRows)
   // Sync local state when server data changes (after router.refresh() re-runs
@@ -524,6 +602,9 @@ export function EvergreenList({
           usage={usageByRow[row.id] ?? { total: 0, beforeApproval: 0 }}
           cohort={cohortByRow[row.id] ?? 0}
           cohortUsers={cohortUsersByRow[row.id] ?? 0}
+          lastDisapprovedAt={lastDisapprovedByRow[row.id] ?? null}
+          affected={affectedByRow[row.id] ?? []}
+          highlighted={highlightId === row.id}
           onDeleted={() => handleDeleted(row.id)}
         />
       ))}

@@ -6,6 +6,7 @@ import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
 import { escapeHtml } from '@/lib/email-chrome'
 import { isMissingEvergreenTable } from '@/lib/evergreen'
 import {
+  classifyReportLoad,
   computePatchedSections,
   filterCohort,
   groupReportsByUser,
@@ -18,6 +19,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Workstream C2 — the "Patch reports & notify" / "Notify only" admin action.
 // Auth shape copied verbatim from ../route.ts and ../regenerate/route.ts.
+//
+// Workstream D2 addendum: a cohort row whose report was hard-deleted (idea
+// deletion cascades reports away — src/app/api/ideas/[id]/route.ts) can never
+// be patched or notified. Those rows are drained out of the cohort as
+// 'orphaned' (see classifyReportLoad in src/lib/evergreen-remediation.ts)
+// rather than left 'skipped' forever — 'orphaned' never enters `processed`
+// (no report/idea to email about), so it's counted separately and never
+// affects the patch/notify email flow below.
 async function requireAdmin(): Promise<{ email: string } | NextResponse> {
   const supabase = await createDbClient()
   const {
@@ -191,6 +200,7 @@ export async function POST(
   let patched = 0
   let notified = 0
   let skipped = 0
+  let orphaned = 0
   const processed: ProcessedRow[] = []
 
   for (const usage of toProcess) {
@@ -202,11 +212,42 @@ export async function POST(
       .eq('id', usage.report_id)
       .maybeSingle()
 
-    if (reportError || !report) {
+    // D2: a genuine query ERROR stays skipped/retryable; a successful query
+    // that simply found no row means the report was hard-deleted (idea
+    // deletion cascades reports away) and can never be remediated — drain it
+    // out of the cohort as 'orphaned' instead of leaving it to accrete
+    // forever. See classifyReportLoad's doc comment for the full rationale.
+    const loadOutcome = classifyReportLoad(report, reportError)
+
+    if (loadOutcome === 'error') {
       console.error(`evergreen remediate: failed to load report ${usage.report_id}`, reportError)
       skipped++
       continue
     }
+
+    if (loadOutcome === 'orphaned') {
+      // Requires migration 032 (remediation CHECK widened to include
+      // 'orphaned'). Pre-032 this update hits the OLD 2-value constraint
+      // (Postgres 23514 check_violation) and the row is left
+      // skipped/retryable instead — same behaviour as before this
+      // classification existed, no crash.
+      const { error: orphanError } = await service
+        .from('evergreen_report_usage')
+        .update({ remediated_at: new Date().toISOString(), remediation: 'orphaned' })
+        .eq('id', usage.id)
+
+      if (orphanError) {
+        console.error(`evergreen remediate: failed to mark usage row ${usage.id} orphaned`, orphanError)
+        skipped++
+      } else {
+        orphaned++
+      }
+      continue
+    }
+
+    // loadOutcome === 'ok' here, so `report` is guaranteed non-null per
+    // classifyReportLoad — spelled out explicitly so TS narrows it below.
+    if (!report) continue
 
     let kind: RemediationKind = 'notified'
 
@@ -294,10 +335,10 @@ export async function POST(
     await logError({
       source: 'api:admin/evergreen/[id]/remediate',
       message: `Evergreen remediation run for ${id}: ${skipped} row(s) skipped, ${emailsFailed} email(s) failed to send`,
-      detail: { evergreenId: id, mode, patched, notified, skipped, emailsSent, emailsFailed, remaining },
+      detail: { evergreenId: id, mode, patched, notified, orphaned, skipped, emailsSent, emailsFailed, remaining },
       path: 'POST /api/admin/evergreen/[id]/remediate',
     })
   }
 
-  return NextResponse.json({ patched, notified, emailsSent, emailsFailed, skipped, remaining })
+  return NextResponse.json({ patched, notified, orphaned, emailsSent, emailsFailed, skipped, remaining })
 }

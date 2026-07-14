@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   isSupersededUsageRow,
   filterCohort,
+  shouldOfferRemediation,
+  classifyReportLoad,
   computePatchedSections,
   groupReportsByUser,
 } from '@/lib/evergreen-remediation'
@@ -73,6 +75,40 @@ describe('filterCohort', () => {
 
   it('returns an empty array when nothing matches', () => {
     expect(filterCohort([], current)).toEqual([])
+  })
+})
+
+describe('shouldOfferRemediation', () => {
+  it('is false when the cohort is empty, regardless of disapproval history', () => {
+    expect(shouldOfferRemediation(0, '2026-07-01T00:00:00Z')).toBe(false)
+    expect(shouldOfferRemediation(0, null)).toBe(false)
+  })
+
+  it('is false for a non-empty cohort when the key has never been disapproved (routine expiry/warm-script refresh — no action needed)', () => {
+    expect(shouldOfferRemediation(3, null)).toBe(false)
+  })
+
+  it('is true for a non-empty cohort when the key has a disapproval somewhere in its history', () => {
+    expect(shouldOfferRemediation(3, '2026-07-01T00:00:00Z')).toBe(true)
+  })
+
+  it('treats migration 032 not run yet (last_disapproved_at always null) the same as "never disapproved" — falls back to the informational line, never crashes', () => {
+    expect(shouldOfferRemediation(5, null)).toBe(false)
+  })
+})
+
+describe('classifyReportLoad', () => {
+  it('returns "ok" when the report loaded successfully with no error', () => {
+    expect(classifyReportLoad({ id: 'report-1' }, null)).toBe('ok')
+  })
+
+  it('returns "error" when the query itself failed, even if a row happens to be present', () => {
+    expect(classifyReportLoad({ id: 'report-1' }, new Error('db down'))).toBe('error')
+    expect(classifyReportLoad(null, new Error('db down'))).toBe('error')
+  })
+
+  it('returns "orphaned" for a successful query that simply found no row (report hard-deleted, e.g. via idea deletion cascade)', () => {
+    expect(classifyReportLoad(null, null)).toBe('orphaned')
   })
 })
 

@@ -43,12 +43,23 @@ interface StepMeta {
   error?: string
 }
 
+// Workstream D3: the evergreen stash the pipeline writes to _meta when a
+// canonical baseline was served this run (see evergreenMetaStash in
+// src/lib/inngest/generate-report.ts and the shared shape in
+// src/lib/evergreen-remediation.ts's PatchableSections).
+interface EvergreenMetaStash {
+  id: string
+  updated_at: string
+  review_status_at_use: string
+}
+
 interface ReportMeta {
   cost_usd?: number
   model?: string
   partial?: boolean
   section_status?: Record<string, string>
   steps?: Record<string, StepMeta>
+  evergreen?: EvergreenMetaStash
 }
 
 interface BugRow {
@@ -134,6 +145,24 @@ export default async function AdminReportInspectorPage({
   const sectionKeys = Object.keys(sectionsObj).filter(k => k !== '_meta')
   const stepEntries = meta?.steps ? Object.entries(meta.steps) : []
   const sectionStatusEntries = meta?.section_status ? Object.entries(meta.section_status) : []
+
+  // Workstream D3 trace link — resolve the evergreen entry this report was
+  // served (if any) so the admin can jump straight from "compliance looks
+  // wrong" to the cache entry that produced it. The entry may since have
+  // been evicted (or the table itself dropped) — either way this is
+  // supplementary trace info, so any failure just means "entry no longer
+  // exists", never a crash on this page.
+  let evergreenEntryLabel: string | null = null
+  if (meta?.evergreen) {
+    const { data: evergreenRow } = await service
+      .from('evergreen_baselines')
+      .select('country_code, archetype')
+      .eq('id', meta.evergreen.id)
+      .maybeSingle()
+    if (evergreenRow) {
+      evergreenEntryLabel = `${evergreenRow.country_code} · ${ARCHETYPE_LABELS[evergreenRow.archetype] ?? evergreenRow.archetype}`
+    }
+  }
 
   return (
     <div>
@@ -266,6 +295,24 @@ export default async function AdminReportInspectorPage({
               <span className="text-xs text-slate-500 light:text-gray-400">meta cost: ${meta.cost_usd.toFixed(4)}</span>
             )}
           </div>
+
+          {/* Workstream D3 — trace link to the evergreen entry (if any) that
+              fed this report's compliance section. */}
+          {meta.evergreen && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-slate-400 light:text-gray-500 mb-1.5">Evergreen entry</p>
+              <p className="text-xs text-slate-300 light:text-gray-700">
+                {evergreenEntryLabel ?? 'entry no longer exists'} · revision{' '}
+                {new Date(meta.evergreen.updated_at).toLocaleString()} · {meta.evergreen.review_status_at_use} at use ·{' '}
+                <Link
+                  href={`/app/admin/evergreen?highlight=${meta.evergreen.id}`}
+                  className="text-indigo-300 light:text-indigo-600 underline underline-offset-2"
+                >
+                  view
+                </Link>
+              </p>
+            </div>
+          )}
 
           {sectionStatusEntries.length > 0 && (
             <div className="mb-4">

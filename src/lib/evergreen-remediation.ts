@@ -41,6 +41,23 @@ export function filterCohort<T extends { evergreen_id: string; evergreen_updated
   return usageRows.filter(u => isSupersededUsageRow(u, current))
 }
 
+/**
+ * Workstream D1 gating predicate — cohorts accrue on ANY revision bump (a
+ * routine expiry refresh or warm-script re-run supersedes perfectly good
+ * content, not just a disapprove-driven fix), so "cohort > 0" alone is not a
+ * call to action. The "Remediate…" control only makes sense when this KEY
+ * has a disapproval somewhere in its history — `last_disapproved_at` is the
+ * permanent marker for that (migration 032, never cleared by approve or
+ * storeEvergreenBaseline/regenerate — see 032_evergreen_followups.sql).
+ * Split out as a pure predicate so the admin list's render decision and its
+ * test are the exact same rule. `lastDisapprovedAt` is `null` both for
+ * "never disapproved" and "migration 032 not run yet" — both cases correctly
+ * fall back to the muted informational line rather than the action button.
+ */
+export function shouldOfferRemediation(cohort: number, lastDisapprovedAt: string | null): boolean {
+  return cohort > 0 && lastDisapprovedAt !== null
+}
+
 /** The subset of a report's `sections` shape this module reads/writes. */
 export interface PatchableSections {
   legal_compliance?: unknown
@@ -83,6 +100,25 @@ export function computePatchedSections(
       },
     },
   }
+}
+
+export type ReportLoadOutcome = 'ok' | 'orphaned' | 'error'
+
+/**
+ * Workstream D2 classifier — the remediate route's per-cohort-row report
+ * load must tell apart a genuine query ERROR (transient, stays
+ * 'skipped'/retryable on a re-run) from a successful query that simply found
+ * no row (`!report && !error`): the report was hard-deleted — e.g. the user
+ * deleted the idea it belonged to, which cascades reports away, see
+ * src/app/api/ideas/[id]/route.ts — and can NEVER be remediated. That usage
+ * row should drain out of the cohort as 'orphaned' instead of accreting
+ * forever as 'skipped'. Pure — no I/O — so it's directly unit testable
+ * without any Supabase mocking.
+ */
+export function classifyReportLoad(report: unknown, error: unknown): ReportLoadOutcome {
+  if (error) return 'error'
+  if (!report) return 'orphaned'
+  return 'ok'
 }
 
 export interface RemediatedReportRef {

@@ -16,8 +16,9 @@ function isMissingTable(error: { code?: string } | null | undefined): boolean {
 }
 
 // Postgres 42703 = undefined_column, PostgREST PGRST204 = "column not found
-// in schema cache" — both mean migration 031 (disapproved_at/disapprove_note)
-// hasn't been run yet.
+// in schema cache" — means migration 031 (disapproved_at/disapprove_note) or
+// 032 (last_disapproved_at) hasn't been run yet. Both surface identically
+// (a column this handler writes doesn't exist), so one check covers both.
 function isMissingColumn(error: { code?: string } | null | undefined): boolean {
   return error?.code === '42703' || error?.code === 'PGRST204'
 }
@@ -114,9 +115,16 @@ export async function PATCH(
     }
 
     const service = createServiceClient()
+    const now = new Date().toISOString()
     const { error } = await service
       .from('evergreen_baselines')
-      .update({ review_status: 'disapproved', disapproved_at: new Date().toISOString(), disapprove_note: note })
+      // last_disapproved_at (migration 032) is the PERMANENT "this key has a
+      // disapproval in its history" marker — unlike disapproved_at/
+      // disapprove_note, nothing ever clears it (not approve, not
+      // storeEvergreenBaseline/regenerate). It drives the admin list's
+      // Remediate-vs-informational-line gate (shouldOfferRemediation,
+      // src/lib/evergreen-remediation.ts).
+      .update({ review_status: 'disapproved', disapproved_at: now, disapprove_note: note, last_disapproved_at: now })
       .eq('id', id)
 
     if (error) {
@@ -126,9 +134,11 @@ export async function PATCH(
           { status: 503 }
         )
       }
-      // Migration 031 not yet run: either the review_status CHECK still only
-      // allows ('unreviewed', 'approved') — Postgres 23514 (check_violation)
-      // — or the disapproved_at/disapprove_note columns don't exist yet.
+      // Migration 031/032 not yet run: either the review_status CHECK still
+      // only allows ('unreviewed', 'approved') — Postgres 23514
+      // (check_violation) — or one of the columns this update writes
+      // (disapproved_at/disapprove_note from 031, last_disapproved_at from
+      // 032) doesn't exist yet.
       if (error.code === '23514' || isMissingColumn(error)) {
         return NextResponse.json(
           { error: 'Disapprove is not available yet — the required migration has not been run.' },

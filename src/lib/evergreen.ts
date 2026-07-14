@@ -198,6 +198,12 @@ export interface EvergreenStoreInput {
  * expires_at out 180 days from now. Never throws — the report that
  * triggered this call must never fail because the cache write did.
  *
+ * Deliberately does NOT touch `last_disapproved_at` (migration 032) — unlike
+ * disapproved_at/disapprove_note, that column is a PERMANENT "this key has a
+ * disapproval in its history" marker and must survive regeneration; leaving
+ * it out of the upsert payload below (rather than explicitly re-writing its
+ * existing value) is what makes that true.
+ *
  * Returns the stored row (or null on any swallowed failure, including a
  * missing table) rather than a boolean, so callers can record the
  * CANONICAL id/updated_at the database actually assigned — an in-memory

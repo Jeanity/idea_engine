@@ -1,5 +1,6 @@
 import { createDbClient, createServiceClient } from '@/lib/db'
 import { logError } from '@/lib/log-error'
+import { isMissingEvergreenTable } from '@/lib/evergreen'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Self-service, irreversible account deletion. FK cascades (auth.users ->
@@ -9,6 +10,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 // user and every row they own. Same cascade the admin "remove account" route
 // relies on (src/app/api/admin/users/[id]/route.ts) — no manual child-table
 // cleanup needed here either.
+//
+// ONE exception (Workstream D2, migration 031_evergreen_lifecycle.sql):
+// evergreen_report_usage rows carry a user_id column but have NO FK to
+// auth.users (they FK to evergreen_baselines, on delete cascade — deleting a
+// baseline cleans up its own usage history, not a user's), so they would
+// otherwise outlive a deleted account. Deleted explicitly below, BEFORE the
+// deleteUser call — missing-table tolerant (031 not run yet), and non-fatal:
+// a failure here must never block the user's own account deletion.
 export async function DELETE(request: NextRequest) {
   const supabase = await createDbClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -21,6 +30,14 @@ export async function DELETE(request: NextRequest) {
 
   // Only used AFTER the auth check above, per project ground rules.
   const service = createServiceClient()
+
+  const { error: usageDeleteError } = await service
+    .from('evergreen_report_usage')
+    .delete()
+    .eq('user_id', user.id)
+  if (usageDeleteError && !isMissingEvergreenTable(usageDeleteError)) {
+    console.error(`[account] self-delete: failed to clean up evergreen_report_usage for ${user.id}:`, usageDeleteError.message)
+  }
 
   const { error } = await service.auth.admin.deleteUser(user.id)
   if (error) {

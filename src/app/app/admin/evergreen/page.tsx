@@ -5,7 +5,7 @@ import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/adm
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import type { EvergreenReviewStatus } from '@/lib/database.types'
 import { filterCohort } from '@/lib/evergreen-remediation'
-import { EvergreenList, type EvergreenRow, type EvergreenUsage } from './evergreen-list'
+import { EvergreenList, type EvergreenAffectedReport, type EvergreenRow, type EvergreenUsage } from './evergreen-list'
 
 export const metadata = { title: 'Evergreen — Admin — HadIdea' }
 
@@ -41,10 +41,11 @@ const STATUS_LABELS: Record<EvergreenReviewStatus, string> = {
 export default async function AdminEvergreenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>
+  searchParams: Promise<{ status?: string; page?: string; highlight?: string }>
 }) {
-  const { status: statusParam, page: pageParam } = await searchParams
+  const { status: statusParam, page: pageParam, highlight: highlightParam } = await searchParams
   const statusFilter = statusParam || null
+  const highlightId = highlightParam || null
   const page = parsePage(pageParam)
   const { from, to } = pageRange(page)
 
@@ -93,11 +94,18 @@ export default async function AdminEvergreenPage({
   // dialog's "N user(s) will be emailed" copy (a cohort of 5 reports might
   // belong to 2 users, since one usage row = one report, not one user).
   const cohortUsersByRow: Record<string, number> = {}
+  // Workstream D3: "Affected reports" — EVERY usage row for this entry
+  // (every revision, not just the current one), newest first, so Danny can
+  // trace a bad entry to the reports it touched. Same source query as
+  // usageByRow/cohortByRow above (report_id/created_at added to the select),
+  // no extra round trip — "reuse the usage rows page.tsx already fetches"
+  // per the spec.
+  const affectedByRow: Record<string, EvergreenAffectedReport[]> = {}
   const ids = evergreenRows.map(r => r.id)
   if (ids.length > 0) {
     const { data: usageRows, error: usageError } = await service
       .from('evergreen_report_usage')
-      .select('evergreen_id, evergreen_updated_at, approved_at_use, remediated_at, user_id')
+      .select('evergreen_id, report_id, evergreen_updated_at, approved_at_use, remediated_at, user_id, created_at')
       .in('evergreen_id', ids)
 
     if (!usageError && usageRows) {
@@ -112,11 +120,39 @@ export default async function AdminEvergreenPage({
         const cohort = filterCohort(usageRows, { id: row.id, updated_at: row.updated_at })
         cohortByRow[row.id] = cohort.length
         cohortUsersByRow[row.id] = new Set(cohort.map(u => u.user_id)).size
+
+        affectedByRow[row.id] = usageRows
+          .filter(u => u.evergreen_id === row.id)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map(u => ({
+            report_id: u.report_id,
+            created_at: u.created_at,
+            current: u.evergreen_updated_at === row.updated_at,
+          }))
       }
     }
     // usageError (including a missing table, 42P01/PGRST205) leaves
-    // usageByRow/cohortByRow/cohortUsersByRow empty for the affected rows —
-    // EvergreenList treats a missing entry as zero.
+    // usageByRow/cohortByRow/cohortUsersByRow/affectedByRow empty for the
+    // affected rows — EvergreenList treats a missing entry as zero/empty.
+  }
+
+  // Workstream D1: last_disapproved_at (migration 032) is a SEPARATE,
+  // best-effort query — deliberately NOT part of the main listQuery select
+  // above, so a missing column here (032 not run) never trips the page-level
+  // "migration missing" banner that guards 030/031. A query failure
+  // (including 42703/PGRST204) just leaves lastDisapprovedByRow empty, and
+  // every row falls back to null — EvergreenList's shouldOfferRemediation
+  // gate treats null exactly like "never disapproved" (show the muted
+  // informational line, not the Remediate control).
+  const lastDisapprovedByRow: Record<string, string | null> = {}
+  if (ids.length > 0) {
+    const { data: laRows, error: laError } = await service
+      .from('evergreen_baselines')
+      .select('id, last_disapproved_at')
+      .in('id', ids)
+    if (!laError && laRows) {
+      for (const r of laRows) lastDisapprovedByRow[r.id] = r.last_disapproved_at
+    }
   }
 
   const totalCount = count ?? 0
@@ -180,6 +216,9 @@ export default async function AdminEvergreenPage({
             usageByRow={usageByRow}
             cohortByRow={cohortByRow}
             cohortUsersByRow={cohortUsersByRow}
+            lastDisapprovedByRow={lastDisapprovedByRow}
+            affectedByRow={affectedByRow}
+            highlightId={highlightId}
           />
 
           {totalCount > ADMIN_PAGE_SIZE && (
