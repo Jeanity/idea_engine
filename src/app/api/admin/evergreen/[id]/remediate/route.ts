@@ -3,6 +3,7 @@ import { isAdminEmail } from '@/lib/admin'
 import { logError } from '@/lib/log-error'
 import { getAuthUsersByIds } from '@/lib/admin-users'
 import { buildBrandedEmail, getSiteUrl, sendMail } from '@/lib/mailer'
+import { escapeHtml } from '@/lib/email-chrome'
 import { isMissingEvergreenTable } from '@/lib/evergreen'
 import {
   computePatchedSections,
@@ -55,6 +56,11 @@ function buildRemediationEmail(
   const links = reports.map(r => `${siteUrl}/app/ideas/${r.idea_id}/report`)
   const plural = reports.length > 1
 
+  // Danny's note is trusted, but a legitimate note containing <, > or &
+  // ("fees were < the amount shown", "Smith & Co") must not break the HTML
+  // variant — escape it there; the text variant stays raw.
+  const noteHtml = escapeHtml(note).replace(/\n/g, '<br />')
+
   if (kind === 'patched') {
     const subject = 'Your HadIdea report has been updated'
     const intro = `We refreshed some information used in your report${plural ? 's' : ''} and it's now up to date — there's nothing you need to do.`
@@ -62,7 +68,7 @@ function buildRemediationEmail(
     const linksText = links.join('\n')
     return {
       subject,
-      bodyHtml: `<p>${intro}</p><p>${note.replace(/\n/g, '<br />')}</p>${linksHtml}`,
+      bodyHtml: `<p>${intro}</p><p>${noteHtml}</p>${linksHtml}`,
       bodyText: `${intro}\n\n${note}\n\n${linksText}`,
     }
   }
@@ -73,7 +79,7 @@ function buildRemediationEmail(
   const linksText = links.join('\n')
   return {
     subject,
-    bodyHtml: `<p>${intro}</p><p>${note.replace(/\n/g, '<br />')}</p>${linksHtml}`,
+    bodyHtml: `<p>${intro}</p><p>${noteHtml}</p>${linksHtml}`,
     bodyText: `${intro}\n\n${note}\n\n${linksText}`,
   }
 }
@@ -187,7 +193,7 @@ export async function POST(
     // abort the whole cohort run.
     const { data: report, error: reportError } = await service
       .from('reports')
-      .select('id, idea_id, sections')
+      .select('id, idea_id, sections, status')
       .eq('id', usage.report_id)
       .maybeSingle()
 
@@ -199,7 +205,12 @@ export async function POST(
 
     let kind: RemediationKind = 'notified'
 
-    if (mode === 'patch') {
+    // Only patch settled reports. A report mid-regeneration (queued/running —
+    // /api/reports/full resets sections and re-runs the pipeline) will get
+    // current-baseline content from that run anyway; writing into it here
+    // would race the pipeline's own section writes. It still gets the notify
+    // email and is marked remediated.
+    if (mode === 'patch' && report.status === 'complete') {
       const patchedSections = computePatchedSections(
         (report.sections ?? {}) as PatchableSections,
         newBaselineItems,
