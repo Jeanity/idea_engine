@@ -71,15 +71,31 @@ function countryDisplayName(code: string): string {
   }
 }
 
+// Summary returned by POST /api/admin/evergreen/[id]/remediate — rendered
+// inline after a Patch/Notify run so Danny sees exactly what happened
+// without leaving the page.
+interface RemediateSummary {
+  patched: number
+  notified: number
+  emailsSent: number
+  emailsFailed: number
+  skipped: number
+  remaining: number
+}
+
 function EvergreenItem({
   row,
   archetypeLabels,
   usage,
+  cohort,
+  cohortUsers,
   onDeleted,
 }: {
   row: EvergreenRow
   archetypeLabels: Record<string, string>
   usage: EvergreenUsage
+  cohort: number
+  cohortUsers: number
   onDeleted: () => void
 }) {
   const router = useRouter()
@@ -95,7 +111,16 @@ function EvergreenItem({
   const [approving, setApproving] = useState(false)
   const [disapproving, setDisapproving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState('')
+
+  // Workstream C2 remediation form state.
+  const [showRemediateForm, setShowRemediateForm] = useState(false)
+  const [remediateMode, setRemediateMode] = useState<'patch' | 'notify'>(status === 'approved' ? 'patch' : 'notify')
+  const [remediateNoteInput, setRemediateNoteInput] = useState('')
+  const [remediating, setRemediating] = useState(false)
+  const [remediateSummary, setRemediateSummary] = useState<RemediateSummary | null>(null)
+  const [remediateError, setRemediateError] = useState('')
 
   async function approve() {
     setApproving(true)
@@ -180,6 +205,64 @@ function EvergreenItem({
     }
   }
 
+  async function regenerate() {
+    if (!window.confirm('Regenerate this entry? This runs a fresh AI research call (~$0.18) and immediately replaces the current content — status resets to New.')) {
+      return
+    }
+    setRegenerating(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/evergreen/${row.id}/regenerate`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to regenerate')
+        return
+      }
+      setStatus('unreviewed')
+      setDisapproveNoteState(null)
+      window.dispatchEvent(new Event(ADMIN_NAV_SEEN_EVENT))
+      router.refresh()
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  async function submitRemediate() {
+    const note = remediateNoteInput.trim()
+    if (!note) {
+      setRemediateError('A note is required.')
+      return
+    }
+    const confirmMsg = remediateMode === 'patch'
+      ? `Patch reports & notify: up to ${cohort} affected report(s) will be updated, and ${cohortUsers} user(s) will be emailed. Continue?`
+      : `Notify only: no reports are changed, but ${cohortUsers} user(s) will be emailed. Continue?`
+    if (!window.confirm(confirmMsg)) return
+
+    setRemediating(true)
+    setRemediateError('')
+    setRemediateSummary(null)
+    try {
+      const res = await fetch(`/api/admin/evergreen/${row.id}/remediate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: remediateMode, note }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setRemediateError(data.error ?? 'Failed to remediate')
+        return
+      }
+      setRemediateSummary(data)
+      router.refresh()
+    } catch {
+      setRemediateError('Network error — please try again')
+    } finally {
+      setRemediating(false)
+    }
+  }
+
   const label = archetypeLabels[row.archetype] ?? row.archetype
 
   return (
@@ -210,6 +293,14 @@ function EvergreenItem({
             </span>
             <span className="block text-xs text-slate-500 light:text-gray-400">
               {usage.total} report{usage.total === 1 ? '' : 's'} on this version ({usage.beforeApproval} before approval)
+              {cohort > 0 && (
+                <>
+                  {' · '}
+                  <span className="text-amber-300 light:text-amber-700">
+                    {cohort} report{cohort === 1 ? '' : 's'} on superseded version{cohort === 1 ? '' : 's'}
+                  </span>
+                </>
+              )}
             </span>
           </span>
         </button>
@@ -241,6 +332,17 @@ function EvergreenItem({
                 Source report
               </Link>
             )}
+            <button
+              onClick={regenerate}
+              disabled={regenerating}
+              className={
+                status === 'disapproved'
+                  ? 'text-xs font-medium px-2.5 py-1 rounded-full border border-indigo-500/40 bg-indigo-500/20 text-indigo-200 hover:bg-indigo-500/30 light:border-indigo-300 light:bg-indigo-100 light:text-indigo-800 light:hover:bg-indigo-200 transition-colors disabled:opacity-50'
+                  : 'text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 hover:text-white light:border-gray-200 light:text-gray-600 light:hover:border-gray-300 light:hover:text-gray-900 transition-colors disabled:opacity-50'
+              }
+            >
+              {regenerating ? 'Regenerating…' : 'Regenerate'}
+            </button>
             <button
               onClick={doDelete}
               disabled={deleting}
@@ -287,9 +389,82 @@ function EvergreenItem({
             {disapproveNoteState.disapprovedAt ? `Disapproved ${new Date(disapproveNoteState.disapprovedAt).toLocaleString()}: ` : ''}
             {disapproveNoteState.note}
           </p>
-          <p className="text-[11px] text-red-300/80 light:text-red-600" title="Regenerate ships in a follow-up build (Workstream C2)">
-            Not being served — regenerate to restore (coming next)
+          <p className="text-[11px] text-red-300/80 light:text-red-600">
+            Not being served — Regenerate restores it (status resets to New).
           </p>
+        </div>
+      )}
+
+      {cohort > 0 && (
+        <div className="mt-3 ml-6 max-w-lg">
+          {!showRemediateForm ? (
+            <button
+              onClick={() => setShowRemediateForm(true)}
+              className="text-xs font-medium px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/15 light:border-amber-300 light:bg-amber-50 light:text-amber-800 light:hover:bg-amber-100 transition-colors"
+            >
+              Remediate…
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 light:bg-amber-50 light:border-amber-200 px-3 py-3">
+              <div className="flex items-center gap-3 text-xs text-slate-300 light:text-gray-700">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name={`remediate-mode-${row.id}`}
+                    checked={remediateMode === 'patch'}
+                    disabled={status !== 'approved'}
+                    onChange={() => setRemediateMode('patch')}
+                  />
+                  Patch reports &amp; notify
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name={`remediate-mode-${row.id}`}
+                    checked={remediateMode === 'notify'}
+                    onChange={() => setRemediateMode('notify')}
+                  />
+                  Notify only
+                </label>
+              </div>
+              {status !== 'approved' && (
+                <p className="text-[11px] text-amber-300/80 light:text-amber-700">
+                  Patching is disabled until this entry is Approved — Danny must approve the fixed content before it&apos;s pushed into user reports. Notify only is always available.
+                </p>
+              )}
+              <textarea
+                value={remediateNoteInput}
+                onChange={e => setRemediateNoteInput(e.target.value)}
+                maxLength={2000}
+                rows={3}
+                placeholder="Note to affected users (required) — shown in the email, e.g. what was wrong and what you're doing about it."
+                className="w-full rounded-lg border border-white/10 bg-slate-950/60 light:bg-white light:border-gray-200 px-3 py-2 text-xs text-slate-200 light:text-gray-800 focus:outline-none focus:ring-1 focus:ring-amber-400/50"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={submitRemediate}
+                  disabled={remediating || !remediateNoteInput.trim()}
+                  className="text-xs font-medium px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 light:border-amber-300 light:bg-amber-100 light:text-amber-800 transition-colors disabled:opacity-50"
+                >
+                  {remediating ? 'Sending…' : `Send (${cohort} affected)`}
+                </button>
+                <button
+                  onClick={() => { setShowRemediateForm(false); setRemediateNoteInput(''); setRemediateError('') }}
+                  className="text-xs font-medium px-2.5 py-1 rounded-full border border-white/10 text-slate-300 hover:border-white/20 light:border-gray-200 light:text-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+              {remediateError && <p className="text-[11px] text-red-300 light:text-red-600">{remediateError}</p>}
+            </div>
+          )}
+          {remediateSummary && (
+            <p className="mt-2 text-[11px] text-slate-400 light:text-gray-500">
+              Patched {remediateSummary.patched} · Notified {remediateSummary.notified} · Emails sent {remediateSummary.emailsSent}
+              {remediateSummary.emailsFailed > 0 && ` (${remediateSummary.emailsFailed} failed)`} · Skipped {remediateSummary.skipped}
+              {remediateSummary.remaining > 0 && ` · ${remediateSummary.remaining} still remaining — run again to continue`}
+            </p>
+          )}
         </div>
       )}
 
@@ -308,10 +483,14 @@ export function EvergreenList({
   rows: initialRows,
   archetypeLabels,
   usageByRow,
+  cohortByRow,
+  cohortUsersByRow,
 }: {
   rows: EvergreenRow[]
   archetypeLabels: Record<string, string>
   usageByRow: Record<string, EvergreenUsage>
+  cohortByRow: Record<string, number>
+  cohortUsersByRow: Record<string, number>
 }) {
   const [rows, setRows] = useState(initialRows)
   // Sync local state when server data changes (after router.refresh() re-runs
@@ -343,6 +522,8 @@ export function EvergreenList({
           row={row}
           archetypeLabels={archetypeLabels}
           usage={usageByRow[row.id] ?? { total: 0, beforeApproval: 0 }}
+          cohort={cohortByRow[row.id] ?? 0}
+          cohortUsers={cohortUsersByRow[row.id] ?? 0}
           onDeleted={() => handleDeleted(row.id)}
         />
       ))}

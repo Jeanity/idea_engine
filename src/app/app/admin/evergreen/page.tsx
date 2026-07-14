@@ -4,6 +4,7 @@ import { Pagination, MarkSeen } from '@/components/admin'
 import { ADMIN_PAGE_SIZE, pageRange, parsePage, totalPageCount } from '@/lib/admin-pagination'
 import { ARCHETYPE_LABELS } from '@/lib/archetype-labels'
 import type { EvergreenReviewStatus } from '@/lib/database.types'
+import { filterCohort } from '@/lib/evergreen-remediation'
 import { EvergreenList, type EvergreenRow, type EvergreenUsage } from './evergreen-list'
 
 export const metadata = { title: 'Evergreen — Admin — HadIdea' }
@@ -82,11 +83,21 @@ export default async function AdminEvergreenPage({
   // 030 (the table this page fundamentally depends on) is the one that gets
   // the loud banner above.
   const usageByRow: Record<string, EvergreenUsage> = {}
+  // Workstream C2: per-row cohort count — usage rows on a SUPERSEDED
+  // revision of this baseline (evergreen_updated_at != current updated_at)
+  // that haven't been remediated yet. Same source query as usageByRow above
+  // (one round trip for both), filtered with the shared pure predicate so
+  // this count and the remediate route's own cohort query never drift.
+  const cohortByRow: Record<string, number> = {}
+  // Distinct affected users per row — used only for the remediate confirm
+  // dialog's "N user(s) will be emailed" copy (a cohort of 5 reports might
+  // belong to 2 users, since one usage row = one report, not one user).
+  const cohortUsersByRow: Record<string, number> = {}
   const ids = evergreenRows.map(r => r.id)
   if (ids.length > 0) {
     const { data: usageRows, error: usageError } = await service
       .from('evergreen_report_usage')
-      .select('evergreen_id, evergreen_updated_at, approved_at_use')
+      .select('evergreen_id, evergreen_updated_at, approved_at_use, remediated_at, user_id')
       .in('evergreen_id', ids)
 
     if (!usageError && usageRows) {
@@ -98,11 +109,14 @@ export default async function AdminEvergreenPage({
           total: matches.length,
           beforeApproval: matches.filter(m => !m.approved_at_use).length,
         }
+        const cohort = filterCohort(usageRows, { id: row.id, updated_at: row.updated_at })
+        cohortByRow[row.id] = cohort.length
+        cohortUsersByRow[row.id] = new Set(cohort.map(u => u.user_id)).size
       }
     }
     // usageError (including a missing table, 42P01/PGRST205) leaves
-    // usageByRow empty for the affected rows — EvergreenList treats a
-    // missing entry as { total: 0, beforeApproval: 0 }.
+    // usageByRow/cohortByRow/cohortUsersByRow empty for the affected rows —
+    // EvergreenList treats a missing entry as zero.
   }
 
   const totalCount = count ?? 0
@@ -160,7 +174,13 @@ export default async function AdminEvergreenPage({
             ))}
           </div>
 
-          <EvergreenList rows={evergreenRows} archetypeLabels={ARCHETYPE_LABELS} usageByRow={usageByRow} />
+          <EvergreenList
+            rows={evergreenRows}
+            archetypeLabels={ARCHETYPE_LABELS}
+            usageByRow={usageByRow}
+            cohortByRow={cohortByRow}
+            cohortUsersByRow={cohortUsersByRow}
+          />
 
           {totalCount > ADMIN_PAGE_SIZE && (
             <Pagination

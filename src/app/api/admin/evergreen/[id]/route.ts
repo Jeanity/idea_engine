@@ -62,13 +62,29 @@ export async function PATCH(
     const service = createServiceClient()
     const { error } = await service
       .from('evergreen_baselines')
-      .update({ review_status: 'approved', reviewed_at: new Date().toISOString() })
+      // C2 nit: approving a previously-disapproved row must clear its
+      // disapprove note/timestamp — a fresh approval means the row is no
+      // longer in the disapproved state those fields describe.
+      .update({
+        review_status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        disapproved_at: null,
+        disapprove_note: null,
+      })
       .eq('id', id)
 
     if (error) {
       if (isMissingTable(error)) {
         return NextResponse.json(
           { error: 'Evergreen baselines table is not available right now — please try again later.' },
+          { status: 503 }
+        )
+      }
+      // Migration 031 not yet run: the disapproved_at/disapprove_note
+      // columns this update now clears don't exist yet.
+      if (isMissingColumn(error)) {
+        return NextResponse.json(
+          { error: 'Approve is not fully available yet — the required migration has not been run.' },
           { status: 503 }
         )
       }
